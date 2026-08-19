@@ -1,0 +1,15 @@
+# agent-plan-visualiser local per-checkout state — never tracked
+.apv/.last-capture
+# agent-plan-visualiser local per-checkout state — never tracked
+.apv/.pending-extract
+# agent-plan-visualiser local per-checkout state — never tracked
+.apv/.toolchain-home
+
+# OS and local tool state
+.DS_Store
+.omc/
+
+# APV derived artefacts — rebuilt from events.jsonl, never tracked
+.apv/cache.sqlite
+.apv/projection.json
+.apv/summary.md

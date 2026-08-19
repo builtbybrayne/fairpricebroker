@@ -1,0 +1,41 @@
+# .apv-config.toml — committed project configuration for agent-plan-visualiser.
+# Lives at the repo root (it names the data dir, so it cannot live inside it).
+# Unknown keys are tolerated by design — this file accrues future config.
+
+[gate]
+# Check ids the integrity composite (gate-composite.py) enforces.
+# blocking = corruption of the record (exit 1); warn = advisory, printed,
+# never failing. Moving an id between the lists changes enforcement
+# without code edits.
+blocking = ["schema", "referential", "sealed-tail", "implementation-on-draft", "resurrection-without-reopen", "fulcrum-without-decision"]
+warn = ["drift", "orphans", "stalled", "long-blockers", "attribution-drift"]
+
+[storage]
+# APV_DATA_DIR env var overrides this; default is .apv/ when neither is set.
+data_dir = ".apv"
+# Where the plan documents live, relative to the repo root. Uncomment when
+# the tracked project sits in a sub-folder of the repo (monorepo case) —
+# the data dir stays at the repo root; only the plan corpus moves.
+# planning_dir = "planning"
+
+# Multiple sub-projects in one repo (T3-multi-project +
+# T3-project-attribution): register each project's planning root and the
+# directories it owns (dirs — explicit carve-outs; planning_dir is
+# implicitly owned). Commits and the event log stay repo-wide (one
+# record); entities are attributed at creation by location — named
+# sub-projects are stamped attributes.project, the default project (the
+# [storage] root's implicit "main", renamed by a project claiming that
+# root) never is; unmatched planless entities show as "unassigned" for
+# triage. Deliberate re-homes are operator-ruled project.assigned events.
+# Uncomment and adapt:
+# [projects.website]
+# planning_dir = "site/planning"
+# dirs = ["site/"]
+# [projects.plugin]
+# planning_dir = "plugin/planning"
+# dirs = ["plugin/"]
+
+[requires]
+# The plugin this project depends on (T3-cross-client-install).
+apv_min_version = "0.7.2"
+skills = ["apv-capture", "apv-merge", "using-agent-plan-visualiser"]
