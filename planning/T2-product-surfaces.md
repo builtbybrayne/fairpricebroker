@@ -191,3 +191,15 @@ template on one horizontal core (T1 §2.2).
 here with shipping milestones deferred to the milestone plan; quick-mode
 retention duration is T2-data-layer's question, governed by a business
 ruling.)*
+
+## 6. Rulings (19 Aug 2026, operator, in-chat)
+
+- **R1 (Q1 — survey respondent visibility): RULED as leaning.**
+  Anonymised rows by default; a respondent may opt into named
+  attribution.
+- **R2 — casual is stateless and disclosure-labelled** (from the
+  data-layer ruling): the casual surface persists no price data (an
+  anonymous completion event only) and computes SERVER-side — never
+  in-browser (the engine is trade secret and abuse-controlled; ephemeral
+  ≠ client-side). Quick-mode surfaces carry the standing disclosure line
+  that anonymised session data is stored long-term for analysis.

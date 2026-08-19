@@ -180,3 +180,17 @@ infrastructure ambition).
   which product-owned object store holds the nightly dumps (e.g. a
   Cloudflare R2 or Backblaze B2 bucket in the Newco's name)? Leaning: R2
   if Cloudflare hosting is chosen, else B2 — either ~£0 at this volume.
+
+## 6. Rulings (19 Aug 2026, operator, in-chat)
+
+- **R1 (Q1 — host): RULED — Vercel** for v1; revisit at scale.
+- **R2 (Q2 — analytics): RULED — self-hosted Umami** until revenue;
+  Plausible when £9/month is noise.
+- **R3 (Q3 — Managed Payments application): DEFERRED by operator.**
+  Blocked on business prerequisites (no company set up yet — the Newco
+  question, business-side). Intent recorded: apply as soon as the entity
+  exists; build nothing against it until approved; Paddle remains the
+  fallback.
+- **R4 (Q4 — backup target): RULED — Backblaze B2** (follows the Vercel
+  ruling; product-owned bucket in the Newco's name once it exists,
+  personal-but-transferable until then).

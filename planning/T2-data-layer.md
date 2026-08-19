@@ -114,9 +114,17 @@ row one). Both are day-one schema decisions that cannot be retrofitted.
      a residual row would identify (small-N verticals/regions). Cascade
      covers invites (emails), attribution joins, event payloads, and the
      user-facing export bundles.
-   - *Quick-mode retention sweeper* (window per Q1): deletes quick-mode
-     party positions and invite PII after the window; the anonymised
-     statistical fact and the session skeleton survive.
+   - *Quick-mode PII sweeper* (ruled — §6 R1): purges invite emails and
+     other PII 30 days after a quick session closes; **the fact rows
+     (tuples + metadata snapshots) are retained indefinitely** as
+     anonymised statistical records — the operator's ruling is "store as
+     much as we can for as long as we can" once no name is on it, with an
+     on-page disclosure line ("free quick sessions are stored, anonymised,
+     for analysis").
+   - *Casual sessions store no price data at all* (ruled — §6 R1): the
+     casual operation is stateless; the only persisted trace is an
+     anonymous completion event (template id, timestamp, attribution ref)
+     so the activation metric and usage counts still work (T1 §2.7).
    - *Copies*: exports regenerate nightly (post-purge state wins within
      24h); backup dumps expire on a fixed schedule so purged identity ages
      out of all copies; a restore replays a purge tombstone log before
@@ -186,3 +194,30 @@ row one). Both are day-one schema decisions that cannot be retrofitted.
 
 *(Moved out per audit: the backup target/scheduling question now lives in
 T2-platform's backup contract.)*
+
+## 6. Rulings (19 Aug 2026, operator, in-chat)
+
+- **R1 (Q1 — retention): RULED, reshaped.** Data is kept, identity is
+  not: quick-mode fact rows (tuples + metadata) are retained
+  indefinitely as anonymised statistical records with an on-page
+  disclosure; only PII (invite emails etc.) is swept, 30 days after
+  close. Casual sessions never persist price data — stateless
+  computation, anonymous completion event only. (Operator's reasoning:
+  no pressure to delete nameless data; free/casual sessions shouldn't
+  really touch the database at all. Orchestrator's note, accepted into
+  the contract: quick sessions MUST touch the database — blindness
+  requires the server to hold party A's sealed input while party B takes
+  days — so ephemerality is casual-only; and even casual computation
+  stays SERVER-side, never in-browser, because shipping the engine in
+  the client bundle would publish the trade-secret maths and bypass
+  abuse controls. Ephemeral ≠ client-side.)
+- **R2 (Q2 — erasure): RULED — the reconciliation stands.** On an
+  erasure request, user identity is replaced with placeholder data; the
+  reconciliation record itself is never dropped (obligation to the
+  counterparty, and a legitimate-interest basis for retaining the
+  transaction record). Where the residual row could still identify,
+  coarsen metadata; dropping the fact row is not an option. "We can only
+  do our best; we cannot change reality."
+- **Related idea captured business-side:** pre-canned quick-session
+  templates configured for questions with deliberate data value (scope
+  note, 19 Aug 2026).

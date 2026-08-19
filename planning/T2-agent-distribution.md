@@ -157,3 +157,12 @@ with two separate fields — immutable submission channel (human UI / API /
 MCP) and declared response origin (human / agent / unknown) — storage
 belongs to T2-data-layer, commissioner-facing presentation to
 T2-product-surfaces.)*
+
+## 6. Rulings (19 Aug 2026, operator, in-chat)
+
+- **R1 (Q1 — Apps SDK): RULED as leaning.** The ChatGPT-Apps-style
+  entrypoint is an owned adapter seam over the capability catalogue,
+  designed now, built only when the milestone plan schedules it.
+- **R2 — casual statelessness confirmed** (data-layer ruling): the casual
+  operation persists nothing but an anonymous completion event; §2.3's
+  "stateless-by-default" is now stateless, full stop.
