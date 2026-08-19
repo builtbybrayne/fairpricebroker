@@ -18,7 +18,8 @@ alerts, uptime checks, backups, cost caps. Two rules sharpened by review:
 our error-reporting tools must never be allowed to ship people's price
 numbers to a third party, and payment notifications must be treated like
 bank statements — verified, deduplicated, and reconciled — so nobody gets
-free or lost credit. Three decisions need Alastair — at the bottom.
+free or lost credit. All of this plan's decisions are now recorded at the
+bottom (three ruled, one deferred until the company exists).
 
 Everything below this line is the detailed version, written for the agents
 doing the work.
@@ -91,6 +92,18 @@ infrastructure ambition).
    prices are business-side (venture ladder ~£9.99/10 as the working
    sketch). The MoR is the revenue system of record (never duplicated);
    the product-owned account is transferable (separability).
+   **The credit lifecycle is a provider-independent contract** (audit r2):
+   credits enter a balance by *promotional grant* (free launch credits —
+   issued by config, idempotently, once per account) or *verified
+   purchase*; a session creation **reserves-then-debits atomically** (one
+   credit per invited reconciliation; the configured table-size schedule
+   per survey), releasing the reservation if creation fails; refunds
+   reverse un-spent credits and drive the balance negative when already
+   spent (a visible state that blocks new spends, never claws back a
+   completed reconciliation); org shared pools (milestone-scheduled)
+   select the pool at creation time. All lifecycle entries are idempotent
+   on their originating event id. Ledger storage is the data-layer's
+   billing-reference seam; the rules are this plan's.
 4. **Webhooks are treated as untrusted bank statements.** The receiver:
    verifies provider signatures; is idempotent, keyed on the provider's
    immutable event id (stored in the billing-reference table);
@@ -155,11 +168,25 @@ infrastructure ambition).
    surfacing (the MoR's artefact — we link to it).
 4. **Email service**: provider account on the product domain,
    SPF/DKIM/DMARC, templated transactional sends per lifecycle event.
+   **Deliverability controls live in this component** (audit r2): the
+   send path enforces the per-session recipient cap (default 50; the 51st
+   requires an operator-granted account setting) and per-account daily
+   caps; the provider's complaint/bounce feedback webhooks feed a
+   sending-state machine whose auto-pause (complaints >0.1%) blocks
+   further invite sends until operator release; no code path sends invite
+   mail except through this component and its provider.
 5. **Resilience kit**: error tracking under the §2.5 scrubbing contract,
    health route (status only, no internals), external uptime monitor,
    backup pipeline per §2.6, spend caps and billing alerts.
-6. **Web analytics**: cookie-banner-free analytics (Q2) wired to
-   attribution refs where possible, under the same no-PII egress rule.
+6. **Web analytics — self-hosted Umami, the ruled exception to §2.1's
+   one-deployable principle** (audit r2): Umami runs as a second, small,
+   free-tier deployable with its own isolated database credentials (a
+   dedicated schema/user in the product Supabase project with NO access
+   to product tables, or its own free-tier Postgres — T3 decides by
+   free-tier limits at build time). No-PII event contract (page paths and
+   attribution refs only; never emails, tuples, or session identifiers);
+   credential-isolated from previews like everything else; counts inside
+   the £0 pre-revenue ceiling and the >£10/month escalation rule.
 
 ## 4. Verification approach (binding on T3s)
 
@@ -176,7 +203,19 @@ infrastructure ambition).
 - Backup drill: nightly artefact lands offsite; scorecard flags a stale
   dump; restore + tombstone replay rehearsed against a scratch project,
   meeting the stated RPO/RTO.
-- Deliverability: SPF/DKIM/DMARC checks green before invite E2E runs.
+- Deliverability: SPF/DKIM/DMARC checks green before invite E2E runs;
+  guardrail tests — the 51st recipient is refused without an operator
+  grant, daily caps enforce, a simulated complaint rate >0.1% flips the
+  sending state to paused and blocks sends, and no alternative send path
+  exists (static check: only the email component imports the provider
+  client).
+- Preview isolation negative test: CI asserts preview builds contain no
+  production secrets and a preview's connection attempt against the
+  production database fails.
+- Credit lifecycle tests: idempotent promotional grant (re-run issues
+  nothing), reserve-debit-release on failed creation, refund-after-spend
+  drives negative balance and blocks new spends, launch phase exposes no
+  checkout and no subscription SKU anywhere.
 
 ## 5. Open questions (HITL)
 
@@ -216,3 +255,12 @@ infrastructure ambition).
   §6 R3): invitees never authenticate beyond the invite grant, so the
   former "email-verified quick" principal generalises to the *invitee*
   principal above.
+- **R6 — audit round 2 revisions applied** (19 Aug 2026): credit
+  lifecycle made a provider-independent contract (grants, atomic
+  reserve/debit/release, refund-after-spend semantics, idempotency, org
+  pools); Umami declared the ruled exception to the one-deployable
+  principle with isolation and cost treatment specified; deliverability
+  guardrails moved into the email component with enforcement tests
+  (51st-recipient refusal, auto-pause state machine, single send path);
+  preview-isolation negative test added; human summary decision count
+  corrected.

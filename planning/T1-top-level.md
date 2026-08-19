@@ -272,3 +272,17 @@ T2-agent-distribution.
 - **All five §4 questions are now ruled.** This T1's open-questions
   section is closed; future questions arrive as new addenda or in child
   plans.
+
+### Addendum 5 (19 Aug 2026, night — §2.4 clarification)
+
+Cross-model audit surfaced a collision between §2.4 ("identifiable raw
+data is never disclosed to any party other than its subject") and the
+operator's survey-attribution ruling (T2-product-surfaces §6 R1:
+respondents may opt into named attribution). Clarification, implementing
+the operator's ruling: §2.4's boundary forbids disclosure **without the
+subject's direction** — a data subject's explicit, informed opt-in to
+attribute their own response is subject-directed disclosure and is
+permitted. The default remains anonymous; consent is per-response, never
+assumed, never a condition of participation. (Flagged to the operator for
+veto at the next review; recorded by the orchestrator as the faithful
+reading of two operator rulings in tension.)

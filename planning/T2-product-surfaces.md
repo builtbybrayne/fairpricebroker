@@ -55,28 +55,43 @@ template on one horizontal core (T1 §2.2).
    blind-safe variant. No surface ever holds a field its viewer may not
    see; redaction is never a UI concern. The developer audit panel appears
    only when the API returned audit data (no client toggle, no flag).
-2. **Lifecycle is a transition contract, not a state list.** Canonical
-   states (re-adopted, T1 Q4): `created`, `draft`, `submitted`, `locked`,
-   `closed`, `cancelled`; `archived` is a per-viewer presentation flag,
-   not a canonical state. Transitions (event → authorised actor → guard →
-   next state):
-   - create → creator → valid template/config → `created`→`draft`
-   - save-position → a party → session not locked → stays `draft`
-   - submit → a party → valid in-domain tuple → that party `submitted`
-   - recall → the submitting party → counterparty not yet submitted →
-     back to `draft`
-   - second-submit → the other party → both valid → `locked`
-     (automatic), which triggers server-side computation; computation
-     success → `closed` (results payloads issued, notifications sent);
-     computation failure → session stays `locked` with an operator-visible
-     error state, never a silent close
-   - cancel → creator → before both parties have submitted → `cancelled`
+2. **Lifecycle is a transition contract, not a state list.** Two
+   distinct notions, never conflated: **session state** — canonical:
+   `open` (accepting positions), `locked`, `closed`, `cancelled` — and
+   **per-participant submission status** — `draft`, `submitted`,
+   `recalled` (re-submittable). `archived` is a per-viewer presentation
+   flag, not a state. Per-shape contracts (event → authorised actor →
+   guard → next state):
+   *Invited reconciliation* (both compositions — creator-as-party and
+   creator-as-host):
+   - create → account-holding creator → valid template/config + credit
+     debit per entitlement rules → session `open`
+   - save-position → a party → session `open` → participant `draft`
+   - submit → a party → valid in-domain tuple → participant `submitted`
+   - recall → a submitted party → the other party not yet `submitted` →
+     participant `recalled` (may re-submit); first-submitter-can-recall
+     asymmetry is a feature
+   - both-submitted → automatic → session `locked`, triggering
+     server-side computation; success → `closed` (payloads issued,
+     notifications sent); failure → stays `locked` with an
+     operator-visible error state, never a silent close
+   - cancel → creator → before both parties `submitted` → `cancelled`
      (visible, non-interactive)
    - No transition out of `closed` or `cancelled`; try again with a new
-     session. First-submitter-can-recall asymmetry is a feature.
-   **Survey closure:** a survey session closes on commissioner action or
-   configured deadline/quota, whichever first; late responses are refused;
-   computation runs at close over valid responses.
+     session.
+   *Survey*:
+   - create/configure → account-holding commissioner → valid template +
+     table-size debit per entitlement rules → `open`
+   - respond → an invited respondent → session `open`, one response per
+     grant, tuple valid → response recorded (invalid tuples rejected
+     individually per T2-engine §3.3)
+   - close → commissioner action, or configured deadline/quota
+     (whichever first) → `locked`; late responses refused; computation
+     over valid responses → `closed`
+   - cancel → commissioner → before close → `cancelled`
+   *Casual*: no lifecycle at all — a stateless computation with no
+   persisted session (T2-data-layer §6 R1); the canonical states simply
+   do not apply.
 3. **Three session shapes** (ruled 19 Aug 2026, superseding the
    prototype's four types — see §6 R3):
    - *casual* — no auth, co-present, the sole full-detail mode, lives on
@@ -138,11 +153,18 @@ template on one horizontal core (T1 §2.2).
    the four intersection points including explicit `interval-crossing` and
    `no-crossing` states (plainly worded, never hidden), the acceptable
    range, N, and valid/invalid response counts.
-10. **Invites are records, not links alone** (re-adopted): an invite row
-    (session, role, optional email, expiry, acceptance) behind a
-    `/join/{invite}` URL, deliverable by email or shareable link; the
-    server resolves role and auth requirement from the record. Direct
-    sessions can only invite the counterparty role.
+10. **Invites are records, not links alone** (re-adopted, tightened per
+    audit r2): an invite row (session, role, bound email where required,
+    expiry, acceptance) behind a `/join/{invite}` URL; the server
+    resolves role and auth requirement from the record. **Cardinalities
+    and binding by shape:** a creator-as-party issues exactly ONE
+    counterparty grant; a creator-as-host issues exactly TWO party
+    grants; every invited-party grant is **email-bound and single-use**
+    (a forwarded link cannot be redeemed by another address — blind
+    parties' identities matter). Survey respondent invites may be
+    email-bound OR shareable-link (respondents are many and low-stakes;
+    shareable links also spare the sending domain — the ≤cap rule
+    applies to emailed invites).
 
 ## 3. What — components
 
@@ -152,9 +174,12 @@ template on one horizontal core (T1 §2.2).
    and is handed to the completion event without being user-editable.
 2. **Session creation and configuration**: template pick, labels,
    currency (one per session, display-only to the engine), invite issue.
-   Creating an invited reconciliation or a survey debits the creator's
-   credit balance per the entitlement rules (T2-platform §2.3); the
-   balance and top-up path are visible at the point of spend.
+   **Entitlement debits are shape-specific** (rules and phases owned by
+   T2-platform §2.3): an invited reconciliation debits exactly one
+   credit; a survey debits per the configured table-size schedule. The
+   balance is visible at the point of spend; the top-up path appears
+   only in the paid phase (in the free-launch-credit phase there is no
+   checkout anywhere in the flow).
 3. **Party experience**: tactile meter entry with validation (ascending,
    in-domain per T2-engine §2.5), sealed-state feedback, draft/submit/
    recall controls, progress choreography (you → them → reveal), the
@@ -179,10 +204,14 @@ template on one horizontal core (T1 §2.2).
 
 ## 4. Verification approach (binding on T3s)
 
-- E2E flows per shape: casual round-trip; invited end-to-end (creator
-  account + credit debit, invitee via email link, both submit, reveal);
-  survey commission/respond/close; org creation and membership (once its
-  milestone ships it).
+- E2E flows per shape: casual round-trip; invited end-to-end in BOTH
+  compositions (creator-as-party with one grant; creator-as-host with two
+  grants), covering credit debit, email-bound link redemption (wrong
+  address refused), both submissions, reveal; survey
+  commission/respond/close including table-size debit and late-response
+  refusal; entitlement-phase gates (free-launch phase shows no checkout;
+  paid phase debits and refuses at zero balance); org creation and
+  membership (once its milestone ships it).
 - Payload-safety tests: for each role × session type × deal outcome,
   assert the rendered DOM never contains counterparty raw values or
   distances (fixtures from T2-data-layer's payload classes).
@@ -219,7 +248,9 @@ ruling.)*
 
 - **R1 (Q1 — survey respondent visibility): RULED as leaning.**
   Anonymised rows by default; a respondent may opt into named
-  attribution.
+  attribution — per-response, informed, never a participation condition
+  (audit r2 flagged tension with T1 §2.4; resolved by T1 Addendum 5:
+  subject-directed disclosure is the subject's own act).
 - **R2 — casual is stateless and disclosure-labelled** (from the
   data-layer ruling): the casual surface persists no price data (an
   anonymous completion event only) and computes SERVER-side — never
@@ -239,3 +270,10 @@ ruling.)*
   re-adopted four-type structure from the March design; the lifecycle,
   host, invite, and blindness machinery re-adopted under T1 Q4 are
   unchanged.
+- **R4 — audit round 2 revisions applied** (19 Aug 2026): session state
+  separated from per-participant status with per-shape transition
+  contracts (survey open/respond/close, casual explicitly lifecycle-free);
+  invite cardinalities fixed (party-creator one grant, host-creator two)
+  with email-bound single-use party grants; entitlement phases carried
+  into components and verification (shape-specific debits, no checkout in
+  the free-launch phase).
