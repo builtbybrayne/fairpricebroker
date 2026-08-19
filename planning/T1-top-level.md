@@ -196,3 +196,23 @@ T2-agent-distribution.
 - **New standing rule:** all plan documents carry a leading plain-language
   human summary section (dual-audience convention, per the operator's
   humane-reporting instruction, 19 Aug 2026).
+
+### Addendum (19 Aug 2026, later same day)
+
+- **Q3 (payments): RULED — international Merchant of Record required.**
+  Stripe is not an MoR (the seller remains merchant of record) and is
+  therefore out. Provider recommendation: **Paddle** (mature SaaS MoR,
+  proper B2B VAT invoicing, transfers cleanly in acquisition); lighter
+  alternative Lemon Squeezy (Stripe-owned since 2024). Provider
+  confirmation pending; the MoR requirement itself is ruled.
+- **Q1 (stack): selection criteria ruled, proposal updated, final ruling
+  pending.** Operator rulings: Next.js is excluded (prefer simpler and
+  faster); founder fluency is NOT a criterion — choose the best fit for
+  the problem; **agent data-access is a first-class criterion** (AI agents
+  will search, extract, and digest this data). Updated proposal
+  (see `docs/standards-and-stacks.md`): SvelteKit + TypeScript, Postgres
+  via Supabase, engine as a pure TS package.
+- **Q2 of T2-engine interacts:** the precision ruling (exact decimals,
+  3–4+ d.p. legitimate) is a further argument for a datastore with true
+  arbitrary-precision numerics (Postgres NUMERIC) over float-based
+  document stores.

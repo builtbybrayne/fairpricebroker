@@ -17,21 +17,28 @@
 
 ## Application stack
 
+Selection criteria ruled by Al (19 Aug 2026): simpler and faster than
+Next.js (which is excluded); best fit for the problem, founder fluency NOT a
+criterion; **agent data-access is first-class** — AI agents will search,
+extract, and digest this data, so the datastore and API surfaces must be
+friendly to programmatic/SQL/semantic access.
+
 | Thing | Status | Decision / current position |
 |---|---|---|
 | Language | **LEANING** | TypeScript end-to-end (engine is pure TS regardless — T2-engine §2.1) |
-| Framework | **LEANING** (recommendation, awaiting ruling — T1 Q1) | Next.js, App Router. Why: landing-page-is-the-product needs SSR/SEO + API routes + MCP endpoints in one deployable; validated by the March 2026 design; TS end-to-end. |
-| Backend / data | **LEANING** (operator default, awaiting ruling — T1 Q1) | **Firebase**: Auth (all four tiers) + Firestore. Why: founder fluency; venture docs already assume it (own Firebase project, Firestore events). Honest cost: relational shapes (credit ledger, org membership, N≥20 aggregates) are clunkier than Postgres — mitigated by the nightly raw-event export (below), which keeps a later warehouse/migration option open. Alternative considered: Supabase/Postgres (March design) — better aggregates + RLS, rejected-by-default for fluency reasons unless Al rules otherwise. |
-| Hosting | **LEANING** | Vercel (native Next.js) — Firebase App Hosting acceptable alternative if consolidation preferred. |
-| Payments | **LEANING** (operator default, awaiting ruling — T1 Q3) | **Stripe** (+ Stripe Tax). Recorded tension: business research (Update 1 §7) leaned Merchant of Record (Paddle/Lemon Squeezy) for global B2C VAT — ~3 margin points for zero tax admin. Suggested path: start Stripe (UK-first + B2B reverse-charge is simple), revisit MoR if international B2C volume appears. Separate product-owned Stripe account either way (separability ruling). |
+| Framework | **LEANING** (proposal v2, awaiting ruling — T1 Q1) | **SvelteKit**. Why: SSR/SEO for landing-page-is-the-product, server endpoints for API + MCP in the same deployable, materially simpler mental model and faster runtime than Next.js, first-class TS. (Next.js excluded by operator ruling. Runner-up considered: Astro + Hono — best-in-class content/SEO + a superb tiny API framework, but two moving parts where SvelteKit is one.) |
+| Backend / data | **LEANING** (proposal v2, awaiting ruling — T1 Q1) | **Postgres, managed via Supabase**. Why it is the best fit: the domain is relational (auctions/parties/invites/orgs, an append-only credit ledger); NUMERIC gives true arbitrary-precision money (T2-engine R2 ruling: 3–4+ d.p. legitimate); the N≥20 aggregate layer is plain SQL views; row-level security gives defense-in-depth under the blindness rule; and for agent access SQL is the lingua franca — aggregates exposable as read-only views/APIs, pgvector available if semantic search over the corpus is wanted later. Supabase adds managed Auth (magic link / OAuth / OTP email tokens — all four tiers) without a second vendor. (Firebase default withdrawn by operator: fluency removed as a criterion; Firestore's float-only numbers alone now disqualify it against the precision ruling.) |
+| Hosting | **LEANING** | Vercel or Cloudflare (SvelteKit adapters for both; pick at scaffold time — Cloudflare cheaper/faster edge, Vercel more conventional). Supabase hosts the data layer either way. |
+| Payments | **RULED: international Merchant of Record** (19 Aug 2026, T1 §5 addendum) — Stripe is out (it is a processor, not an MoR). Provider **LEANING: Paddle** (mature SaaS MoR, real B2B VAT invoices, transfers cleanly in acquisition); alternative Lemon Squeezy (simpler, Stripe-owned since 2024, historically weaker B2B invoicing). Provider confirmation pending. Separate product-owned account either way (separability ruling). |
 | Email (transactional) | RULED (venture docs) | Postmark/Mailgun-class service on the product domain; never Workspace. |
+| Agent data-access | **LEANING** (new criterion, 19 Aug 2026) | MCP endpoints (already ruled, T1 §2.3) + read-only SQL views for aggregate/published data + `.md` twins of public pages. Raw party data stays behind the blindness boundary regardless of surface. |
 
 ## Analytics & measurement
 
 | Thing | Status | Decision |
 |---|---|---|
 | Web analytics | **LEANING** (venture docs) | Umami self-hosted or Plausible — cookie-banner-free. No GA4. |
-| Product events | **LEANING** (venture docs) | Events to Firestore; nightly export to a sqlite file in the library scope; the scorecard agent reads that. No Mixpanel/Amplitude. |
+| Product events | **LEANING** (updated 19 Aug with stack proposal v2) | Events as a plain Postgres table; aggregates as SQL views. Scorecard agent reads via a read-only connection or a nightly sqlite export to the library scope (venture docs' original shape — keep whichever proves simpler). No Mixpanel/Amplitude. |
 | Revenue truth | RULED (venture docs) | Stripe (or MoR) is the database; never duplicate. |
 | Attribution | RULED (T1 §2.7) | Share-link ref codes on every shared result; completed reconciliations = the activation metric. |
 | Resilience | RULED (venture docs) | Sentry free tier, uptime ping, backups. |
@@ -51,4 +58,4 @@
 | Plan style | RULED (19 Aug 2026, T1 §5) | Every plan opens with a plain-language "Human summary" section; the rest is the agent report (humane dual-audience convention). |
 | Business/technical split | RULED (19 Aug 2026) | Business/GTM in the ExFu library scope (Dropbox, no APV yet); technical in this repo. Reference, never repeat. |
 | Engine verification | RULED (T2-engine §4) | Golden vectors from the prototype + generative property tests. |
-| vwpa prior art | **OPEN** (T1 Q4, deferred pending stack ruling) | Engine port = salvage. Under a Firebase ruling: reuse Next.js scaffolding patterns, engine-extraction plan, and lifecycle thinking from the March design; drop the Supabase-specific parts. Verdict: patterns yes, repo no. |
+| vwpa prior art | **OPEN** (T1 Q4, deferred pending stack ruling) | Engine port = salvage. Under stack proposal v2 (Supabase back in): the March design's *data thinking* (schema shape, RLS/party-isolation approach, auction lifecycle, engine-extraction plan) transfers well; its Next.js-specific scaffolding does not (framework changed). Verdict trend: design-doc yes, code no. |

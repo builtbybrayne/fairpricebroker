@@ -99,7 +99,16 @@ faithful to the proven prototype.
    converged-trivially marking, not an edge-case crash. Rounding for
    display is the caller's job; the engine documents its own boundary
    rounding, if any, in the numerical policy.
-6. **Honesty signals are instrumentation only** (v1): computed per party,
+6. **Precision is preserved, presentation is transformed** (ruled — §6 R2).
+   Prices are exact decimals and may legitimately carry 3–4+ decimal places
+   (volume-product haggling); the engine accepts and returns full input
+   precision, never silently rounding. Storage is an
+   arbitrary-precision-capable mechanism (T2-data-layer's column choice);
+   display rounding is a *presentation transform* owned by callers, sane
+   default two decimal places. Engine internals may compute in binary
+   floating point (results are advisory prices), with output precision and
+   any boundary rounding documented in the numerical policy.
+7. **Honesty signals are instrumentation only** (v1): computed per party,
    returned alongside results for storage, never applied as correction.
    Correction machinery (compression, confidence weighting) is a
    designed-but-dormant v2 concern and must not leak into v1 interfaces
@@ -160,10 +169,16 @@ normative contract a T3 implements:
   pairing never crosses in the sampled range, that point is returned as an
   explicit `no-crossing` result state, never extrapolated.
 - *Result:* the four points (or their explicit result states), the
-  acceptable price range (PMC–PME), N, and a small-sample flag below the
-  named threshold (Q3). Invalid respondent tuples are rejected
-  individually with a per-respondent validation report; a survey computes
-  only over valid tuples and reports both counts.
+  acceptable price range (PMC–PME), and N — always reported, never judged
+  (ruled — §6 R3: we are a broker, not an analyser; the engine computes
+  from N=2 upward with no sample-adequacy gate or mandatory flag; a
+  friendly small-N note is a presentation option owned by product
+  surfaces, not an engine contract). Invalid respondent tuples are
+  rejected individually with a per-respondent validation report; a survey
+  computes only over valid tuples and reports both counts. (Distinct
+  concern, unchanged: the venture's N≥20 rule governs *published
+  aggregates* in T2-data-layer, not survey results returned to their own
+  commissioning user.)
 - *Verification:* representative and edge-case vectors (interval-crossing,
   no-crossing, all-identical respondents, minimum-N) are binding on the
   implementing T3, alongside at least one hand-computed classic VWPM
@@ -222,3 +237,22 @@ is a product-surface rule):
   to compute intersections at all rather than flag)? Leaning flag below
   N=20 (mirrors the venture's N≥20 aggregate-publishing rule), compute
   from N=2 with the flag.
+
+## 6. Rulings (19 Aug 2026, operator, in-chat)
+
+- **R1 (Q1 — convergence tolerance): RULED as proposed.** Relative to the
+  active zone width, with an absolute floor. Golden vectors captured from
+  the prototype's absolute-0.01 behaviour carry a per-vector fidelity note
+  where the semantics diverge.
+- **R2 (Q2 — money representation): RULED, superseding the float leaning.**
+  No assumption that prices are "sane" 2-d.p. figures — volume-product
+  haggling can hinge on 3–4 d.p. Contract: precision-preserving decimal
+  values end-to-end (arbitrary-precision-capable storage), with display
+  rounding as a caller-owned presentation transform, sane default 2 d.p.
+  Principle 6 (§2) carries the binding text.
+- **R3 (Q3 — small-sample threshold): RULED — not our problem.** The
+  product is a broker, not an analyser (yet): no sample-adequacy gate, no
+  mandatory flag; N is always reported; a friendly note is a
+  product-surface presentation option only. §3.3 carries the binding text.
+  The N≥20 rule remains in force where it always lived: published
+  aggregates (T2-data-layer).
