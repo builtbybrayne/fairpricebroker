@@ -53,13 +53,14 @@ infrastructure ambition).
    principals and what this layer asserts about each to T2-data-layer:
    - *anonymous* (casual): an ephemeral visit identifier; no account; may
      own nothing persistent except attribution correlation.
-   - *email-verified* (quick): a one-time-code principal bound to one
-     email for one session's role; stable identifier = the invite grant,
-     not an account.
-   - *account* (direct): magic link and/or Google OAuth; stable user id;
-     may hold history and defaults.
-   - *org member/admin* (org): OAuth-required account plus org membership
-     claims.
+   - *invitee* (invited sessions and survey respondents): a one-time
+     email-link principal bound to one role in one session; stable
+     identifier = the invite grant, not an account; never pays.
+   - *account* (creators and commissioners): magic link and/or Google
+     OAuth; stable user id; holds history, defaults, and the credit
+     balance. Creating invited/survey sessions requires this principal.
+   - *org member/admin* (org plumbing, milestone-scheduled): OAuth-required
+     account plus org membership claims; shared credit pool.
    - *developer*: a server-granted database role bound to named operator
      accounts; never self-selectable, invisible in user-facing surfaces
      (re-adopted, T1 Q4).
@@ -75,14 +76,21 @@ infrastructure ambition).
 3. **Money enters only through the MoR checkout, over a provider-neutral
    seam.** Purchases run through the merchant-of-record's hosted checkout
    (Managed Payments constraint: Checkout/Payment Links only;
-   subscriptions created via Checkout). This plan binds the *seam*, not
-   the catalogue: a purchase-to-entitlement interface that maps verified
-   provider events to account entitlements via the data-layer's neutral
-   billing-reference table. Credit packs and subscriptions are
-   **non-binding examples** — the paid catalogue is deliberately unruled
-   until the paid-layer milestone (T1 Addendum 4: pricing re-derived).
-   The MoR is the revenue system of record (never duplicated); the
-   product-owned account is transferable (separability).
+   subscriptions created via Checkout). The seam: a
+   purchase-to-entitlement interface mapping verified provider events to
+   account entitlements via the data-layer's neutral billing-reference
+   table. **The launch catalogue is now ruled** (operator, 19 Aug 2026 —
+   §6 R5): **credit packs only** — one-off purchases crediting the
+   buyer's balance; one credit = one invited reconciliation; surveys
+   priced per table × size in the same currency of credits. **No
+   subscription at launch**: a subscription product is added only when
+   the venture's trigger fires (>30% of pack buyers re-buying within 6
+   months), as a Checkout-created product over the same seam — config,
+   not rebuild. Until the company + MoR account exist, entitlements run
+   on free launch credits (no checkout in the flow at all). Exact pack
+   prices are business-side (venture ladder ~£9.99/10 as the working
+   sketch). The MoR is the revenue system of record (never duplicated);
+   the product-owned account is transferable (separability).
 4. **Webhooks are treated as untrusted bank statements.** The receiver:
    verifies provider signatures; is idempotent, keyed on the provider's
    immutable event id (stored in the billing-reference table);
@@ -115,6 +123,13 @@ infrastructure ambition).
    notifications, lifecycle nudges. Marketing email is out of scope here
    (business-side owns it); the sending domain and its reputation are
    product assets. SPF/DKIM/DMARC green before any invite ships.
+   **Deliverability guardrails** (operator ruling, 19 Aug 2026): invite
+   sends are capped per session (default 50 recipients — a survey invite
+   list is not a mailing list) and per account per day; bounce and
+   spam-complaint rates are monitored with auto-pause thresholds
+   (complaints >0.1% pause invite sending, mirroring the venture's
+   outreach thresholds); all invite mail goes through the transactional
+   provider, never raw SMTP.
 8. **Cost ceiling pre-revenue: ~£0/month** (Supabase Free, free-tier
    hosting and resilience, free-tier email volume). Spend caps and
    billing alerts on everywhere they exist. Any change introducing a
@@ -194,3 +209,10 @@ infrastructure ambition).
 - **R4 (Q4 — backup target): RULED — Backblaze B2** (follows the Vercel
   ruling; product-owned bucket in the Newco's name once it exists,
   personal-but-transferable until then).
+- **R5 — launch catalogue ruled** (operator, 19 Aug 2026): credits only
+  at launch (creator-pays-per-reconciliation; free launch credits until
+  the MoR exists); subscription deferred to the second-pack-rebuy
+  trigger. Session shapes restructured accordingly (T2-product-surfaces
+  §6 R3): invitees never authenticate beyond the invite grant, so the
+  former "email-verified quick" principal generalises to the *invitee*
+  principal above.

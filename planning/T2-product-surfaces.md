@@ -11,14 +11,14 @@ status: draft
 
 **This is the blueprint for everything people actually see and touch:** the
 pages, the meter, the invitation flow, and the moment the fair price is
-revealed. It fixes the shapes we already trust from the earlier prototype
-design — four kinds of session (from "play instantly on the homepage" to
-"company account"), the submit-and-reveal choreography, and the strict rule
-that a middleman host can see the outcome but never anyone's numbers. It
-applies the chosen look ("The Instrument") everywhere — and the server, not
-the page, decides what each viewer may ever see, so the reveal animation
-cannot leak the other side's numbers even by mistake. One decision needs
-Alastair — at the bottom.
+revealed. There are three shapes: **casual** (two people in the same room —
+the free homepage demo, nothing stored), **invited** (the real product: the
+creator holds an account and spends a credit; the person they invite needs
+no account and pays nothing), and **survey** (one commissioner, many
+respondents, paid per table). A middleman host can see the outcome but
+never anyone's numbers, and the server — not the page — decides what each
+viewer may ever see, so the reveal animation cannot leak the other side's
+numbers even by mistake.
 
 Everything below this line is the detailed version, written for the agents
 doing the work.
@@ -77,22 +77,37 @@ template on one horizontal core (T1 §2.2).
    **Survey closure:** a survey session closes on commissioner action or
    configured deadline/quota, whichever first; late responses are refused;
    computation runs at close over valid responses.
-3. **Four session types, one spectrum of formality** (re-adopted):
-   *casual* (no auth, co-present, the sole full-detail mode, lives on the
-   landing page), *quick* (email-token auth, blind), *direct* (magic
-   link / OAuth, blind, personal history), *org* (OAuth, blind,
-   org-owned). Mode is fixed at creation and persisted; nothing downgrades
-   a blind session to full-detail.
+3. **Three session shapes** (ruled 19 Aug 2026, superseding the
+   prototype's four types — see §6 R3):
+   - *casual* — no auth, co-present, the sole full-detail mode, lives on
+     the landing page, stateless (no price persistence).
+   - *invited* — the blind two-party product. The **creator holds an
+     account** (magic link / OAuth) and spends one credit per
+     reconciliation from their balance (entitlement-enforced; free launch
+     credits until the MoR exists — T2-platform §2.3). The **invitee
+     never pays and needs no account**: a one-time email link grants
+     their single role in this single session. The creator is either one
+     of the two parties or the host (recruiter pattern). Personal history
+     attaches to the creator's account.
+   - *survey* — one account-holding commissioner pays per table × size;
+     respondents are invitees (no account, no payment).
+   *Org* is not a fourth shape: it is account plumbing (org-owned
+   sessions, shared credit pool, membership admin) layered onto invited
+   and survey shapes — architecture bound here, shipping
+   milestone-scheduled.
+   Mode is fixed at creation and persisted; nothing downgrades a blind
+   session to full-detail.
 4. **The role matrix is the contract.** Per session type, the roles and
    their payload classes:
    | Role | Exists in | May do | Sees (payload class) |
    |---|---|---|---|
-   | creator | all | configure, invite, cancel (per §2.2) | own-party view if also a party; else host-or-summary view per type |
-   | party (A/B) | all | draft/submit/recall own tuple | party-safe: own inputs, outcome, own no-deal distance only |
-   | host | host-controlled | observe, nudge | host-safe: outcome summary + the two "what Party X sees" panels; never inputs |
-   | commissioner | survey | configure, invite N, close | survey results per engine contract; individual rows only as the data-layer survey boundary permits (respondent identity separated from tuple unless respondent opted to be named) |
+   | creator (account) | invited, survey | configure, invite, cancel (per §2.2); spends the credit | own-party view if also a party; host view if hosting; never both parties' inputs |
+   | party (A/B) | casual, invited | draft/submit/recall own tuple | party-safe: own inputs, outcome, own no-deal distance only (casual: full-detail, co-present) |
+   | invitee grant | invited, survey | the one role the invite names, in that session only | that role's payload class; no account, no payment |
+   | host | invited (host-controlled) | observe, nudge | host-safe: outcome summary + the two "what Party X sees" panels; never inputs |
+   | commissioner | survey | configure, invite ≤cap, close; pays per table | survey results per engine contract; rows anonymised unless a respondent opted into attribution (§6 R1) |
    | respondent | survey | submit one tuple | own submission + confirmation only |
-   | org admin | org | membership + org-session management | as creator/host per session; never party inputs |
+   | org admin | org plumbing (later) | membership, org sessions, shared credit pool | as creator/host per session; never party inputs |
    | developer | all (server-granted) | read audit payloads | internal-only class; granted by database role, never user-selectable, invisible to other users |
 5. **Templates are configuration, not code:** a template = the four
    question texts, party labels, the directional mapping (which party is
@@ -137,6 +152,9 @@ template on one horizontal core (T1 §2.2).
    and is handed to the completion event without being user-editable.
 2. **Session creation and configuration**: template pick, labels,
    currency (one per session, display-only to the engine), invite issue.
+   Creating an invited reconciliation or a survey debits the creator's
+   credit balance per the entitlement rules (T2-platform §2.3); the
+   balance and top-up path are visible at the point of spend.
 3. **Party experience**: tactile meter entry with validation (ascending,
    in-domain per T2-engine §2.5), sealed-state feedback, draft/submit/
    recall controls, progress choreography (you → them → reveal), the
@@ -145,20 +163,25 @@ template on one horizontal core (T1 §2.2).
 4. **Host experience**: outcome summary + the two safety panels.
 5. **Survey mode surface** (build order per T1 Q2 ruling: fast-follow):
    commissioner setup (template questions, N invites, close rule),
-   respondent flow (one meter, no account), results per §2.9.
+   respondent flow (one meter, no account), results per §2.9. Invite
+   lists are capped per session (default 50 — the platform's
+   deliverability guardrail, T2-platform §2.7); raising the cap is an
+   operator-granted per-account setting, never self-serve.
 6. **Org machinery**: org creation, membership, org-owned sessions, admin
    controls — architecture bound here; shipping milestone decided in the
    milestone plan (not this document).
 7. **Custom template authoring**: bound architecture per §2.5; shipping
    milestone likewise deferred to the milestone plan.
-8. **Dashboard**: session list per user/org, archive flag, settings
-   (default currency, default labels).
+8. **Dashboard**: session list per user/org, archive flag, credit
+   balance and purchase history, settings (default currency, default
+   labels).
 9. **Developer audit panel**: renders only on API-supplied audit data.
 
 ## 4. Verification approach (binding on T3s)
 
-- E2E flows per session type: casual round-trip; quick with two email
-  tokens; direct invite/accept; org creation and membership (once its
+- E2E flows per shape: casual round-trip; invited end-to-end (creator
+  account + credit debit, invitee via email link, both submit, reveal);
+  survey commission/respond/close; org creation and membership (once its
   milestone ships it).
 - Payload-safety tests: for each role × session type × deal outcome,
   assert the rendered DOM never contains counterparty raw values or
@@ -188,7 +211,7 @@ template on one horizontal core (T1 §2.2).
   show all.
 
 *(Resolved out of round 1: org and custom-template architecture are bound
-here with shipping milestones deferred to the milestone plan; quick-mode
+here with shipping milestones deferred to the milestone plan;
 retention duration is T2-data-layer's question, governed by a business
 ruling.)*
 
@@ -201,5 +224,18 @@ ruling.)*
   data-layer ruling): the casual surface persists no price data (an
   anonymous completion event only) and computes SERVER-side — never
   in-browser (the engine is trade secret and abuse-controlled; ephemeral
-  ≠ client-side). Quick-mode surfaces carry the standing disclosure line
-  that anonymised session data is stored long-term for analysis.
+  ≠ client-side). Invited-session surfaces carry the standing disclosure
+  line that anonymised session data is stored long-term for analysis.
+- **R3 — three shapes replace the four types** (operator, 19 Aug 2026,
+  "I'm sold — it's clearer"): quick and direct merge into one **invited**
+  shape where the account-holding creator pays per reconciliation via
+  credits and the invitee is always free and account-less; casual stays
+  the free ephemeral demo; survey is commissioner-paid per table × size.
+  Org is account plumbing (shared credit pool), not a shape. Launch runs
+  on free launch credits until the company + merchant-of-record exist
+  (entitlement config, not architecture). Subscription is NOT a launch
+  feature: it is added when the venture's second-pack-rebuy trigger fires
+  (>30% of pack buyers re-buying within 6 months). Supersedes the
+  re-adopted four-type structure from the March design; the lifecycle,
+  host, invite, and blindness machinery re-adopted under T1 Q4 are
+  unchanged.

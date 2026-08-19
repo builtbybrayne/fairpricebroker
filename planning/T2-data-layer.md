@@ -114,12 +114,12 @@ row one). Both are day-one schema decisions that cannot be retrofitted.
      a residual row would identify (small-N verticals/regions). Cascade
      covers invites (emails), attribution joins, event payloads, and the
      user-facing export bundles.
-   - *Quick-mode PII sweeper* (ruled — §6 R1): purges invite emails and
-     other PII 30 days after a quick session closes; **the fact rows
+   - *Invited-session PII sweeper* (ruled — §6 R1; shape renamed from 'quick' by §6 R3 cross-ref): purges invite emails and
+     other PII 30 days after an invited session closes; **the fact rows
      (tuples + metadata snapshots) are retained indefinitely** as
      anonymised statistical records — the operator's ruling is "store as
      much as we can for as long as we can" once no name is on it, with an
-     on-page disclosure line ("free quick sessions are stored, anonymised,
+     on-page disclosure line ("sessions are stored, anonymised,
      for analysis").
    - *Casual sessions store no price data at all* (ruled — §6 R1): the
      casual operation is stateless; the only persisted trace is an
@@ -157,7 +157,7 @@ row one). Both are day-one schema decisions that cannot be retrofitted.
    the library scope, produce the encrypted dump artefact for the
    platform backup path. Failure surfaces on the scorecard.
 6. **GDPR toolset**: per-user export bundle; erasure routine with
-   re-identification review and cascade (§2.8); quick-mode sweeper;
+   re-identification review and cascade (§2.8); invited-session sweeper;
    tombstone replay on restore.
 
 ## 4. Verification approach (binding on T3s)
@@ -184,7 +184,7 @@ row one). Both are day-one schema decisions that cannot be retrofitted.
 
 ## 5. Open questions (HITL)
 
-- **Q1 — quick-mode retention window** (business ruling): the prototype
+- **Q1 — invited-session PII window** (business ruling): the prototype
   said 30 days. Adopt 30 days now? Leaning yes, revisit at paid layer.
 - **Q2 — erasure coarsening policy.** When a purged user's residual fact
   row is potentially identifying (rare vertical × region), do we coarsen
@@ -198,14 +198,14 @@ T2-platform's backup contract.)*
 ## 6. Rulings (19 Aug 2026, operator, in-chat)
 
 - **R1 (Q1 — retention): RULED, reshaped.** Data is kept, identity is
-  not: quick-mode fact rows (tuples + metadata) are retained
+  not: invited-session fact rows (tuples + metadata) are retained
   indefinitely as anonymised statistical records with an on-page
   disclosure; only PII (invite emails etc.) is swept, 30 days after
   close. Casual sessions never persist price data — stateless
   computation, anonymous completion event only. (Operator's reasoning:
   no pressure to delete nameless data; free/casual sessions shouldn't
   really touch the database at all. Orchestrator's note, accepted into
-  the contract: quick sessions MUST touch the database — blindness
+  the contract: invited (formerly quick) sessions MUST touch the database — blindness
   requires the server to hold party A's sealed input while party B takes
   days — so ephemerality is casual-only; and even casual computation
   stays SERVER-side, never in-browser, because shipping the engine in
@@ -221,3 +221,9 @@ T2-platform's backup contract.)*
 - **Related idea captured business-side:** pre-canned quick-session
   templates configured for questions with deliberate data value (scope
   note, 19 Aug 2026).
+
+- **R3 cross-reference (19 Aug 2026, later):** the session-shape
+  restructure (T2-product-surfaces §6 R3) merges quick+direct into the
+  *invited* shape; this plan's retention and sweeper rulings apply to
+  invited sessions unchanged. The credit balance lives on account
+  identities; the billing-reference seam is unchanged.
