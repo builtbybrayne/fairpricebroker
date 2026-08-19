@@ -2,7 +2,7 @@
 id: T2-engine
 plan_kind: thematic
 tier: 2
-status: draft
+status: active
 ---
 
 # T2-engine — the maths core
@@ -37,6 +37,10 @@ doing the work.
 >
 > Revised 19 Aug 2026 addressing Codex audit round 1 (verdict: revise;
 > 2 high / 4 medium / 1 low — return at `.exfu/returns/t2-engine-audit-r1.json`).
+>
+> **Accepted 19 Aug 2026 by Alastair** (operator ceremony, in-chat), after
+> Codex pre-acceptance audit, revision addressing all findings, and the
+> operator's §6 rulings on all three open questions.
 
 ## 1. Why (theme intent)
 
