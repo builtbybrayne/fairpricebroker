@@ -28,6 +28,17 @@ trust position); one living canvas centerpiece where the convergence
 animates. Fun lives in the centerpiece and the reveal moment; trust lives
 in everything around it.
 
+## Ruling (19 Aug 2026, night)
+**Direction E "The Instrument" ACCEPTED by Alastair** — with one correction
+that becomes a standing design-system rule: the convergence animation as
+drawn (both parties' bars visibly converging) implies the viewer can see
+the other side's range. Permitted only in non-blind modes (casual,
+co-present, the viral partner toy). **Blind brokerings need a
+blindness-safe reveal variant** — the viewer's own range plus the fair
+price landing, or an abstract convergence encoding no counterparty
+positions. The animation principle ("the maths is the motion") is accepted
+as-is.
+
 ## Watch-outs recorded
 - Gamification in a fairness/trust product must reward *completion*, not
   *winning* — a leaderboard for negotiators is poison to the blind-fairness

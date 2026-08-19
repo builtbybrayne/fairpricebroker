@@ -235,3 +235,19 @@ T2-agent-distribution.
   Payments primary, Paddle fallback** if eligibility or fees disappoint.
   Supersedes Addendum 1's "Stripe is out" (that referred to vanilla
   Stripe Payments, which is indeed not an MoR).
+
+### Addendum 3 (19 Aug 2026, night)
+
+- **Q1 (stack): now fully RULED.** SvelteKit + TypeScript; **Supabase
+  (Postgres)** accepted by the operator ($0 free tier pre-revenue, Pro at
+  first revenue). Q1 is closed.
+- **Design language RULED: "The Instrument"** (see
+  `docs/standards-and-stacks.md` Design row and `docs/design-brief.md`),
+  with a binding blindness constraint: the convergence-reveal animation
+  may show both parties' ranges ONLY in non-blind modes; blind sessions
+  get a blindness-safe reveal variant. This is principle §2.1 applied to
+  motion design; T2-product-surfaces must specify the per-mode variants.
+- Remaining open from §4: Q2 (build order of modes) and Q4 (prior-art
+  re-adoption boundary — now largely answerable: SvelteKit means vwpa's
+  Next.js scaffolding is out; its Supabase-era schema/RLS thinking and
+  lifecycle design remain candidate requirements for T2-product-surfaces).
