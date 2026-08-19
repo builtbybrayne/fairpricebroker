@@ -2,7 +2,7 @@
 id: T1-top-level
 plan_kind: thematic
 tier: 1
-status: draft
+status: active
 ---
 
 # T1 — Pricing Meter product: top-level technical intent
@@ -15,6 +15,11 @@ status: draft
 >
 > Revised 19 Aug 2026 addressing Codex audit round 1 (verdict: revise;
 > 1 high / 5 medium / 1 low — return at `.exfu/returns/t1-top-level-audit-r1.json`).
+>
+> **Accepted 19 Aug 2026 by Alastair** (operator ceremony, in-chat), after
+> Codex pre-acceptance audit and revision addressing all findings. Open
+> questions Q1–Q5 remain open — acceptance advances the plan, not the
+> rulings.
 
 ## 1. Why
 
