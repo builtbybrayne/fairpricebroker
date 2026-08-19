@@ -251,3 +251,24 @@ T2-agent-distribution.
   re-adoption boundary — now largely answerable: SvelteKit means vwpa's
   Next.js scaffolding is out; its Supabase-era schema/RLS thinking and
   lifecycle design remain candidate requirements for T2-product-surfaces).
+
+### Addendum 4 (19 Aug 2026, night — closes §4)
+
+- **Q2 (build order): RULED — two-party reconciliation first.** It is the
+  thesis, the activation metric, and the landing-page casual mode; the
+  blindness machinery is the moat. Survey mode fast-follows (no blindness,
+  same maths and invite plumbing), ideally before launch week since
+  founders are the launch-channel audience.
+- **Q4 (prior-art boundary): RULED — re-adopt / re-derive split as
+  recommended.** Re-adopted as requirements for T2-product-surfaces: the
+  four session types (casual / quick / direct / org), the lifecycle state
+  machine (draft → submit → recall → lock → close, first-submitter-can-
+  recall asymmetry), the host safety panels ("what Party A sees / what
+  Party B sees"), the invite model, the hidden developer-audit role, and
+  the Postgres RLS party-isolation approach. Re-derived fresh: everything
+  visual (The Instrument governs), pricing/tiers (venture research
+  governs), and any recruiter-specific assumptions (horizontal core
+  governs).
+- **All five §4 questions are now ruled.** This T1's open-questions
+  section is closed; future questions arrive as new addenda or in child
+  plans.
