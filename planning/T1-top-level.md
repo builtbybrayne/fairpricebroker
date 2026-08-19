@@ -216,3 +216,22 @@ T2-agent-distribution.
   3–4+ d.p. legitimate) is a further argument for a datastore with true
   arbitrary-precision numerics (Postgres NUMERIC) over float-based
   document stores.
+
+### Addendum 2 (19 Aug 2026, evening)
+
+- **Q1 (framework): RULED — SvelteKit** ("svelte is acceptable").
+  Datastore (Supabase/Postgres) pending operator confirm after cost check
+  ($0 dev / $25 per month production — Pro tier).
+- **Q3 (payments) candidate revised: Stripe Managed Payments.** Operator
+  surfaced Stripe's MoR product (docs.stripe.com/payments/managed-payments,
+  verified 19 Aug 2026): Stripe becomes merchant of record, handling
+  VAT/GST/sales tax in 80+ countries, disputes, fraud, and
+  transaction-level support. UK sellers eligible; SaaS/digital products
+  supported (relevant tax codes exist); works via Checkout and Payment
+  Links only (no Elements/custom payment forms; subscriptions must be
+  created through Checkout — acceptable for this product); requires
+  passing Stripe's eligibility review; per-transaction fee premium not
+  stated in docs — confirm at signup. New leaning: **Stripe Managed
+  Payments primary, Paddle fallback** if eligibility or fees disappoint.
+  Supersedes Addendum 1's "Stripe is out" (that referred to vanilla
+  Stripe Payments, which is indeed not an MoR).
