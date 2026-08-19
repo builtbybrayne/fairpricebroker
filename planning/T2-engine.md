@@ -7,6 +7,29 @@ status: draft
 
 # T2-engine — the maths core
 
+## 0. Human summary (plain language)
+
+**This is the blueprint for the maths brain of Fair Price Broker.** It does
+two jobs with one engine: (1) two people each secretly enter four price
+points and it finds the fair middle (or says "no deal possible — here's the
+least unfair number"), and (2) one founder asks many people about a price
+and it draws the classic pricing-survey answer.
+
+The rules that matter: **the engine's full answer is for our servers only**
+— what each person is allowed to see gets filtered elsewhere, so nobody can
+ever peek at the other side. The maths must give **the same answer every
+time**, show its working, and be tested against the proven prototype so we
+know the port didn't change the numbers. It also quietly measures whether
+someone's four numbers look honest (measured and stored only — no
+punishing anyone yet).
+
+Three small decisions still need Alastair — listed at the bottom.
+
+Everything below this line is the detailed version, written for the agents
+doing the work.
+
+---
+
 > Spawned from `T1-top-level` §3 theme 1 (19 Aug 2026). Architecture
 > altitude: names real components and contracts, no file paths or code.
 > Inherits all T1 §2 principles by reference — notably principle 1

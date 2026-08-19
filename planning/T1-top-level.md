@@ -5,7 +5,28 @@ tier: 1
 status: active
 ---
 
-# T1 — Pricing Meter product: top-level technical intent
+# T1 — Fair Price Broker: top-level technical intent
+
+## 0. Human summary (plain language)
+
+**We're building Fair Price Broker (fairprice.broker): a website where two
+people who need to agree a price each secretly enter four numbers, and the
+maths finds the fair middle — without either side ever seeing the other's
+numbers.** The same maths also powers a "survey many people about my price"
+tool for founders.
+
+This document is the project's constitution. It says what "done" looks like
+(the free tool working end-to-end, with proof people complete it), the
+rules that never bend (nobody can ever peek at the other side's numbers;
+one engine with many skins; AI assistants are first-class users; every
+entry is tagged so the data becomes valuable), and the five build areas
+(the maths engine, the screens, the AI doorway, the data vault, the
+plumbing). It ends with the decisions still waiting for Alastair.
+
+Everything below this line is the detailed version, written for the agents
+doing the work.
+
+---
 
 > Scope ruling (Alastair, 19 Aug 2026): this T1 is **technical-only**. The
 > venture's why — practice frame, GTM, market strategy, exit thinking — lives
@@ -154,3 +175,24 @@ T2-agent-distribution.
   against the horizontal-core principle?
 - **Q5 — name and domain.** Business-side decision; technical consequence
   is repo/package/domain naming. Placeholder "fairprice" until ruled.
+
+## 5. Rulings (19 Aug 2026, operator, in-chat)
+
+- **Q5 (name and domain): RULED.** Product name **Fair Price Broker**;
+  domain **https://fairprice.broker** (already owned). The repo keeps its
+  `fairprice` name; package and brand naming follow the product name.
+  (Continuity note: this is the March 2026 design doc's name and domain —
+  that pairing survives even though the doc's stack/GTM content was
+  superseded.)
+- **Q1 (stack): direction stated, not yet ruled.** Operator default:
+  Firebase + Stripe, explicitly open to better suggestions; app framework
+  agnostic. Recommendation and trade-offs live in
+  `docs/standards-and-stacks.md`; ruling pending.
+- **Q3 (payments): direction stated, not yet ruled.** Operator default
+  Stripe (note: business-side research leaned Merchant of Record for
+  global VAT — tension recorded in `docs/standards-and-stacks.md`).
+- **Q4 (prior-art re-adoption): deferred pending Q1.** Operator is
+  agnostic; overlap depends on the stack ruling.
+- **New standing rule:** all plan documents carry a leading plain-language
+  human summary section (dual-audience convention, per the operator's
+  humane-reporting instruction, 19 Aug 2026).
