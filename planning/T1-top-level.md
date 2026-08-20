@@ -286,3 +286,16 @@ permitted. The default remains anonymous; consent is per-response, never
 assumed, never a condition of participation. (Flagged to the operator for
 veto at the next review; recorded by the orchestrator as the faithful
 reading of two operator rulings in tension.)
+
+### Addendum 6 (20 Aug 2026 — entity ruling)
+
+Operator ruled: the venture starts inside **WhaleyBear Ltd**; the Newco is
+incorporated on a hair trigger — **any evidence of desire** (first paying
+customer, genuine pilot commitment, acquirer interest) → spin up the Newco
+asap. §2.5's separability principle is unchanged and strengthened: every
+"assignable to the proposed Newco" reads as "owned by WhaleyBear under
+separability discipline, assigned to the Newco when the trigger fires";
+a clean written IP record inside WhaleyBear is part of the discipline.
+Consequence: the Managed Payments application (T2-platform §6 R3) is no
+longer entity-blocked; its timing remains "as the paid phase approaches".
+Business record: scope note "Entity Decision -- 20 Aug 2026".

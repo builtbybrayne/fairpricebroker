@@ -14,6 +14,7 @@
 | Product name | **RULED** (19 Aug 2026, T1 §5) | **Fair Price Broker** |
 | Domain | **RULED** (19 Aug 2026, T1 §5) | https://fairprice.broker (owned) |
 | Repo name | RULED | stays `fairprice` |
+| Legal entity | **RULED** (20 Aug 2026, T1 §5 addendum 6) | Start inside **WhaleyBear Ltd**; Newco incorporated on a hair trigger — ANY evidence of desire (first paying customer, pilot commitment, acquirer interest). Separability discipline + written IP record inside WhaleyBear keep the eventual assignment cheap. Unblocks the Stripe MoR application (timing: as the paid phase approaches). |
 
 ## Application stack
 
