@@ -130,3 +130,10 @@ page, launch week (M3) · Umami analytics MAY slip to M2 without failing M1
   business-side work. Leaning: yes, M1 — an unlaunched tool holding
   strangers' salary expectations without a privacy policy is not
   "working".
+
+## 7. Erratum (20 Aug 2026, appended post-approval)
+
+§0's "nothing about AI doorways" and §5's M2 line predate the operator's
+agent-parity ruling and were left stale at approval: the agent doorway IS
+in M1 (item 6, DoD 8); M2's doorway work is only the survey capabilities'
+agent access per the parity law. §2 items and §4 are authoritative.
