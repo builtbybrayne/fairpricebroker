@@ -294,3 +294,12 @@ ruling.)*
   casual mode the DEVICE transiently holds both tuples (one client) — the
   handover is UX-enforced etiquette, not cryptographic blindness; server
   and stored-data guarantees are unchanged (nothing is stored at all).
+
+- **R6 (20 Aug 2026, operator, post-acceptance append) — casual outcome
+  hides raw figures by default.** Refines R5: the casual outcome view
+  shows the reconciliation (fair price, zones, the convergence animation)
+  WITHOUT either party's raw input figures by default; an explicit "show
+  the numbers" control reveals them on demand. Raw figures appear nowhere
+  else. The both-range animation remains permitted in casual (it encodes
+  ranges, which the pair chose to reconcile co-presently); the default
+  conceals the four-point inputs themselves.

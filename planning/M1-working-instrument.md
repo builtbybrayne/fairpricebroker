@@ -46,8 +46,10 @@ MoR approval, no business prerequisite gates any M1 item.
    20 Aug 2026): Person A enters their figures while B looks away; an
    interstitial confirms-and-hides A's entries before the device is
    handed over; B enters theirs; a "both look now" interstitial precedes
-   the full-detail reveal. Entered figures are never re-displayed outside
-   the outcome view. *(T2-product-surfaces §6 R5)*
+   the reveal. **The outcome shows the reconciliation (fair price, zones,
+   animation) WITHOUT either side's raw figures by default; a "show the
+   numbers" button reveals them on demand.** Entered figures are never
+   displayed anywhere else. *(T2-product-surfaces §6 R5–R6)*
 5. **Invited reconciliation end-to-end** — creator accounts (magic link +
    Google), free launch credits (idempotent grant; balance visible; no
    checkout anywhere), email-bound single-use invites via the
