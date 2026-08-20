@@ -2,10 +2,14 @@
 id: M1-working-instrument
 plan_kind: milestone
 milestone_index: 1
-status: draft
+status: active
 ---
 
 # M1 — The Working Instrument
+
+> **Approved 20 Aug 2026 by Alastair** (target-selection ceremony, in-chat),
+> after one review round (agent doorway moved in; blind-handover and
+> hidden-figures rulings folded in). M1 is the active delivery target.
 
 ## 0. Human summary (plain language)
 
