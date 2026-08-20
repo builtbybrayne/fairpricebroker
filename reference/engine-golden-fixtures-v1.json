@@ -1,0 +1,2081 @@
+{
+  "provenance": {
+    "source": "/Users/al/Studio/projects/vwpa/product/vwpa.jsx",
+    "source_lines": "5-225 (maths only, copied verbatim)",
+    "generated": "2026-08-20",
+    "generator": "T3-m1-engine-port revision r2 (fairprice repo), run under Node v25.9.0",
+    "note": "absolute-0.01 records the prototype's native tolerance mode; relative-r1 records the same maths run with threshold = max(0.01, zoneWidth*1e-4). Distances are NOT prototype output; they are derived here by the interval-distance formula of T3-m1-engine-port: distance_p = max(0, tuple[0] - fairPrice, fairPrice - tuple[3]) per party."
+  },
+  "fixtures": [
+    {
+      "id": "comfort-zone",
+      "input": {
+        "lowPreferrer": [
+          80,
+          95,
+          110,
+          125
+        ],
+        "highPreferrer": [
+          70,
+          90,
+          105,
+          120
+        ]
+      },
+      "modes": {
+        "absolute-0.01": {
+          "threshold": 0.01,
+          "result": {
+            "overlap": true,
+            "overlapLow": 95,
+            "overlapHigh": 105,
+            "dealLow": 80,
+            "dealHigh": 120,
+            "hasComfortZone": true,
+            "gap": 0,
+            "layers": [
+              {
+                "methods": [
+                  {
+                    "name": "Arithmetic Midpoint",
+                    "value": 100
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 99.87492177719089
+                  },
+                  {
+                    "name": "Nash Bargaining",
+                    "value": 97.5
+                  },
+                  {
+                    "name": "Kalai-Smorodinsky",
+                    "value": 99.61538461538461
+                  },
+                  {
+                    "name": "Joint Acceptability",
+                    "value": 95
+                  },
+                  {
+                    "name": "Flexibility-Weighted",
+                    "value": 99.73684210526315
+                  }
+                ],
+                "values": [
+                  100,
+                  99.87492177719089,
+                  97.5,
+                  99.61538461538461,
+                  95,
+                  99.73684210526315
+                ],
+                "spread": 5
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 98.62119141630643
+                  },
+                  {
+                    "name": "Median",
+                    "value": 99.67611336032388
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 99.18178712445966
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 99.525
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 98.60398124998027
+                  }
+                ],
+                "values": [
+                  98.62119141630643,
+                  99.67611336032388,
+                  99.18178712445966,
+                  99.525,
+                  98.60398124998027
+                ],
+                "spread": 1.0721321103436168
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 99.12161463021405
+                  },
+                  {
+                    "name": "Median",
+                    "value": 99.18178712445966
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 99.10932618025538
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 99.40271967218627
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 99.12061346501345
+                  }
+                ],
+                "values": [
+                  99.12161463021405,
+                  99.18178712445966,
+                  99.10932618025538,
+                  99.40271967218627,
+                  99.12061346501345
+                ],
+                "spread": 0.2933934919308854
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 99.18721221442576
+                  },
+                  {
+                    "name": "Median",
+                    "value": 99.12161463021405
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 99.1413384065624
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 99.1342646270695
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 99.18715049533311
+                  }
+                ],
+                "values": [
+                  99.18721221442576,
+                  99.12161463021405,
+                  99.1413384065624,
+                  99.1342646270695,
+                  99.18715049533311
+                ],
+                "spread": 0.06559758421170159
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 99.15431607472097
+                  },
+                  {
+                    "name": "Median",
+                    "value": 99.1413384065624
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 99.15425117632168
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 99.13506213497746
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 99.1543122423645
+                  }
+                ],
+                "values": [
+                  99.15431607472097,
+                  99.1413384065624,
+                  99.15425117632168,
+                  99.13506213497746,
+                  99.1543122423645
+                ],
+                "spread": 0.019253939743506976
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 99.14785600698939
+                  },
+                  {
+                    "name": "Median",
+                    "value": 99.15425117632168
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 99.14996727508286
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 99.15354591713123
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 99.14785567366252
+                  }
+                ],
+                "values": [
+                  99.14785600698939,
+                  99.15425117632168,
+                  99.14996727508286,
+                  99.15354591713123,
+                  99.14785567366252
+                ],
+                "spread": 0.006395502659160002
+              }
+            ],
+            "fairPrice": 99.14996727508286,
+            "convergenceAchieved": true
+          }
+        },
+        "relative-r1": {
+          "threshold": 0.01,
+          "result": {
+            "overlap": true,
+            "overlapLow": 95,
+            "overlapHigh": 105,
+            "dealLow": 80,
+            "dealHigh": 120,
+            "hasComfortZone": true,
+            "gap": 0,
+            "layers": [
+              {
+                "methods": [
+                  {
+                    "name": "Arithmetic Midpoint",
+                    "value": 100
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 99.87492177719089
+                  },
+                  {
+                    "name": "Nash Bargaining",
+                    "value": 97.5
+                  },
+                  {
+                    "name": "Kalai-Smorodinsky",
+                    "value": 99.61538461538461
+                  },
+                  {
+                    "name": "Joint Acceptability",
+                    "value": 95
+                  },
+                  {
+                    "name": "Flexibility-Weighted",
+                    "value": 99.73684210526315
+                  }
+                ],
+                "values": [
+                  100,
+                  99.87492177719089,
+                  97.5,
+                  99.61538461538461,
+                  95,
+                  99.73684210526315
+                ],
+                "spread": 5
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 98.62119141630643
+                  },
+                  {
+                    "name": "Median",
+                    "value": 99.67611336032388
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 99.18178712445966
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 99.525
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 98.60398124998027
+                  }
+                ],
+                "values": [
+                  98.62119141630643,
+                  99.67611336032388,
+                  99.18178712445966,
+                  99.525,
+                  98.60398124998027
+                ],
+                "spread": 1.0721321103436168
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 99.12161463021405
+                  },
+                  {
+                    "name": "Median",
+                    "value": 99.18178712445966
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 99.10932618025538
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 99.40271967218627
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 99.12061346501345
+                  }
+                ],
+                "values": [
+                  99.12161463021405,
+                  99.18178712445966,
+                  99.10932618025538,
+                  99.40271967218627,
+                  99.12061346501345
+                ],
+                "spread": 0.2933934919308854
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 99.18721221442576
+                  },
+                  {
+                    "name": "Median",
+                    "value": 99.12161463021405
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 99.1413384065624
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 99.1342646270695
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 99.18715049533311
+                  }
+                ],
+                "values": [
+                  99.18721221442576,
+                  99.12161463021405,
+                  99.1413384065624,
+                  99.1342646270695,
+                  99.18715049533311
+                ],
+                "spread": 0.06559758421170159
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 99.15431607472097
+                  },
+                  {
+                    "name": "Median",
+                    "value": 99.1413384065624
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 99.15425117632168
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 99.13506213497746
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 99.1543122423645
+                  }
+                ],
+                "values": [
+                  99.15431607472097,
+                  99.1413384065624,
+                  99.15425117632168,
+                  99.13506213497746,
+                  99.1543122423645
+                ],
+                "spread": 0.019253939743506976
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 99.14785600698939
+                  },
+                  {
+                    "name": "Median",
+                    "value": 99.15425117632168
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 99.14996727508286
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 99.15354591713123
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 99.14785567366252
+                  }
+                ],
+                "values": [
+                  99.14785600698939,
+                  99.15425117632168,
+                  99.14996727508286,
+                  99.15354591713123,
+                  99.14785567366252
+                ],
+                "spread": 0.006395502659160002
+              }
+            ],
+            "fairPrice": 99.14996727508286,
+            "convergenceAchieved": true
+          }
+        }
+      }
+    },
+    {
+      "id": "deal-only",
+      "input": {
+        "lowPreferrer": [
+          50,
+          60,
+          70,
+          80
+        ],
+        "highPreferrer": [
+          75,
+          85,
+          95,
+          105
+        ]
+      },
+      "modes": {
+        "absolute-0.01": {
+          "threshold": 0.01,
+          "result": {
+            "overlap": true,
+            "overlapLow": 75,
+            "overlapHigh": 80,
+            "dealLow": 75,
+            "dealHigh": 80,
+            "hasComfortZone": false,
+            "gap": 0,
+            "layers": [
+              {
+                "methods": [
+                  {
+                    "name": "Arithmetic Midpoint",
+                    "value": 77.5
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 77.45966692414834
+                  },
+                  {
+                    "name": "Nash Bargaining",
+                    "value": 77.5
+                  },
+                  {
+                    "name": "Kalai-Smorodinsky",
+                    "value": 77.5
+                  },
+                  {
+                    "name": "Joint Acceptability",
+                    "value": 77.5
+                  },
+                  {
+                    "name": "Flexibility-Weighted",
+                    "value": 77.5
+                  }
+                ],
+                "values": [
+                  77.5,
+                  77.45966692414834,
+                  77.5,
+                  77.5,
+                  77.5,
+                  77.5
+                ],
+                "spread": 0.040333075851663125
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 77.49327782069139
+                  },
+                  {
+                    "name": "Median",
+                    "value": 77.5
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 77.5
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 77.5
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 77.49327636256004
+                  }
+                ],
+                "values": [
+                  77.49327782069139,
+                  77.5,
+                  77.5,
+                  77.5,
+                  77.49327636256004
+                ],
+                "spread": 0.006723637439961294
+              }
+            ],
+            "fairPrice": 77.5,
+            "convergenceAchieved": true
+          }
+        },
+        "relative-r1": {
+          "threshold": 0.01,
+          "result": {
+            "overlap": true,
+            "overlapLow": 75,
+            "overlapHigh": 80,
+            "dealLow": 75,
+            "dealHigh": 80,
+            "hasComfortZone": false,
+            "gap": 0,
+            "layers": [
+              {
+                "methods": [
+                  {
+                    "name": "Arithmetic Midpoint",
+                    "value": 77.5
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 77.45966692414834
+                  },
+                  {
+                    "name": "Nash Bargaining",
+                    "value": 77.5
+                  },
+                  {
+                    "name": "Kalai-Smorodinsky",
+                    "value": 77.5
+                  },
+                  {
+                    "name": "Joint Acceptability",
+                    "value": 77.5
+                  },
+                  {
+                    "name": "Flexibility-Weighted",
+                    "value": 77.5
+                  }
+                ],
+                "values": [
+                  77.5,
+                  77.45966692414834,
+                  77.5,
+                  77.5,
+                  77.5,
+                  77.5
+                ],
+                "spread": 0.040333075851663125
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 77.49327782069139
+                  },
+                  {
+                    "name": "Median",
+                    "value": 77.5
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 77.5
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 77.5
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 77.49327636256004
+                  }
+                ],
+                "values": [
+                  77.49327782069139,
+                  77.5,
+                  77.5,
+                  77.5,
+                  77.49327636256004
+                ],
+                "spread": 0.006723637439961294
+              }
+            ],
+            "fairPrice": 77.5,
+            "convergenceAchieved": true
+          }
+        }
+      }
+    },
+    {
+      "id": "no-deal",
+      "input": {
+        "lowPreferrer": [
+          40,
+          50,
+          60,
+          70
+        ],
+        "highPreferrer": [
+          90,
+          100,
+          110,
+          120
+        ]
+      },
+      "modes": {
+        "absolute-0.01": {
+          "threshold": 0.01,
+          "result": {
+            "overlap": false,
+            "overlapLow": 70,
+            "overlapHigh": 90,
+            "dealLow": 90,
+            "dealHigh": 70,
+            "hasComfortZone": false,
+            "gap": 20,
+            "layers": [
+              {
+                "methods": [
+                  {
+                    "name": "Arithmetic Midpoint",
+                    "value": 80
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 79.37253933193772
+                  },
+                  {
+                    "name": "Nash Bargaining",
+                    "value": 80
+                  },
+                  {
+                    "name": "Kalai-Smorodinsky",
+                    "value": 80
+                  },
+                  {
+                    "name": "Joint Acceptability",
+                    "value": 70
+                  },
+                  {
+                    "name": "Flexibility-Weighted",
+                    "value": 80
+                  }
+                ],
+                "values": [
+                  80,
+                  79.37253933193772,
+                  80,
+                  80,
+                  70,
+                  80
+                ],
+                "spread": 10
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 78.22875655532296
+                  },
+                  {
+                    "name": "Median",
+                    "value": 80
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 79.84313483298443
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 79.85
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 78.13663613463959
+                  }
+                ],
+                "values": [
+                  78.22875655532296,
+                  80,
+                  79.84313483298443,
+                  79.85,
+                  78.13663613463959
+                ],
+                "spread": 1.8633638653604123
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 79.21170550458939
+                  },
+                  {
+                    "name": "Median",
+                    "value": 79.84313483298443
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 79.3072971294358
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 79.86956452942476
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 79.2072116583721
+                  }
+                ],
+                "values": [
+                  79.21170550458939,
+                  79.84313483298443,
+                  79.3072971294358,
+                  79.86956452942476,
+                  79.2072116583721
+                ],
+                "spread": 0.6623528710526614
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 79.4877827309613
+                  },
+                  {
+                    "name": "Median",
+                    "value": 79.3072971294358
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 79.45404582233654
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 79.25026459499053
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 79.48720513711127
+                  }
+                ],
+                "values": [
+                  79.4877827309613,
+                  79.3072971294358,
+                  79.45404582233654,
+                  79.25026459499053,
+                  79.48720513711127
+                ],
+                "spread": 0.23751813597077387
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 79.39731908296709
+                  },
+                  {
+                    "name": "Median",
+                    "value": 79.45404582233654
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 79.41618269629454
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 79.46759368940378
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 79.39725707950497
+                  }
+                ],
+                "values": [
+                  79.39731908296709,
+                  79.45404582233654,
+                  79.41618269629454,
+                  79.46759368940378,
+                  79.39725707950497
+                ],
+                "spread": 0.07033660989881696
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 79.42647967410139
+                  },
+                  {
+                    "name": "Median",
+                    "value": 79.41618269629454
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 79.42251586719938
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 79.40640083879181
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 79.42647431033542
+                  }
+                ],
+                "values": [
+                  79.42647967410139,
+                  79.41618269629454,
+                  79.42251586719938,
+                  79.40640083879181,
+                  79.42647431033542
+                ],
+                "spread": 0.020078835309575993
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 79.41961067734451
+                  },
+                  {
+                    "name": "Median",
+                    "value": 79.42251586719938
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 79.42172429127645
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 79.4233674546284
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 79.41961031345753
+                  }
+                ],
+                "values": [
+                  79.41961067734451,
+                  79.42251586719938,
+                  79.42172429127645,
+                  79.4233674546284,
+                  79.41961031345753
+                ],
+                "spread": 0.003757141170879663
+              }
+            ],
+            "fairPrice": 79.42172429127645,
+            "convergenceAchieved": true
+          }
+        },
+        "relative-r1": {
+          "threshold": 0.01,
+          "result": {
+            "overlap": false,
+            "overlapLow": 70,
+            "overlapHigh": 90,
+            "dealLow": 90,
+            "dealHigh": 70,
+            "hasComfortZone": false,
+            "gap": 20,
+            "layers": [
+              {
+                "methods": [
+                  {
+                    "name": "Arithmetic Midpoint",
+                    "value": 80
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 79.37253933193772
+                  },
+                  {
+                    "name": "Nash Bargaining",
+                    "value": 80
+                  },
+                  {
+                    "name": "Kalai-Smorodinsky",
+                    "value": 80
+                  },
+                  {
+                    "name": "Joint Acceptability",
+                    "value": 70
+                  },
+                  {
+                    "name": "Flexibility-Weighted",
+                    "value": 80
+                  }
+                ],
+                "values": [
+                  80,
+                  79.37253933193772,
+                  80,
+                  80,
+                  70,
+                  80
+                ],
+                "spread": 10
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 78.22875655532296
+                  },
+                  {
+                    "name": "Median",
+                    "value": 80
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 79.84313483298443
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 79.85
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 78.13663613463959
+                  }
+                ],
+                "values": [
+                  78.22875655532296,
+                  80,
+                  79.84313483298443,
+                  79.85,
+                  78.13663613463959
+                ],
+                "spread": 1.8633638653604123
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 79.21170550458939
+                  },
+                  {
+                    "name": "Median",
+                    "value": 79.84313483298443
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 79.3072971294358
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 79.86956452942476
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 79.2072116583721
+                  }
+                ],
+                "values": [
+                  79.21170550458939,
+                  79.84313483298443,
+                  79.3072971294358,
+                  79.86956452942476,
+                  79.2072116583721
+                ],
+                "spread": 0.6623528710526614
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 79.4877827309613
+                  },
+                  {
+                    "name": "Median",
+                    "value": 79.3072971294358
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 79.45404582233654
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 79.25026459499053
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 79.48720513711127
+                  }
+                ],
+                "values": [
+                  79.4877827309613,
+                  79.3072971294358,
+                  79.45404582233654,
+                  79.25026459499053,
+                  79.48720513711127
+                ],
+                "spread": 0.23751813597077387
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 79.39731908296709
+                  },
+                  {
+                    "name": "Median",
+                    "value": 79.45404582233654
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 79.41618269629454
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 79.46759368940378
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 79.39725707950497
+                  }
+                ],
+                "values": [
+                  79.39731908296709,
+                  79.45404582233654,
+                  79.41618269629454,
+                  79.46759368940378,
+                  79.39725707950497
+                ],
+                "spread": 0.07033660989881696
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 79.42647967410139
+                  },
+                  {
+                    "name": "Median",
+                    "value": 79.41618269629454
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 79.42251586719938
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 79.40640083879181
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 79.42647431033542
+                  }
+                ],
+                "values": [
+                  79.42647967410139,
+                  79.41618269629454,
+                  79.42251586719938,
+                  79.40640083879181,
+                  79.42647431033542
+                ],
+                "spread": 0.020078835309575993
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 79.41961067734451
+                  },
+                  {
+                    "name": "Median",
+                    "value": 79.42251586719938
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 79.42172429127645
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 79.4233674546284
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 79.41961031345753
+                  }
+                ],
+                "values": [
+                  79.41961067734451,
+                  79.42251586719938,
+                  79.42172429127645,
+                  79.4233674546284,
+                  79.41961031345753
+                ],
+                "spread": 0.003757141170879663
+              }
+            ],
+            "fairPrice": 79.42172429127645,
+            "convergenceAchieved": true
+          }
+        }
+      },
+      "derivedDistances": {
+        "note": "not prototype output; interval-distance formula per T3",
+        "lowPreferrer": 9.421724291276448,
+        "highPreferrer": 10.578275708723552
+      }
+    },
+    {
+      "id": "r1-divergence",
+      "input": {
+        "lowPreferrer": [
+          5000000,
+          6000000,
+          7000000,
+          8000000
+        ],
+        "highPreferrer": [
+          7500000,
+          8500000,
+          9500000,
+          10500000
+        ]
+      },
+      "modes": {
+        "absolute-0.01": {
+          "threshold": 0.01,
+          "result": {
+            "overlap": true,
+            "overlapLow": 7500000,
+            "overlapHigh": 8000000,
+            "dealLow": 7500000,
+            "dealHigh": 8000000,
+            "hasComfortZone": false,
+            "gap": 0,
+            "layers": [
+              {
+                "methods": [
+                  {
+                    "name": "Arithmetic Midpoint",
+                    "value": 7750000
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 7745966.692414834
+                  },
+                  {
+                    "name": "Nash Bargaining",
+                    "value": 7750000
+                  },
+                  {
+                    "name": "Kalai-Smorodinsky",
+                    "value": 7750000
+                  },
+                  {
+                    "name": "Joint Acceptability",
+                    "value": 7750000
+                  },
+                  {
+                    "name": "Flexibility-Weighted",
+                    "value": 7750000
+                  }
+                ],
+                "values": [
+                  7750000,
+                  7745966.692414834,
+                  7750000,
+                  7750000,
+                  7750000,
+                  7750000
+                ],
+                "spread": 4033.307585165836
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 7749327.782069139
+                  },
+                  {
+                    "name": "Median",
+                    "value": 7750000
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 7750000
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 7750000
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 7749327.636255998
+                  }
+                ],
+                "values": [
+                  7749327.782069139,
+                  7750000,
+                  7750000,
+                  7750000,
+                  7749327.636255998
+                ],
+                "spread": 672.3637440018356
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 7749731.083665028
+                  },
+                  {
+                    "name": "Median",
+                    "value": 7750000
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 7749775.92735638
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 7749993.27636256
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 7749731.076666389
+                  }
+                ],
+                "values": [
+                  7749731.083665028,
+                  7750000,
+                  7749775.92735638,
+                  7749993.27636256,
+                  7749731.076666389
+                ],
+                "spread": 268.92333361133933
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 7749846.272810072
+                  },
+                  {
+                    "name": "Median",
+                    "value": 7749775.92735638
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 7749833.42912799
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 7749749.901299741
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 7749846.271820007
+                  }
+                ],
+                "values": [
+                  7749846.272810072,
+                  7749775.92735638,
+                  7749833.42912799,
+                  7749749.901299741,
+                  7749846.271820007
+                ],
+                "spread": 96.37151033058763
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 7749810.360482839
+                  },
+                  {
+                    "name": "Median",
+                    "value": 7749833.42912799
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 7749818.542768125
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 7749838.081231694
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 7749810.3603802305
+                  }
+                ],
+                "values": [
+                  7749810.360482839,
+                  7749833.42912799,
+                  7749818.542768125,
+                  7749838.081231694,
+                  7749810.3603802305
+                ],
+                "spread": 27.720851463265717
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 7749822.154798175
+                  },
+                  {
+                    "name": "Median",
+                    "value": 7749818.542768125
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 7749820.777459651
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 7749814.102695178
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 7749822.154789511
+                  }
+                ],
+                "values": [
+                  7749822.154798175,
+                  7749818.542768125,
+                  7749820.777459651,
+                  7749814.102695178,
+                  7749822.154789511
+                ],
+                "spread": 8.052102996967733
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 7749819.546502128
+                  },
+                  {
+                    "name": "Median",
+                    "value": 7749820.777459651
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 7749820.491672429
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 7749820.987243241
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 7749819.546501544
+                  }
+                ],
+                "values": [
+                  7749819.546502128,
+                  7749820.777459651,
+                  7749820.491672429,
+                  7749820.987243241,
+                  7749819.546501544
+                ],
+                "spread": 1.44074169639498
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 7749820.269875799
+                  },
+                  {
+                    "name": "Median",
+                    "value": 7749820.491672429
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 7749820.27187807
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 7749820.699094902
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 7749820.269875782
+                  }
+                ],
+                "values": [
+                  7749820.269875799,
+                  7749820.491672429,
+                  7749820.27187807,
+                  7749820.699094902,
+                  7749820.269875782
+                ],
+                "spread": 0.42921912018209696
+              }
+            ],
+            "fairPrice": 7749820.27187807,
+            "convergenceAchieved": false
+          }
+        },
+        "relative-r1": {
+          "threshold": 50,
+          "result": {
+            "overlap": true,
+            "overlapLow": 7500000,
+            "overlapHigh": 8000000,
+            "dealLow": 7500000,
+            "dealHigh": 8000000,
+            "hasComfortZone": false,
+            "gap": 0,
+            "layers": [
+              {
+                "methods": [
+                  {
+                    "name": "Arithmetic Midpoint",
+                    "value": 7750000
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 7745966.692414834
+                  },
+                  {
+                    "name": "Nash Bargaining",
+                    "value": 7750000
+                  },
+                  {
+                    "name": "Kalai-Smorodinsky",
+                    "value": 7750000
+                  },
+                  {
+                    "name": "Joint Acceptability",
+                    "value": 7750000
+                  },
+                  {
+                    "name": "Flexibility-Weighted",
+                    "value": 7750000
+                  }
+                ],
+                "values": [
+                  7750000,
+                  7745966.692414834,
+                  7750000,
+                  7750000,
+                  7750000,
+                  7750000
+                ],
+                "spread": 4033.307585165836
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 7749327.782069139
+                  },
+                  {
+                    "name": "Median",
+                    "value": 7750000
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 7750000
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 7750000
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 7749327.636255998
+                  }
+                ],
+                "values": [
+                  7749327.782069139,
+                  7750000,
+                  7750000,
+                  7750000,
+                  7749327.636255998
+                ],
+                "spread": 672.3637440018356
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 7749731.083665028
+                  },
+                  {
+                    "name": "Median",
+                    "value": 7750000
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 7749775.92735638
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 7749993.27636256
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 7749731.076666389
+                  }
+                ],
+                "values": [
+                  7749731.083665028,
+                  7750000,
+                  7749775.92735638,
+                  7749993.27636256,
+                  7749731.076666389
+                ],
+                "spread": 268.92333361133933
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 7749846.272810072
+                  },
+                  {
+                    "name": "Median",
+                    "value": 7749775.92735638
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 7749833.42912799
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 7749749.901299741
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 7749846.271820007
+                  }
+                ],
+                "values": [
+                  7749846.272810072,
+                  7749775.92735638,
+                  7749833.42912799,
+                  7749749.901299741,
+                  7749846.271820007
+                ],
+                "spread": 96.37151033058763
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 7749810.360482839
+                  },
+                  {
+                    "name": "Median",
+                    "value": 7749833.42912799
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 7749818.542768125
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 7749838.081231694
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 7749810.3603802305
+                  }
+                ],
+                "values": [
+                  7749810.360482839,
+                  7749833.42912799,
+                  7749818.542768125,
+                  7749838.081231694,
+                  7749810.3603802305
+                ],
+                "spread": 27.720851463265717
+              }
+            ],
+            "fairPrice": 7749818.542768125,
+            "convergenceAchieved": true
+          }
+        }
+      }
+    },
+    {
+      "id": "decimal-precision",
+      "input": {
+        "lowPreferrer": [
+          80.1234,
+          95.5678,
+          110.9012,
+          125.3456
+        ],
+        "highPreferrer": [
+          70.2345,
+          90.6789,
+          105.1111,
+          120.4444
+        ]
+      },
+      "modes": {
+        "absolute-0.01": {
+          "threshold": 0.01,
+          "result": {
+            "overlap": true,
+            "overlapLow": 95.5678,
+            "overlapHigh": 105.1111,
+            "dealLow": 80.1234,
+            "dealHigh": 120.4444,
+            "hasComfortZone": true,
+            "gap": 0,
+            "layers": [
+              {
+                "methods": [
+                  {
+                    "name": "Arithmetic Midpoint",
+                    "value": 100.33945
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 100.22592769628027
+                  },
+                  {
+                    "name": "Nash Bargaining",
+                    "value": 97.79005000000001
+                  },
+                  {
+                    "name": "Kalai-Smorodinsky",
+                    "value": 99.96314631424931
+                  },
+                  {
+                    "name": "Joint Acceptability",
+                    "value": 95.5678
+                  },
+                  {
+                    "name": "Flexibility-Weighted",
+                    "value": 100.09006264810269
+                  }
+                ],
+                "values": [
+                  100.33945,
+                  100.22592769628027,
+                  97.79005000000001,
+                  99.96314631424931,
+                  95.5678,
+                  100.09006264810269
+                ],
+                "spread": 4.771649999999994
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 98.99607277643872
+                  },
+                  {
+                    "name": "Median",
+                    "value": 100.02660448117601
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 99.51729666465808
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 99.91000149999999
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 98.98016101371711
+                  }
+                ],
+                "values": [
+                  98.99607277643872,
+                  100.02660448117601,
+                  99.51729666465808,
+                  99.91000149999999,
+                  98.98016101371711
+                ],
+                "spread": 1.0464434674589
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 99.48602728719798
+                  },
+                  {
+                    "name": "Median",
+                    "value": 99.51729666465808
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 99.47445698036559
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 99.77545804898587
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 99.48505327574948
+                  }
+                ],
+                "values": [
+                  99.48602728719798,
+                  99.51729666465808,
+                  99.47445698036559,
+                  99.77545804898587,
+                  99.48505327574948
+                ],
+                "spread": 0.3010010686202804
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 99.5476584513914
+                  },
+                  {
+                    "name": "Median",
+                    "value": 99.48602728719798
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 99.49612574253518
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 99.49251704448281
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 99.54759233458262
+                  }
+                ],
+                "values": [
+                  99.5476584513914,
+                  99.48602728719798,
+                  99.49612574253518,
+                  99.49251704448281,
+                  99.54759233458262
+                ],
+                "spread": 0.061631164193414634
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 99.513984172038
+                  },
+                  {
+                    "name": "Median",
+                    "value": 99.49612574253518
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 99.51207837386687
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 99.49280671525926
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 99.51398032880434
+                  }
+                ],
+                "values": [
+                  99.513984172038,
+                  99.49612574253518,
+                  99.51207837386687,
+                  99.49280671525926,
+                  99.51398032880434
+                ],
+                "spread": 0.021177456778730175
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 99.50579506650072
+                  },
+                  {
+                    "name": "Median",
+                    "value": 99.51207837386687
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 99.50739481506879
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 99.51292529919905
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 99.50579462859184
+                  }
+                ],
+                "values": [
+                  99.50579506650072,
+                  99.51207837386687,
+                  99.50739481506879,
+                  99.51292529919905,
+                  99.50579462859184
+                ],
+                "spread": 0.007130670607210732
+              }
+            ],
+            "fairPrice": 99.50739481506879,
+            "convergenceAchieved": true
+          }
+        },
+        "relative-r1": {
+          "threshold": 0.01,
+          "result": {
+            "overlap": true,
+            "overlapLow": 95.5678,
+            "overlapHigh": 105.1111,
+            "dealLow": 80.1234,
+            "dealHigh": 120.4444,
+            "hasComfortZone": true,
+            "gap": 0,
+            "layers": [
+              {
+                "methods": [
+                  {
+                    "name": "Arithmetic Midpoint",
+                    "value": 100.33945
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 100.22592769628027
+                  },
+                  {
+                    "name": "Nash Bargaining",
+                    "value": 97.79005000000001
+                  },
+                  {
+                    "name": "Kalai-Smorodinsky",
+                    "value": 99.96314631424931
+                  },
+                  {
+                    "name": "Joint Acceptability",
+                    "value": 95.5678
+                  },
+                  {
+                    "name": "Flexibility-Weighted",
+                    "value": 100.09006264810269
+                  }
+                ],
+                "values": [
+                  100.33945,
+                  100.22592769628027,
+                  97.79005000000001,
+                  99.96314631424931,
+                  95.5678,
+                  100.09006264810269
+                ],
+                "spread": 4.771649999999994
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 98.99607277643872
+                  },
+                  {
+                    "name": "Median",
+                    "value": 100.02660448117601
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 99.51729666465808
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 99.91000149999999
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 98.98016101371711
+                  }
+                ],
+                "values": [
+                  98.99607277643872,
+                  100.02660448117601,
+                  99.51729666465808,
+                  99.91000149999999,
+                  98.98016101371711
+                ],
+                "spread": 1.0464434674589
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 99.48602728719798
+                  },
+                  {
+                    "name": "Median",
+                    "value": 99.51729666465808
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 99.47445698036559
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 99.77545804898587
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 99.48505327574948
+                  }
+                ],
+                "values": [
+                  99.48602728719798,
+                  99.51729666465808,
+                  99.47445698036559,
+                  99.77545804898587,
+                  99.48505327574948
+                ],
+                "spread": 0.3010010686202804
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 99.5476584513914
+                  },
+                  {
+                    "name": "Median",
+                    "value": 99.48602728719798
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 99.49612574253518
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 99.49251704448281
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 99.54759233458262
+                  }
+                ],
+                "values": [
+                  99.5476584513914,
+                  99.48602728719798,
+                  99.49612574253518,
+                  99.49251704448281,
+                  99.54759233458262
+                ],
+                "spread": 0.061631164193414634
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 99.513984172038
+                  },
+                  {
+                    "name": "Median",
+                    "value": 99.49612574253518
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 99.51207837386687
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 99.49280671525926
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 99.51398032880434
+                  }
+                ],
+                "values": [
+                  99.513984172038,
+                  99.49612574253518,
+                  99.51207837386687,
+                  99.49280671525926,
+                  99.51398032880434
+                ],
+                "spread": 0.021177456778730175
+              },
+              {
+                "methods": [
+                  {
+                    "name": "Mean",
+                    "value": 99.50579506650072
+                  },
+                  {
+                    "name": "Median",
+                    "value": 99.51207837386687
+                  },
+                  {
+                    "name": "Trimmed Mean",
+                    "value": 99.50739481506879
+                  },
+                  {
+                    "name": "KDE Mode",
+                    "value": 99.51292529919905
+                  },
+                  {
+                    "name": "Geometric Mean",
+                    "value": 99.50579462859184
+                  }
+                ],
+                "values": [
+                  99.50579506650072,
+                  99.51207837386687,
+                  99.50739481506879,
+                  99.51292529919905,
+                  99.50579462859184
+                ],
+                "spread": 0.007130670607210732
+              }
+            ],
+            "fairPrice": 99.50739481506879,
+            "convergenceAchieved": true
+          }
+        }
+      }
+    }
+  ]
+}
