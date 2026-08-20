@@ -2,7 +2,7 @@
 id: T2-platform
 plan_kind: thematic
 tier: 2
-status: draft
+status: active
 ---
 
 # T2-platform — plumbing, identity, money, resilience
@@ -35,6 +35,11 @@ doing the work.
 > Revised 19 Aug 2026 addressing Codex audit round 1 (verdict: revise;
 > 2 high / 3 medium / 1 low — return at
 > `.exfu/returns/t2-platform-audit-r1.json`).
+
+>
+> **Accepted 20 Aug 2026 by Alastair** (operator ceremony, in-chat), after
+> two Codex audit rounds, revisions addressing all findings, and the
+> operator's catalogue/entity rulings (§6).
 
 ## 1. Why (theme intent)
 

@@ -2,7 +2,7 @@
 id: T2-agent-distribution
 plan_kind: thematic
 tier: 2
-status: draft
+status: active
 ---
 
 # T2-agent-distribution — the agent doorway
@@ -19,8 +19,8 @@ misbehaving; and the discoverability work (machine-readable docs and
 directory listings) that makes assistants find and trust us. The hardest
 rule: an agent acts for ONE side of a negotiation and can never reach the
 other side — the only both-sides operation is the casual "we're in the same
-room" calculator, which never touches stored blind sessions at all. One
-decision needs Alastair — at the bottom.
+room" calculator, which never touches stored blind sessions at all. All
+decisions are recorded in the rulings at the bottom.
 
 Everything below this line is the detailed version, written for the agents
 doing the work.
@@ -35,6 +35,10 @@ doing the work.
 > Revised 19 Aug 2026 addressing Codex audit round 1 (verdict: revise;
 > 1 high / 4 medium / 2 low — return at
 > `.exfu/returns/t2-agent-distribution-audit-r1.json`).
+
+>
+> **Accepted 20 Aug 2026 by Alastair** (operator ceremony, in-chat), after
+> Codex audit round 1 and revisions addressing all findings.
 
 ## 1. Why (theme intent)
 

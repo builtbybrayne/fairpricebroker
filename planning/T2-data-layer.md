@@ -2,7 +2,7 @@
 id: T2-data-layer
 plan_kind: thematic
 tier: 2
-status: draft
+status: active
 ---
 
 # T2-data-layer — the vault and the ledger
@@ -19,7 +19,8 @@ It tightens the anonymous-statistics rule so "20 entries" means twenty
 cross-compared to unmask small groups. And it treats deletion honestly:
 when someone asks to be erased, their identity disappears from every copy
 we control — exports and backups included — while the anonymous statistics
-survive. Two decisions need Alastair — at the bottom.
+survive. Decisions are recorded in the rulings at the bottom (one small
+one — the erasure blurring policy — is ruled by leaning, revisitable).
 
 Everything below this line is the detailed version, written for the agents
 doing the work.
@@ -35,6 +36,11 @@ doing the work.
 > Revised 19 Aug 2026 addressing Codex audit round 1 (verdict: revise;
 > 3 high / 4 medium / 1 low — return at
 > `.exfu/returns/t2-data-layer-audit-r1.json`).
+
+>
+> **Accepted 20 Aug 2026 by Alastair** (operator ceremony, in-chat), after
+> Codex audit round 1, revisions addressing all findings, and the
+> operator's retention/erasure rulings (§6).
 
 ## 1. Why (theme intent)
 
