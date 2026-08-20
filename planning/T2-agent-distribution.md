@@ -170,3 +170,11 @@ T2-product-surfaces.)*
 - **R2 — casual statelessness confirmed** (data-layer ruling): the casual
   operation persists nothing but an anonymous completion event; §2.3's
   "stateless-by-default" is now stateless, full stop.
+
+- **R3 (20 Aug 2026, operator, post-acceptance append) — same-milestone
+  parity is a sequencing law.** "We do NOT want to get into the habit of
+  allowing agentic and human accessibility to go out of sync": every
+  human-facing capability ships its agent access IN THE SAME MILESTONE.
+  §2.1's catalogue parity is thereby a delivery rule, not only a test —
+  a milestone whose parity suite is red is not done. (Applied: the
+  doorway moved into M1; survey's agent access ships with survey in M2.)

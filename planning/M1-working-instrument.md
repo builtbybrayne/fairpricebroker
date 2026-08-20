@@ -41,8 +41,13 @@ MoR approval, no business prerequisite gates any M1 item.
    dump to B2; aggregate views exist but publish nothing at M1 volumes).
    *(T2-data-layer)*
 4. **Casual mode on the landing page** — The Instrument design language,
-   stateless server computation, full-detail reveal animation, shareable
-   result card with ref codes, zero signup. *(T2-product-surfaces)*
+   stateless server computation, zero signup, shareable result card with
+   ref codes — with the **blind-handover choreography** (operator ruling,
+   20 Aug 2026): Person A enters their figures while B looks away; an
+   interstitial confirms-and-hides A's entries before the device is
+   handed over; B enters theirs; a "both look now" interstitial precedes
+   the full-detail reveal. Entered figures are never re-displayed outside
+   the outcome view. *(T2-product-surfaces §6 R5)*
 5. **Invited reconciliation end-to-end** — creator accounts (magic link +
    Google), free launch credits (idempotent grant; balance visible; no
    checkout anywhere), email-bound single-use invites via the
@@ -50,19 +55,27 @@ MoR approval, no business prerequisite gates any M1 item.
    both compositions (creator-as-party, creator-as-host with safety
    panels), full lifecycle contract, blind-safe reveal, no-deal view.
    *(T2-product-surfaces, T2-platform)*
-6. **Resilience floor** — error tracking under the scrubbing contract,
+6. **The agent doorway, at parity from day one** (operator ruling,
+   20 Aug 2026: agentic and human accessibility must NEVER go out of
+   sync) — the capability catalogue covering every M1 human capability,
+   with the MCP and HTTP adapters over it, agent credentials/grants, the
+   generated OpenAPI description, and the parity test suite green.
+   Registry/directory submissions stay M3 (that is distribution, not
+   sync). *(T2-agent-distribution)*
+7. **Resilience floor** — error tracking under the scrubbing contract,
    uptime ping, backup pipeline with one rehearsed restore, spend caps.
    *(T2-platform)*
-7. **Legal floor** — privacy policy + ToS pages (salary data, blindness,
+8. **Legal floor** — privacy policy + ToS pages (salary data, blindness,
    anonymised-aggregate reservation, quick-session disclosure line), ICO
    registration confirmed (WhaleyBear). *(business-side words, repo-side
    pages)*
 
 ## 3. Explicitly NOT in M1 (parked, not killed)
 
-Survey mode (M2 — ruled fast-follow before launch) · MCP/agent doorway +
-OpenAPI + `.md` twins + llms.txt (M2 — "agent-native at launch", not at
-M1) · checkout/credit purchase (needs MoR; entitlements stay
+Survey mode (M2 — ruled fast-follow before launch; its agent access ships
+WITH it in M2, per the sync rule) · registry/directory submissions +
+`.md` page twins + llms.txt (M3 distribution polish — the doorway itself
+is IN M1) · checkout/credit purchase (needs MoR; entitlements stay
 free-launch-phase) · org plumbing · custom template authoring · the
 consumer-toy template and viral campaign · directory listings, methodology
 page, launch week (M3) · Umami analytics MAY slip to M2 without failing M1
@@ -84,6 +97,13 @@ page, launch week (M3) · Umami analytics MAY slip to M2 without failing M1
 6. Invite email lands in a normal inbox (not spam) from the product
    domain; the 51st recipient is refused.
 7. Privacy policy and ToS are live; ICO registration confirmed.
+8. An AI agent, using only the MCP tool list and its own credentials,
+   completes everything a human can in M1 — creates an invited session,
+   redeems a party grant, submits, reads its role-safe result, and runs a
+   casual reconciliation — and the catalogue parity suite is green.
+9. The casual blind-handover flow works on one phone: A's figures are
+   hidden before handover, B cannot reveal them, and the outcome appears
+   only at the "both look" step.
 
 ## 5. Sequencing sketch beyond M1 (context, not commitment)
 

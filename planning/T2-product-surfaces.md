@@ -282,3 +282,15 @@ ruling.)*
   with email-bound single-use party grants; entitlement phases carried
   into components and verification (shape-specific debits, no checkout in
   the free-launch phase).
+
+- **R5 (20 Aug 2026, operator, post-acceptance append) — casual
+  blind-handover choreography.** Casual co-present sessions gain a
+  pass-the-device protocol: Party A enters while B looks away; an
+  interstitial confirms-and-hides A's figures before handover; B enters;
+  a "both look now" interstitial precedes the reveal. Entered figures are
+  never re-displayed outside the outcome view (which remains full-detail
+  per the casual payload class — a template MAY later opt to hide raw
+  inputs in the outcome too, as presentation). Honest note, accepted: in
+  casual mode the DEVICE transiently holds both tuples (one client) — the
+  handover is UX-enforced etiquette, not cryptographic blindness; server
+  and stored-data guarantees are unchanged (nothing is stored at all).
