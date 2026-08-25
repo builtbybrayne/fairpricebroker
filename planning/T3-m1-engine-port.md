@@ -37,6 +37,14 @@ version stamp on every result. One question needs Alastair (§6).
 > plan cannot reinterpret an accepted T2); fixture archive now carries
 > version anchors; property arbitraries pinned constructively; honesty
 > zero-variance aligned with T2 §3.5's letter.
+> Revised a third time addressing audit r3 (verdict: revise; 2 high /
+> 1 medium — the delegation round cap is now exhausted, so this
+> revision is unaudited and goes to the operator with the full trail):
+> zero-width zones get an explicit branch (deviation D4 — the natural
+> pipeline provably violates T2 §2.5 at large magnitudes, pinned by the
+> auditor's counterexample as a contract test); outputs get their own
+> `OutputDecimal` brand admitting `"0"`; the anchors assertion covers
+> the complete five-field identity including `inflection`.
 
 ## 1. Environment facts (pinned)
 
@@ -94,15 +102,19 @@ version stamp on every result. One question needs Alastair (§6).
   strings outside the domain (e.g. `"10000000000000000"`,
   `"0.0000000001"`) are REJECTED, never silently converted to
   `0`/`Infinity`-adjacent floats.
+- `OutputDecimal` — a second branded string type for OUTPUTS: same
+  grammar as `DecimalString` but value ≥ 0 (`"0"` is valid — gap and
+  distances are legitimately zero; `DecimalString` itself stays
+  strictly positive because INPUT prices must be). Distinct brands keep
+  the compiler from accepting an output where an input is required.
 - `PricePoint` — every party-relevant monetary OUTPUT is
-  `{ float: number; decimal: DecimalString }`. Serialisation (the
+  `{ float: number; decimal: OutputDecimal }`. Serialisation (the
   `decimal-io/1` output rule): start from `String(float)` (V8 shortest
   round-trip — re-parses to the identical double); if that rendering is
   exponential (contains `e` — reachable for derived values below
   `1e-6`, e.g. a tiny gap or distance), rewrite it losslessly to plain
   decimal expansion by shifting the mantissa's digits per the exponent
-  (a pure string transform — no re-rounding); a `0` value serialises as
-  `"0"` (exempt from `DecimalString`'s positivity, noted in the type).
+  (a pure string transform — no re-rounding); zero serialises as `"0"`.
   The invariant tests rely on: `Number(decimal) === float`, always.
   This is the documented output boundary R2 requires: computed prices
   are float-derived (permitted by T2 §2.6) and serialised canonically;
@@ -291,13 +303,18 @@ zero-width path (§2.5), which is defined behaviour.
   `gap = hasOverlap ? 0 : overlapHigh − overlapLow` (non-negative in
   both disjoint orientations).
 - **Zero-width active zone** (both bounds equal, including
-  float-collapse per §2.4): run the normal maths — every layer-1 method
-  returns the bound, the first consensus layer reproduces it with
-  spread 0, and the loop terminates — a **two-layer trace, exactly as
-  the prototype produces** — and additionally set
-  `convergedTrivially: true` whenever `overlapHigh − overlapLow === 0`
-  (the marking T2 §2.5 requires). `convergedTrivially` is false in all
-  other cases.
+  float-collapse per §2.4) — **explicit branch, deviation D4 (§5)**:
+  when `overlapHigh − overlapLow === 0`, do NOT run the method
+  pipeline. Return the bound `m` directly: `fairPrice = m`;
+  `convergedTrivially: true`; `convergenceAchieved: true`; `layers` =
+  one synthetic layer whose six method entries all carry value `m` and
+  whose spread is `0`. Rationale (the r3 audit's counterexample): run
+  naturally at large magnitudes, the consensus geometric mean's
+  floating-point drift can exceed the tolerance and the prototype then
+  fails to converge on a zero-width zone — violating T2 §2.5's
+  return-the-bound-marked-trivially contract. The explicit branch makes
+  the T2 contract hold exactly at every magnitude in the domain.
+  `convergedTrivially` is false in all other cases.
 - **Distances (deviation D2, §5 — not prototype output):** per party,
   the distance from the fair price to that party's acceptable interval:
   `distance_p = max(0, p.tuple[0] − fairPrice, fairPrice − p.tuple[3])`
@@ -387,9 +404,11 @@ implementation's version constants — asserted in tests.
 
 **2.12 Tests** (replace the scaffold smoke test):
 
-- `golden.test.ts` — first assert `fixtures.anchors` matches the
-  implementation: `algorithmVersion`, `numericPolicyVersion`,
-  `honestySignalSetVersion`, `engineVersion === ENGINE_VERSION`. Then
+- `golden.test.ts` — first assert the COMPLETE `fixtures.anchors`
+  identity against the implementation — all five fields: `inflection`,
+  `algorithmVersion`, `numericPolicyVersion`, `honestySignalSetVersion`,
+  `engineVersion === ENGINE_VERSION` (an archive scoped to any other
+  identity must fail here, per T2 §2.4). Then
   for each of the five fixtures × both tolerance modes: build
   `DirectionalParty` inputs from the fixture (numbers → `DecimalString`
   via `String(n)`; `lowPreferrer` array = low-preferring party), run
@@ -418,7 +437,19 @@ implementation's version constants — asserted in tests.
   same-direction parties → `same-direction-parties`; (c) two distinct
   decimals that collapse to one float (e.g.
   `"1.00000000000000001"` vs `"1.00000000000000002"` used as a
-  zone-bound pair) produce a defined zero-width outcome, not an error.
+  zone-bound pair) produce a defined zero-width outcome (the D4
+  branch), not an error; (d) deterministic serialisation: a
+  comfort-zone result's `gap` is `{ float: 0, decimal: "0" }`; the
+  no-overlap pair low = `["1", "2", "3", "4.000000001"]`, high =
+  `["4.000000002", "5", "6", "7"]` yields a gap float near `1e-9`
+  whose `decimal` contains no `e`, matches `/^0\.0+[0-9]+$/` (plain
+  expansion), and satisfies `Number(decimal) === float`; (e)
+  deterministic large-magnitude zero-width (the r3 counterexample —
+  near MAG_MAX, where the natural pipeline would drift): low =
+  `["1", "2", "900000000000000", "900000000000100"]`, high =
+  `["1.5", "900000000000000", "900000000000050", "900000000000200"]`
+  → `fairPrice.float === 900000000000000` exactly,
+  `convergedTrivially === true`, `layers.length === 1`.
 - `properties.test.ts` — fast-check, pinned run config
   `{ seed: 20260820, numRuns: 200 }` on every property, one
   `fc.assert` per geometry so the fixed seed cannot starve any of them.
@@ -452,8 +483,9 @@ implementation's version constants — asserted in tests.
   5. `overlapLow.float <= overlapHigh.float` — all, exercising D1 via
      `genDisjointInverted`.
   6. `genZeroWidth` → `convergedTrivially === true`,
-     `fairPrice.float === m`, layers.length === 2 (the prototype-shaped
-     trace of §2.5).
+     `convergenceAchieved === true`, `fairPrice.float === m` exactly,
+     `layers.length === 1` with spread `0` (the explicit D4 branch of
+     §2.5).
   7. every PricePoint in the result satisfies
      `Number(p.decimal) === p.float` — all geometries.
 - `honesty.test.ts` — closed-form expectations (derivations in test
@@ -512,6 +544,14 @@ report. A maths mismatch is a finding, not a rounding detail.
   `decimal-io/1` conversion and serialisation policy (§2.1/§2.4) and
   `PricePoint` outputs. The fixtures' numeric inputs are all inside the
   domain and convert via `String(n)` losslessly.
+- **D4 — explicit zero-width branch.** The prototype runs its method
+  pipeline on zero-width zones; at large magnitudes inside this brief's
+  domain, consensus geometric-mean float drift can then exceed the
+  tolerance and the run ends unconverged off the bound (r3 audit
+  counterexample, pinned as contract test (e)) — violating T2 §2.5.
+  This port therefore short-circuits: bound returned exactly, marked
+  `convergedTrivially`, one synthetic layer (§2.5). Golden fixtures are
+  unaffected (none has a zero-width active zone).
 - **F1 — symmetry property: escalated, not reinterpreted.** T2 §4's
   "role-direction symmetry (swapping parties and mirroring direction
   yields the mirrored result)", read as a price-axis reflection, is

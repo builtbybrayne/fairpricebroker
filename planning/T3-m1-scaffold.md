@@ -33,6 +33,14 @@ operator-assisted brief).
 > the dev probe uses `--strictPort` with a bounded readiness loop and a
 > cleanup trap; verification is an explicitly numbered V1–V5 suite; a
 > Docker-blocked run can no longer count as Done.
+> Revised a third time addressing audit r3 (verdict: revise; 2 high /
+> 1 medium / 1 low — the delegation round cap is now exhausted, so this
+> revision is unaudited and goes to the operator with the full trail):
+> two-phase capture/commit protocol removing the completion-ordering
+> circularity; clean-worktree preflight plus a staged-path allowlist
+> check making the commit contents mechanically closed; V4 accepts the
+> probe only on bind-evidence from our own process and kills the whole
+> process group; stale step references fixed.
 
 ## 1. Environment facts (pinned, verified 20 Aug 2026)
 
@@ -66,7 +74,8 @@ operator-assisted brief).
   itself (first run downloads browsers; that is expected, not an error).
 - Working directory for every step: the checkout root —
   `cd "$(git rev-parse --show-toplevel)"`. The repo is APV-tracked:
-  capture-before-commit applies to the commit this brief makes (§2 step 8).
+  capture-before-commit applies to every commit this brief makes (§2
+  step 9).
 - Docker Desktop is required only for step 6 (local Supabase) and was
   NOT running at authoring time; step 6 defines the skip protocol.
 
@@ -77,9 +86,12 @@ cd "$(git rev-parse --show-toplevel)"
 test ! -f package.json || { echo "ABORT: package.json already exists"; exit 1; }
 test ! -f vite.config.ts || { echo "ABORT: vite.config.ts already exists"; exit 1; }
 test -d planning && test -f CLAUDE.md && test -d .apv || { echo "ABORT: not the fairprice checkout root"; exit 1; }
+test -z "$(git status --porcelain)" || { echo "ABORT: worktree not clean - resolve before scaffolding:"; git status --porcelain; exit 1; }
 node -e 'const [M,m]=process.versions.node.split(".").map(Number); process.exit(((M===20&&m>=19)||(M===22&&m>=12)||M>22)?0:1)' \
   || { echo "ABORT: Node $(node --version) outside ^20.19.0 || >=22.12.0"; exit 1; }
 ```
+(The clean-worktree assertion is what makes step 9's staging allowlist
+sound: nothing pre-staged or stray can ride along into the commit.)
 
 ## 2. Steps (exact, in order)
 
@@ -206,49 +218,75 @@ node -e 'const [M,m]=process.versions.node.split(".").map(Number); process.exit(
    - **V2 — e2e tests:** `npm run test:e2e` → PASS: exit 0 (the script
      self-runs `playwright install`; builds + previews on :4173).
    - **V3 — lint:** `npm run lint` → PASS: exit 0.
-   - **V4 — dev server serves:** strict port, bounded readiness loop,
-     guaranteed cleanup:
+   - **V4 — dev server serves:** strict port, bind evidence from OUR
+     process, bounded readiness loop, guaranteed cleanup:
      ```bash
+     set -m   # job control: the background pipeline gets its own process group
      npm run dev -- --port 5173 --strictPort > /tmp/fairprice-dev.log 2>&1 &
      DEV_PID=$!
-     trap 'kill "$DEV_PID" 2>/dev/null' EXIT
+     trap 'kill -- -"$DEV_PID" 2>/dev/null' EXIT
      DEV_OK=""
      for i in $(seq 1 30); do
-       curl -sf --max-time 2 -o /dev/null http://localhost:5173/ && { DEV_OK=1; break; }
        kill -0 "$DEV_PID" 2>/dev/null || break
+       if grep -q "localhost:5173" /tmp/fairprice-dev.log; then
+         curl -sf --max-time 2 -o /dev/null http://localhost:5173/ \
+           && kill -0 "$DEV_PID" 2>/dev/null && { DEV_OK=1; break; }
+       fi
        sleep 1
      done
-     kill "$DEV_PID" 2>/dev/null; trap - EXIT
-     if [ -n "$DEV_OK" ]; then echo "V4 PASS"; else echo "V4 FAIL"; tail -20 /tmp/fairprice-dev.log; fi
+     kill -- -"$DEV_PID" 2>/dev/null; wait "$DEV_PID" 2>/dev/null
+     trap - EXIT; set +m
+     if [ -n "$DEV_OK" ]; then echo "V4 PASS"; else echo "V4 FAIL"; tail -20 /tmp/fairprice-dev.log; exit 1; fi
      ```
-     PASS: prints `V4 PASS`. `--strictPort` makes an occupied :5173 a
-     fast, honest failure (Vite exits; the loop sees the dead PID) —
-     there is no silent-rebind or wrong-service false positive. On FAIL,
-     report the tail; do not probe other ports.
+     PASS: prints `V4 PASS`. The curl is accepted only after OUR
+     process's log shows it bound `localhost:5173` and only while that
+     process is still alive — an occupied port makes `--strictPort`
+     exit, the loop sees the dead PID, and the failure branch exits
+     nonzero (no cross-service false positive). With `set -m` the
+     `kill -- -PGID` terminates the entire npm→sh→vite process group,
+     and `wait` reaps it. On FAIL, report the tail; do not probe other
+     ports.
    - **V5 — adapter wiring** (step 4's assertion, re-run now as part of
      the suite):
      ```bash
      grep -q "@sveltejs/adapter-vercel" vite.config.ts && ! grep -q "adapter-auto" package.json && echo "V5 PASS"
      ```
      PASS: prints `V5 PASS`.
-9. **Capture and commit.** Capture via the **apv-capture skill**
-   (`exfu-agent-plan-visualiser:apv-capture`; `/apv-capture` is its
-   Claude-Code alias — in a client without the alias, read and follow
-   the skill source per CLAUDE.md). Event: `entity.progressed` (or
-   `entity.completed` only under §4's Done condition), with
-   `verification.tested` recording V1–V5 by number and result. The
-   capture appends to `.apv/events.jsonl` — stage it with the allowlist
-   below (this is the §3 guard's one sanctioned `.apv` write). Then:
+9. **Capture and commit — two phases** (capture is via the
+   **apv-capture skill**, `exfu-agent-plan-visualiser:apv-capture`;
+   `/apv-capture` is its Claude-Code alias — in a client without the
+   alias, read and follow the skill source per CLAUDE.md; the capture
+   appends to `.apv/events.jsonl`, the §3 guard's one sanctioned
+   `.apv` write).
+
+   **Phase 1 — the scaffold commit.** Capture `entity.progressed` on
+   THIS plan id with `verification.tested` recording V1–V5 by number
+   and result. Then stage the allowlist (conditionals handle the
+   Docker-blocked run mechanically), verify nothing outside it is
+   staged, and commit:
    ```bash
-   git add package.json package-lock.json .gitignore vite.config.ts playwright.config.ts tsconfig.json eslint.config.js prettier.config.js .npmrc .prettierignore README.md .vscode src static tests supabase .env.example .apv/events.jsonl
-   git status --porcelain | grep -Ev '^[AM]  ' && { echo "ABORT: unexpected paths above are unstaged/untracked - resolve before committing"; exit 1; } || true
+   git add package.json package-lock.json .gitignore vite.config.ts playwright.config.ts tsconfig.json eslint.config.js prettier.config.js .npmrc .prettierignore README.md .vscode src static tests .env.example .apv/events.jsonl
+   [ -d supabase ] && git add supabase
+   git diff --cached --name-only | grep -Ev '^(package\.json|package-lock\.json|\.gitignore|vite\.config\.ts|playwright\.config\.ts|tsconfig\.json|eslint\.config\.js|prettier\.config\.js|\.npmrc|\.prettierignore|README\.md|\.vscode/|src/|static/|tests/|\.env\.example|\.apv/events\.jsonl|supabase/)' \
+     && { echo "ABORT: staged paths outside the allowlist (listed above)"; exit 1; } || true
+   git status --porcelain | grep -Ev '^[AM]  ' \
+     && { echo "ABORT: unstaged/untracked paths remain (listed above)"; exit 1; } || true
    git commit -m "feat(scaffold): SvelteKit app skeleton with vitest/playwright/adapter-vercel"
    test -z "$(git status --porcelain)" && echo "TREE CLEAN"
    ```
-   (`git add` with a missing path — e.g. no `supabase/` on a
-   Docker-blocked run — errors; drop only the absent path from the
-   list and note it in the capture.) PASS: commit succeeds and
-   `TREE CLEAN` prints.
+   PASS: commit succeeds and `TREE CLEAN` prints.
+
+   **Phase 2 — completion, only if §4's Done condition now holds**
+   (V1–V5 passed, phase 1 printed `TREE CLEAN`, Supabase ran green):
+   capture `entity.completed` citing phase 1's commit in its summary,
+   then make the APV-only follow-up commit:
+   ```bash
+   git add .apv/events.jsonl
+   git commit -m "chore(scaffold): record scaffold completion (APV capture only)"
+   test -z "$(git status --porcelain)" && echo "TREE CLEAN 2"
+   ```
+   PASS: `TREE CLEAN 2` prints. On a Docker-blocked run, SKIP phase 2
+   entirely — the plan stays `progressed` (§4).
 
 ## 3. Out of scope (do not touch)
 
@@ -261,20 +299,24 @@ node -e 'const [M,m]=process.versions.node.split(".").map(Number); process.exit(
   pre-existing lines of `.gitignore` (step 3 appends only).
 - **APV boundary, precisely:** never hand-edit `.apv/` or
   `.apv-config.toml`. The ONE sanctioned write is the event append the
-  apv-capture skill itself performs in step 8 — capture-before-commit is
-  repo law and does not conflict with this guard.
+  apv-capture skill itself performs in step 9 (both phases) —
+  capture-before-commit is repo law and does not conflict with this
+  guard.
 - No config edits: `vite.config.ts`, `playwright.config.ts`,
   `tsconfig.json`, `eslint.config.js`, `prettier.config.js` are used
   exactly as generated.
 
 ## 4. Verification & failure protocol
 
-**Done** (= `entity.completed`) requires ALL of: V1–V5 pass, the step-9
-commit lands with `TREE CLEAN`, AND step 6 ran green (local Supabase up,
-`.env` written). A Docker-blocked run is **never Done**: it is an
-incomplete, REVISE-state outcome — record `entity.progressed` with the
-blocked step named, still create `.env.example`, still run V1–V5 and
-commit, and report that M1 item 1 remains open pending Docker. Any other
-failure: stop, capture what was done as `entity.progressed`, and report
-the exact failing command and its output. Never mark this brief complete
+**Done** (= `entity.completed`, recorded in step 9 phase 2) requires
+ALL of: V1–V5 pass, the phase-1 commit lands with `TREE CLEAN`, AND
+step 6 ran green (local Supabase up, `.env` written). The ordering is
+never circular: phase 1 records `entity.progressed` and lands the work;
+phase 2 records completion only after phase 1's success is observed,
+in its own APV-only commit. A Docker-blocked run is **never Done**: it
+is an incomplete, REVISE-state outcome — phase 1 only, with the blocked
+step named in the capture, `.env.example` still created, V1–V5 still
+run, and M1 item 1 reported open pending Docker. Any other failure:
+stop, capture what was done as `entity.progressed`, and report the
+exact failing command and its output. Never mark this brief complete
 with a failing or skipped check unreported.
