@@ -17,7 +17,7 @@ recorded examples that are already captured in this repo), plus the
 agreed upgrades: works for any "low-preferrer vs high-preferrer" pair
 (not just buyer/seller), prices that keep every decimal place they were
 given, a smarter stop-rule for big numbers, honesty measurements, and a
-version stamp on every result.
+version stamp on every result. One question needs Alastair (§6).
 
 ---
 
@@ -27,10 +27,16 @@ version stamp on every result.
 > Survey inflection (T2-engine §3.3) is NOT in this brief (M2).
 >
 > Revised 20 Aug 2026 addressing Codex audit r1 (verdict: revise;
-> 5 high / 2 medium). Golden fixtures are now pre-generated and pinned
-> in-repo (§1); the decimal boundary honours ruling §6 R2; direction
-> normalisation, distances, and every numeric semantic are specified
-> below. Deviations from the prototype are enumerated in §5.
+> 5 high / 2 medium): fixtures pre-generated and pinned in-repo, decimal
+> boundary per ruling R2, normalisation/distances/numerics specified.
+> Revised again same day addressing audit r2 (verdict: revise; 3 high /
+> 3 medium): complete public TypeScript contract (§2.2) with an
+> outcome union and a static field-class map; validated magnitude domain
+> and output serialisation closing the R2 boundary (§2.1/§2.3); the
+> symmetry-property question escalated to the operator as §6 Q1 (a child
+> plan cannot reinterpret an accepted T2); fixture archive now carries
+> version anchors; property arbitraries pinned constructively; honesty
+> zero-variance aligned with T2 §3.5's letter.
 
 ## 1. Environment facts (pinned)
 
@@ -42,16 +48,19 @@ version stamp on every result.
   `reference/engine-golden-fixtures-v1.json` was produced on 20 Aug 2026
   by running the prototype maths verbatim (Node v25.9.0); the exact
   generator is archived beside it
-  (`reference/engine-golden-fixtures-v1.generator.mjs`) and its
-  provenance block is embedded in the JSON. It contains five fixtures —
-  `comfort-zone`, `deal-only`, `no-deal`, `r1-divergence`,
-  `decimal-precision` — each with **full layer traces** (every method
-  value, every layer spread), zone bounds/flags, fair price, and
-  convergence flag, in BOTH tolerance modes; `no-deal` also carries
-  derived distances; `r1-divergence` diverges between modes (8 layers /
-  not converged under absolute-0.01 vs 5 layers / converged under
-  relative-r1, with different fair prices). The oracle is therefore the
-  recorded prototype, not any in-test transcription.
+  (`reference/engine-golden-fixtures-v1.generator.mjs`), its provenance
+  block is embedded in the JSON, and its `anchors` block scopes the
+  vectors to `reconciliation/1` / `np/1` / `honesty/1` / engine `0.1.0`
+  (T2-engine §2.4). It contains five fixtures — `comfort-zone`,
+  `deal-only`, `no-deal`, `r1-divergence`, `decimal-precision` — each
+  with **full layer traces** (every method value, every layer spread),
+  zone bounds/flags, fair price, and convergence flag, in BOTH tolerance
+  modes; `no-deal` also carries derived distances; `r1-divergence`
+  diverges between modes (8 layers / not converged under absolute-0.01
+  vs 5 layers / converged under relative-r1, with different fair
+  prices). The oracle is the recorded prototype, not any in-test
+  transcription. (Audit r2 verified the generator behaviourally faithful
+  to vwpa.jsx and the archive byte-for-byte regenerable.)
 - Target: `src/lib/server/engine/` (server-only path per the scaffold
   brief). TypeScript strict; no imports from outside the engine
   directory except dev/test tooling — the engine is pure (T2-engine
@@ -63,67 +72,193 @@ version stamp on every result.
 
 ## 2. Files to create (exact)
 
-**2.1 `types.ts`**
+**2.1 `types.ts` — scalar boundary types**
 
 - `DecimalString` — a branded string type; grammar
   `^(0|[1-9][0-9]*)(\.[0-9]+)?$` with the additional rule value > 0
-  (so `"0"` and `"0.000"` are invalid). This is the **lossless decimal
-  boundary required by ruling §6 R2**: tuple values enter and are
-  echoed as exact decimal strings; no precision cap.
+  (so `"0"` and `"0.000"` are invalid). Trailing fractional zeros are
+  grammatical (`"100.00"` is well-formed) — equality is decided by the
+  EXACT comparison of §2.4, under which `"100.00"` equals `"100"`.
+  This is the **lossless input boundary required by ruling §6 R2**:
+  tuple values enter and are echoed as exact decimal strings; no
+  precision cap in the grammar.
+- **Magnitude domain (closes the r2 overflow finding):** after float
+  conversion, every tuple value must lie in `[MAG_MIN, MAG_MAX]` =
+  `[1e-9, 1e15]` (named constants in `numericPolicy.ts`, part of np/1),
+  else the typed error `out-of-magnitude-domain`. Rationale (recorded
+  with the constants): (a) caps every product the engine forms — the
+  6-value consensus geometric mean's worst case `(1e15)^6 = 1e90` and
+  the joint-acceptability products stay far inside IEEE-754 double
+  range, and `(1e-9)^6 = 1e-54` stays far above underflow; (b) bounds
+  every computed output magnitude at `1e15 · 1.15`. Valid decimal
+  strings outside the domain (e.g. `"10000000000000000"`,
+  `"0.0000000001"`) are REJECTED, never silently converted to
+  `0`/`Infinity`-adjacent floats.
+- `PricePoint` — every party-relevant monetary OUTPUT is
+  `{ float: number; decimal: DecimalString }`. Serialisation (the
+  `decimal-io/1` output rule): start from `String(float)` (V8 shortest
+  round-trip — re-parses to the identical double); if that rendering is
+  exponential (contains `e` — reachable for derived values below
+  `1e-6`, e.g. a tiny gap or distance), rewrite it losslessly to plain
+  decimal expansion by shifting the mantissa's digits per the exponent
+  (a pure string transform — no re-rounding); a `0` value serialises as
+  `"0"` (exempt from `DecimalString`'s positivity, noted in the type).
+  The invariant tests rely on: `Number(decimal) === float`, always.
+  This is the documented output boundary R2 requires: computed prices
+  are float-derived (permitted by T2 §2.6) and serialised canonically;
+  the policy is recorded in `numericPolicy.ts`. Internal-only trace and
+  curve values stay plain `number` — they never cross a trust boundary
+  (T2 §2.2), and decimal-io/1 records exactly this split.
 - `VWTuple` — `readonly [DecimalString, DecimalString, DecimalString,
-  DecimalString]`, strictly ascending under EXACT decimal comparison
-  (§2.2), never float comparison.
-- `DirectionalParty` — `{ tuple: VWTuple; direction: "low-preferring" |
-  "high-preferring" }`.
-- Field classes, **T2-engine §2.2's exact vocabulary**:
-  `type FieldClass = "per-party-safe" | "host-safe" | "internal-only"`.
-  Per-party-safe fields additionally carry
-  `owner: "low-preferring" | "high-preferring" | "both"`. The engine
-  labels; T2-data-layer redacts by label. Classification table (binding):
+  DecimalString]`, strictly ascending under the EXACT comparison
+  (§2.4), never float comparison.
+- `DirectionalParty` — `{ tuple: VWTuple; direction: Role }` with
+  `type Role = "low-preferring" | "high-preferring"`.
+- `ENGINE_VERSION = "0.1.0"` — a literal exported constant (not read
+  from package.json: the engine does no I/O).
 
-  | Result field | Class |
-  |---|---|
-  | fairPrice (= least-unfair price in no-deal), zone classification (`comfort` / `deal` / `no-deal`), `convergedTrivially`, `convergenceAchieved`, version metadata | per-party-safe, owner `both` |
-  | each party's own distance (§2.4) | per-party-safe, owner = that party |
-  | the counterparty's distance | internal-only (surfaced only via the other party's own-distance field) |
-  | zone bounds (overlapLow/High, dealLow/High, gap), full layer trace, curve data, honesty signals, echoed inputs | internal-only |
-  | (host-safe) | no reconciliation field is host-safe in v1; the class exists in the type for T2-data-layer's contract |
+**2.2 `types.ts` — the complete public contract (closes the r2
+contract finding).** Declare exactly these shapes (names binding;
+`readonly` throughout):
 
-- `EngineVersionMeta` — per T2-engine §2.4, complete:
-  `{ inflection: "reconciliation"; algorithmVersion: "reconciliation/1";
-  numericPolicyVersion: "np/1"; honestySignalSetVersion: "honesty/1";
-  engineVersion: string; toleranceMode: "relative-r1" | "absolute-0.01" }`.
-  `engineVersion` is the literal exported constant `ENGINE_VERSION =
-  "0.1.0"` (a const in `types.ts` — not read from package.json: the
-  engine does no I/O).
+```typescript
+export type Zone = "comfort" | "deal" | "no-deal";
+export type ToleranceMode = "relative-r1" | "absolute-0.01";
 
-**2.2 `validate.ts`** — typed errors, exact decimal arithmetic:
+export interface EngineVersionMeta {
+  inflection: "reconciliation";
+  algorithmVersion: "reconciliation/1";
+  numericPolicyVersion: "np/1";
+  honestySignalSetVersion: "honesty/1";
+  engineVersion: typeof ENGINE_VERSION;
+  toleranceMode: ToleranceMode;
+}
 
-- Errors (typed discriminated union): `MalformedDecimal`, `NonPositive`,
-  `NotAscending`, `SameDirectionParties`.
-- Exact decimal comparison algorithm (spelled so there is no float
-  detour): split on `.`; compare integer parts as `BigInt`; on tie,
-  right-pad the shorter fractional part with zeros to equal length and
-  compare the fractional parts as `BigInt`. Strictly-ascending check
-  uses this comparison across the four values.
-- Float conversion (for computation) happens only AFTER exact
-  validation. Conversion is `Number(decimalString)` — IEEE-754 double,
-  round-to-nearest-even — permitted by T2-engine §2.6 ("internals may
-  compute in binary floating point"), documented as policy
-  `decimal-io/1` in `numericPolicy.ts`. Note recorded there: conversion
-  is monotone non-decreasing, so exact-ascending inputs can collapse to
-  equal floats but never invert; a collapse lands in the zero-width /
-  trivial-convergence paths, which are defined behaviour.
+export interface MethodValue { name: string; value: number }      // internal-only
+export interface LayerTrace {
+  methods: readonly MethodValue[];                                 // 6 in layer 1, 5 after
+  values: readonly number[];
+  spread: number;
+}
 
-**2.3 `reconcile.ts`** — the port. Public entry:
-`reconcile(a: DirectionalParty, b: DirectionalParty, opts?: ReconcileOpts)`.
+export type SignalValue =
+  | { value: number }
+  | { value: null; reason: "zero-variance" };
+export interface HonestySignals {
+  skewness: SignalValue;
+  kurtosis: SignalValue;
+  rangeCompression: number;            // closed-form; 0 at zero variance (T2 §3.5)
+  signalSetVersion: "honesty/1";
+}
+
+export interface CurvePoint { price: number; low: number; high: number; joint: number }
+
+export interface ReconcileResult {
+  zone: Zone;
+  hasComfortZone: boolean;
+  overlap: boolean;
+  overlapLow: PricePoint;  overlapHigh: PricePoint;
+  dealLow: PricePoint;     dealHigh: PricePoint;
+  gap: PricePoint;                       // 0-valued when overlap
+  fairPrice: PricePoint;
+  convergenceAchieved: boolean;
+  convergedTrivially: boolean;
+  layers: readonly LayerTrace[];
+  distances: Readonly<Record<Role, PricePoint>>;
+  honesty: Readonly<Record<Role, HonestySignals>>;
+  curves: readonly CurvePoint[];
+  input: Readonly<Record<Role, { tuple: VWTuple }>>;  // role-keyed, echoed verbatim
+  meta: EngineVersionMeta;
+}
+
+export type EngineErrorKind =
+  | "malformed-decimal" | "non-positive" | "out-of-magnitude-domain"
+  | "not-ascending" | "same-direction-parties";
+export interface EngineError { kind: EngineErrorKind; detail: string }
+
+export type ReconcileOutcome =
+  | { ok: true; result: ReconcileResult }
+  | { ok: false; error: EngineError };
+```
+
+- **Error channel:** `reconcile` returns `ReconcileOutcome` and NEVER
+  throws; validation failures arrive as `{ ok: false, error }`.
+- **Field classification** is a static exported map, not per-instance
+  tags — the engine classifies by declaration; T2-data-layer redacts by
+  path lookup:
+
+```typescript
+export type FieldClassification =
+  | { class: "per-party-safe"; owner: Role | "both" }
+  | { class: "host-safe" }
+  | { class: "internal-only" };
+
+export const FIELD_CLASSES = {
+  "zone":                     { class: "per-party-safe", owner: "both" },
+  "fairPrice":                { class: "per-party-safe", owner: "both" },
+  "convergenceAchieved":      { class: "per-party-safe", owner: "both" },
+  "convergedTrivially":       { class: "per-party-safe", owner: "both" },
+  "meta":                     { class: "per-party-safe", owner: "both" },
+  "distances.low-preferring": { class: "per-party-safe", owner: "low-preferring" },
+  "distances.high-preferring":{ class: "per-party-safe", owner: "high-preferring" },
+  "hasComfortZone":           { class: "internal-only" },
+  "overlap":                  { class: "internal-only" },
+  "overlapLow":               { class: "internal-only" },
+  "overlapHigh":              { class: "internal-only" },
+  "dealLow":                  { class: "internal-only" },
+  "dealHigh":                 { class: "internal-only" },
+  "gap":                      { class: "internal-only" },
+  "layers":                   { class: "internal-only" },
+  "honesty.low-preferring":   { class: "internal-only" },
+  "honesty.high-preferring":  { class: "internal-only" },
+  "curves":                   { class: "internal-only" },
+  "input.low-preferring":     { class: "internal-only" },
+  "input.high-preferring":    { class: "internal-only" },
+} as const satisfies Record<string, FieldClassification>;
+```
+
+  Keys are the exhaustive set of classification paths: every top-level
+  `ReconcileResult` field appears either as itself or as its two
+  role-split children (`distances`, `honesty`, `input`). A party's own
+  distance is per-party-safe to that party; the counterparty's distance
+  is thereby internal to them (T2 §2.2's no-deal contract). No
+  reconciliation field is host-safe in v1; the class exists in the type
+  for T2-data-layer's contract. A unit test asserts this map covers
+  every field of a real result object (§2.10).
+
+**2.3 `validate.ts`** — typed errors, exact decimal arithmetic:
+
+- Produces `EngineError` values (never throws): `malformed-decimal`
+  (grammar), `non-positive` (value rule), `out-of-magnitude-domain`
+  (§2.1), `not-ascending` (equal counts as not ascending — so `"100"`
+  followed by `"100.00"` is rejected), `same-direction-parties`.
+- Validation order per tuple value: grammar → positivity → float
+  conversion → magnitude domain; then tuple ascending check on EXACT
+  decimals; then the two-party direction check.
+
+**2.4 Exact decimal comparison** (in `validate.ts`; no float detour):
+split on `.`; compare integer parts as `BigInt`; on tie, right-pad the
+shorter fractional part with zeros to equal length and compare the
+fractional parts as `BigInt`. Equality under this comparison defines
+`DecimalString` equality (`"100.00" == "100"`).
+Float conversion (for computation) is `Number(decimalString)` —
+IEEE-754 double, round-to-nearest-even — applied only AFTER exact
+validation, and documented under `decimal-io/1`. Recorded note:
+conversion is monotone non-decreasing, so exact-ascending inputs can
+collapse to equal floats but never invert; a collapse lands in the
+zero-width path (§2.5), which is defined behaviour.
+
+**2.5 `reconcile.ts`** — the port. Public entry:
+`reconcile(a: DirectionalParty, b: DirectionalParty, opts?: { tolerance?: { mode: ToleranceMode } }): ReconcileOutcome`.
 
 - **Direction normalisation (exact):** exactly one `low-preferring` and
-  one `high-preferring` party, else `SameDirectionParties`. Normalise to
-  the pair `(low, high)` regardless of argument order. Mapping to the
-  prototype's positions: everywhere the prototype says `buyer`, read
-  `low` (`buyer[i]` → `low.tuple[i]`); everywhere `seller`, read `high`.
-  Direction-generalised method formulas (prototype lines cited):
+  one `high-preferring` party, else `same-direction-parties`. Normalise
+  to the pair `(low, high)` regardless of argument order; the result's
+  `input`, `distances`, and `honesty` are keyed by ROLE, never by
+  argument position. Mapping to the prototype's positions: everywhere
+  the prototype says `buyer`, read `low` (`buyer[i]` → `low.tuple[i]`);
+  everywhere `seller`, read `high`. Direction-generalised method
+  formulas (prototype lines cited):
   - Nash (l.13–22): `worst_high = high[0]`, `worst_low = low[3]`;
     candidate `(worst_low + worst_high) / 2`, clamped to
     `[overlapLow, overlapHigh]`.
@@ -144,7 +279,8 @@ version stamp on every result.
   `comfortHigh = min(low[2], high[2])`; `hasComfortZone: comfortLow <=
   comfortHigh` (zero-width comfort allowed), `hasOverlap: dealLow <=
   dealHigh`. Active zone: comfort if present, else deal if present,
-  else the phantom gap.
+  else the phantom gap. `zone` = `"comfort"` / `"deal"` / `"no-deal"`
+  respectively.
 - **Phantom bounds, order-safe (deviation D1, §5):** when there is no
   overlap, `overlapLow = dealHigh`, `overlapHigh = dealLow`. In the
   classic gap (low range below high range) this equals the prototype's
@@ -152,44 +288,47 @@ version stamp on every result.
   prototype never handled (the low-preferrer's whole range ABOVE the
   high-preferrer's), it still yields a well-ordered interval. Invariant
   (property-tested): `overlapLow <= overlapHigh` for every valid pair.
-  `gap = hasOverlap ? 0 : overlapHigh − overlapLow` (now non-negative in
+  `gap = hasOverlap ? 0 : overlapHigh − overlapLow` (non-negative in
   both disjoint orientations).
-- **Layers:** Layer 1 = the six methods over the active zone; layers 2+
-  = the five consensus methods over the previous layer's values, per the
-  prototype's loop. All loop semantics per §2.6.
+- **Zero-width active zone** (both bounds equal, including
+  float-collapse per §2.4): run the normal maths — every layer-1 method
+  returns the bound, the first consensus layer reproduces it with
+  spread 0, and the loop terminates — a **two-layer trace, exactly as
+  the prototype produces** — and additionally set
+  `convergedTrivially: true` whenever `overlapHigh − overlapLow === 0`
+  (the marking T2 §2.5 requires). `convergedTrivially` is false in all
+  other cases.
 - **Distances (deviation D2, §5 — not prototype output):** per party,
   the distance from the fair price to that party's acceptable interval:
   `distance_p = max(0, p.tuple[0] − fairPrice, fairPrice − p.tuple[3])`
-  (floats). Zero whenever the fair price lies inside the party's range —
-  so zero for both in comfort/deal outcomes; in no-deal it is each
-  party's stretch to the least-unfair price. Classes per §2.1's table.
-  The pinned `no-deal` fixture carries the expected values.
-- **Tolerance (ruling §6 R1):** `opts.tolerance` is
-  `{ mode: "relative-r1" }` (default) or `{ mode: "absolute-0.01" }`
-  (golden-anchoring mode only). Threshold: relative-r1 =
+  (floats, then PricePoint-serialised). Zero whenever the fair price
+  lies inside the party's range — so zero for both in comfort/deal
+  outcomes; in no-deal it is each party's stretch to the least-unfair
+  price. The pinned `no-deal` fixture carries the expected values.
+- **Tolerance (ruling §6 R1):** `opts.tolerance` defaults to
+  `{ mode: "relative-r1" }`; `{ mode: "absolute-0.01" }` is the
+  golden-anchoring mode only. Threshold: relative-r1 =
   `max(0.01, zoneWidth * 1e-4)` with `zoneWidth = overlapHigh −
-  overlapLow` (non-negative post-D1); absolute-0.01 = `0.01`. The
-  result's `EngineVersionMeta.toleranceMode` records the mode used —
-  every result stamps mode + `numericPolicyVersion` (audit M-finding).
-- Zero-width active zone (both bounds equal, including float-collapse
-  per §2.2): return that bound as fairPrice, `convergedTrivially: true`,
-  single-layer trace (T2-engine §2.5).
+  overlapLow`; absolute-0.01 = `0.01`. Every result stamps the mode in
+  `meta.toleranceMode` alongside `numericPolicyVersion`.
+- **Honesty signals** are computed per party on the converted floats
+  and attached role-keyed (internal-only).
 
-**2.4 `numericPolicy.ts`** — every constant named and exported, with
+**2.6 `numericPolicy.ts`** — every constant named and exported, with
 one-line rationales; the set is version `"np/1"`: tolerance floor
 `0.01`; relative factor `1e-4`; grid `steps = 200` (201 evaluation
 points); KDE bandwidth = `range / 3`; KDE degenerate-range shortcut
 `0.01`; curve `steps = 300` (301 points); curve padding `0.85` / `1.15`;
-`maxLayers = 8`; and the `decimal-io/1` conversion policy note (§2.2).
+`maxLayers = 8`; `MAG_MIN = 1e-9`; `MAG_MAX = 1e15`; and the
+`decimal-io/1` conversion-policy record (§2.1/§2.4).
 
-**2.5 `curves.ts`** — `buildCurveData` port (l.229–251): trapezoid
+**2.7 `curves.ts`** — `buildCurveData` port (l.229–251): trapezoid
 acceptability over `[globalMin, globalMax]` = padded union of both
-tuples' ranges; 301 points; fields `{ price, low, high, joint }`
-(direction-keyed names replacing buyer/seller); class internal-only —
-the reveal's data needs are the payload constructor's concern
-downstream.
+tuples' ranges; 301 points; fields per `CurvePoint` (direction-keyed
+names replacing buyer/seller); internal-only — the reveal's data needs
+are the payload constructor's concern downstream.
 
-**2.6 Numeric semantics (pinned — port these behaviours, not
+**2.8 Numeric semantics (pinned — port these behaviours, not
 approximations of them):**
 
 - Grid searches (joint-acceptability l.55–68, KDE l.116–134) evaluate
@@ -210,70 +349,113 @@ approximations of them):**
   `fairPrice` = median of the FINAL layer's values.
 - Trimmed mean (l.103–108): length ≤ 2 → arithmetic mean; else drop
   exactly one minimum and one maximum (`slice(1, -1)` after sort).
-- Geometric mean (l.137–140): `product^(1/n)`; positive domain is
-  guaranteed by validation (T2-engine §2.5).
+- Geometric mean (l.137–140): `product^(1/n)` — safe within the
+  magnitude domain (§2.1); positive domain guaranteed by validation.
+- Nash/KS clamp: `clamp(x, overlapLow, overlapHigh)`.
 - Layer-1 spread = `max − min` of the six method values; consensus
   spread likewise over five.
 
-**2.7 `honesty.ts`** — per T2-engine §3.5, signal-set `"honesty/1"`,
-formulas pinned so a cold agent computes identical values. Functions
-take `readonly number[]` (post-conversion floats; n = 4 in practice) and
-do NOT re-validate — reachability note in §5 F2. With `x̄` the mean,
-`dᵢ = xᵢ − x̄`, and `s` the sample standard deviation
-(`s² = Σdᵢ² / (n−1)`):
+**2.9 `honesty.ts`** — per T2-engine §3.5, signal-set `"honesty/1"`,
+formulas pinned so a cold agent computes identical values.
+**Precondition (documented on each function):** input is exactly four
+finite positive numbers in ascending (not necessarily strict) order —
+the post-conversion floats of a validated tuple; the functions do not
+re-validate (rationale §5 F2). With `x̄` the mean, `dᵢ = xᵢ − x̄`, `n =
+4`, and `s` the sample standard deviation (`s² = Σdᵢ² / (n−1)`):
 
 - Skewness (adjusted Fisher–Pearson, the estimator Excel/Sheets call
-  SKEW): `G1 = [n / ((n−1)(n−2))] · Σ(dᵢ/s)³`.
+  SKEW): `G1 = [n / ((n−1)(n−2))] · Σ(dᵢ/s)³`. Zero variance (all four
+  equal) → `{ value: null, reason: "zero-variance" }`.
 - Kurtosis (sample excess kurtosis, the estimator Excel calls KURT):
-  `G2 = [n(n+1) / ((n−1)(n−2)(n−3))] · Σ(dᵢ/s)⁴ − 3(n−1)²/((n−2)(n−3))`.
-  (n = 4 is the minimum n for which G2 is defined — fine here.)
-- Range compression: `(v₄ − v₁) / ((v₁ + v₄)/2)` — dimensionless.
-- Zero variance (all values equal): every signal returns
-  `{ value: null, reason: "zero-variance" }` — never NaN.
+  `G2 = [n(n+1) / ((n−1)(n−2)(n−3))] · Σ(dᵢ/s)⁴ − 3(n−1)²/((n−2)(n−3))`
+  (n = 4 is the minimum n for which G2 is defined). Zero variance →
+  `{ value: null, reason: "zero-variance" }`.
+- Range compression: `(v₄ − v₁) / ((v₁ + v₄)/2)` — dimensionless,
+  well-defined always (positive domain); **returns `0` at zero
+  variance** — T2 §3.5 assigns null-with-reason to skewness and
+  kurtosis only, and the closed form simply evaluates.
 
-**2.8 `index.ts`** — barrel export; everything typed; no default export.
+**2.10 `index.ts`** — barrel export; everything typed; no default
+export.
 
-**2.9 Fixtures:** copy `reference/engine-golden-fixtures-v1.json`
+**2.11 Fixtures:** copy `reference/engine-golden-fixtures-v1.json`
 verbatim to `src/lib/server/engine/fixtures/golden.json` (the
 `reference/` copy is the canonical archive; the engine copy is what
 tests import). Never edit either copy — a mismatch is a blocker, not a
-tuning target (§4).
+tuning target (§4). The archive's `anchors` block must equal the
+implementation's version constants — asserted in tests.
 
-**2.10 Tests** (replace the scaffold smoke test):
+**2.12 Tests** (replace the scaffold smoke test):
 
-- `golden.test.ts` — for each of the five fixtures × both tolerance
-  modes: build `DirectionalParty` inputs from the fixture (numbers →
-  `DecimalString` via `String(n)`; `lowPreferrer` array = low-preferring
-  party), run `reconcile` in the matching mode, and assert against the
-  recorded result: zone flags and bounds, layer count, EVERY method
-  value in EVERY layer, every layer spread, `fairPrice`, and
+- `golden.test.ts` — first assert `fixtures.anchors` matches the
+  implementation: `algorithmVersion`, `numericPolicyVersion`,
+  `honestySignalSetVersion`, `engineVersion === ENGINE_VERSION`. Then
+  for each of the five fixtures × both tolerance modes: build
+  `DirectionalParty` inputs from the fixture (numbers → `DecimalString`
+  via `String(n)`; `lowPreferrer` array = low-preferring party), run
+  `reconcile` in the matching mode, and assert against the recorded
+  result: zone flags and bounds, layer count, EVERY method value in
+  EVERY layer, every layer spread, `fairPrice.float`, and
   `convergenceAchieved` — numeric comparisons within
-  `1e-9 · max(1, |expected|)`. Additionally: `r1-divergence` asserts the
+  `1e-9 · max(1, |expected|)` — PLUS, on every result: the complete
+  `meta` object (all six fields, `toleranceMode` equal to the mode
+  run), the `zone` string, and `fairPrice.decimal ===
+  String(fairPrice.float)`. Additionally: `r1-divergence` asserts the
   two modes differ exactly as recorded (8 vs 5 layers, different fair
   prices); `no-deal` asserts both distances against `derivedDistances`;
-  `decimal-precision` asserts the echoed input tuples reproduce the
+  `decimal-precision` asserts the echoed `input` tuples reproduce the
   input strings losslessly.
+- `contract.test.ts` — structural checks: (a) `FIELD_CLASSES` covers
+  every field of a real result — for each top-level key of a computed
+  `ReconcileResult`, either the key itself or its two role-split
+  children (`<key>.low-preferring`, `<key>.high-preferring`) appear in
+  the map, and the map has no other keys; (b) boundary cases produce
+  `{ ok: false, error }` with the right `kind`:
+  `"10000000000000000"` and `"0.0000000001"` → `out-of-magnitude-domain`
+  (never a computed result); `"100"` then `"100.00"` in one tuple →
+  `not-ascending`; `"1e5"`, `"-3"`, `"1.2.3"`, `".5"`, `"NaN"`, `""` →
+  `malformed-decimal`; `"0"`, `"0.000"` → `non-positive`; two
+  same-direction parties → `same-direction-parties`; (c) two distinct
+  decimals that collapse to one float (e.g.
+  `"1.00000000000000001"` vs `"1.00000000000000002"` used as a
+  zone-bound pair) produce a defined zero-width outcome, not an error.
 - `properties.test.ts` — fast-check, pinned run config
-  `{ seed: 20260820, numRuns: 200 }` on every property. Generator:
-  4-value strictly-ascending positive tuples (generate 4 distinct
-  positive floats in a bounded range, sort) with both direction
-  assignments, both argument orders, and disjoint/overlapping/inverted
-  geometries reachable. Properties:
-  1. fairPrice ∈ `[overlapLow, overlapHigh]` (inclusive).
-  2. consensus-layer spreads non-increasing (tolerance `1e-12`
-     for float noise).
-  3. determinism: two identical calls give deeply-equal results.
-  4. **argument-order invariance:** `reconcile(a, b)` deeply equals
-     `reconcile(b, a)` — see §5 F1 for why this is the binding reading
-     of T2-engine §4's "role-direction symmetry".
-  5. `overlapLow <= overlapHigh` for every valid pair, including
-     inverted-disjoint (exercises D1).
-  6. zero-width active zone → `convergedTrivially`, fairPrice = the
-     bound.
-  7. validation: non-ascending (exact-decimal), non-positive, and
-     malformed strings (`"1e5"`, `"-3"`, `"1.2.3"`, `".5"`, `"NaN"`,
-     `""`) are rejected with the typed errors of §2.2; two
-     same-direction parties rejected with `SameDirectionParties`.
+  `{ seed: 20260820, numRuns: 200 }` on every property, one
+  `fc.assert` per geometry so the fixed seed cannot starve any of them.
+  **Pinned arbitraries** — base scalar
+  `fc.double({ min: 1e-3, max: 1e12, noNaN: true })`; draw k distinct
+  sorted values via `fc.uniqueArray(base, { minLength: k, maxLength:
+  k })` sorted ascending, then construct (v-notation = the sorted
+  draw):
+  - `genComfort` (k=8): low = `[v1, v3, v6, v8]`, high =
+    `[v2, v4, v5, v7]` → comfort zone `[v4, v5]`.
+  - `genDealOnly` (k=8): low = `[v1, v6, v7, v8]`, high =
+    `[v2, v3, v4, v5]` → no comfort, deal `[v2, v5]`.
+  - `genDisjointClassic` (k=8): low = `[v1, v2, v3, v4]`, high =
+    `[v5, v6, v7, v8]` → gap `[v4, v5]`.
+  - `genDisjointInverted` (k=8): low = `[v5, v6, v7, v8]`, high =
+    `[v1, v2, v3, v4]` → inverted disjoint, gap `[v4, v5]`.
+  - `genZeroWidth` (k=7): with `m = v4`: low = `[v1, v2, m, v6]`,
+    high = `[v3, m, v5, v7]` → comfort zone exactly `[m, m]`
+    (constructive — zero width is guaranteed, not hoped for).
+  Each generated pair is wrapped with both direction assignments and
+  both argument orders. Properties (run against the applicable
+  geometries):
+  1. fairPrice.float ∈ `[overlapLow.float, overlapHigh.float]`
+     (inclusive) — all geometries.
+  2. consensus-layer spreads non-increasing (tolerance `1e-12`) — all.
+  3. determinism: two identical calls give deeply-equal results — all.
+  4. argument-order invariance: `reconcile(a, b)` deeply equals
+     `reconcile(b, a)` — all. (**Provisional pending §6 Q1** — this
+     property is necessary under any reading of T2 §4's symmetry
+     clause; whether it is also sufficient is the operator's ruling.)
+  5. `overlapLow.float <= overlapHigh.float` — all, exercising D1 via
+     `genDisjointInverted`.
+  6. `genZeroWidth` → `convergedTrivially === true`,
+     `fairPrice.float === m`, layers.length === 2 (the prototype-shaped
+     trace of §2.5).
+  7. every PricePoint in the result satisfies
+     `Number(p.decimal) === p.float` — all geometries.
 - `honesty.test.ts` — closed-form expectations (derivations in test
   comments, independent of the implementation); every numeric assertion
   within `1e-12` (the derivations are exact in ℝ; float evaluation is
@@ -286,17 +468,18 @@ tuning target (§4).
     `(2/3) · 8064 / (596/3)**1.5`, expected kurtosis
     `(10/3) · 204068 / (596/3)**2 − 13.5`, range compression
     `30/25 = 1.2`.
-  - Zero variance: direct call with `[5, 5, 5, 5]` →
-    `{ value: null, reason: "zero-variance" }` for skewness and
-    kurtosis.
+  - Zero variance `[5, 5, 5, 5]` (direct call — unreachable through
+    `reconcile`, §5 F2): skewness and kurtosis →
+    `{ value: null, reason: "zero-variance" }`; rangeCompression → `0`.
 
 ## 3. Out of scope (do not touch)
 
 Survey maths; any route/endpoint; any UI; the data layer; persistence of
 any kind; the payload constructor (downstream consumes the field-class
-labels this brief defines); currency handling; rounding for display;
+map this brief defines); currency handling; rounding for display;
 honesty correction machinery (T2-engine §2.7 — signals only);
-regenerating or editing the golden fixtures.
+regenerating or editing the golden fixtures; resolving §6 Q1 (operator
+only).
 
 ## 4. Verification, capture, commit
 
@@ -319,32 +502,56 @@ report. A maths mismatch is a finding, not a rounding detail.
   inverted-disjoint case the prototype never handled. Property 5 pins
   it.
 - **D2 — distances.** Not computed by the prototype; defined here by
-  the interval-distance formula (§2.3) to satisfy T2-engine §2.2's
+  the interval-distance formula (§2.5) to satisfy T2-engine §2.2's
   no-deal contract. The pinned `no-deal` fixture records the expected
   values (its provenance note marks them as derived, not
   prototype-recorded).
-- **D3 — decimal boundary.** The prototype takes JS numbers; this port
-  takes `DecimalString` per ruling §6 R2, with the `decimal-io/1`
-  conversion policy (§2.2). The fixtures' numeric inputs are converted
-  via `String(n)`, which is lossless for every value they contain.
-- **F1 — symmetry interpretation.** T2-engine §4's "role-direction
-  symmetry (swapping parties and mirroring direction yields the mirrored
-  result)" is implemented as argument-order invariance (property 4):
-  normalisation is direction-keyed, so swapping the argument positions
-  of the same two directional parties must change nothing. A price-axis
-  reflection symmetry is NOT claimed — Nash, Kalai-Smorodinsky,
-  flexibility weighting, and the geometric mean are not
-  reflection-invariant, so no such invariant exists to test. If the
-  auditor or operator intended a stronger reading, that is a T2
-  question, not an implementation choice.
+- **D3 — decimal boundary and magnitude domain.** The prototype takes
+  unrestricted JS numbers; this port takes `DecimalString` per ruling
+  §6 R2, restricted to the validated magnitude domain (§2.1), with the
+  `decimal-io/1` conversion and serialisation policy (§2.1/§2.4) and
+  `PricePoint` outputs. The fixtures' numeric inputs are all inside the
+  domain and convert via `String(n)` losslessly.
+- **F1 — symmetry property: escalated, not reinterpreted.** T2 §4's
+  "role-direction symmetry (swapping parties and mirroring direction
+  yields the mirrored result)", read as a price-axis reflection, is
+  provably NOT an invariant of the ported algorithm (the geometric-mean
+  methods in layer 1 and the consensus toolkit are not
+  reflection-invariant; grid tie-breaks orient toward low prices). An
+  accepted T2 cannot be reinterpreted by a child plan, so the question
+  goes to the operator as §6 Q1. Until ruled, property 4 tests
+  argument-order invariance as a necessary-under-any-reading floor,
+  explicitly marked provisional.
 - **F2 — zero-variance reachability.** Through `reconcile()` the
   zero-variance honesty branch is unreachable (validation requires
   strictly ascending tuples, so variance > 0). The contract of T2-engine
   §3.5 is kept at the honesty-function level and tested by direct call
-  (§2.10). This is deliberate: the functions are exported toolkit
+  (§2.12). This is deliberate: the functions are exported toolkit
   members (T2-engine §3.1) and future inflections may feed them
   non-tuple value sets.
 - **F3 — R1 tolerance divergence.** Where relative-r1 and absolute-0.01
   disagree, the fixtures record both modes; the `r1-divergence` fixture
   exists precisely to pin the disagreement (per ruling §6 R1's
   per-vector fidelity-note requirement).
+
+## 6. Open questions (HITL)
+
+- **Q1 — the T2 §4 symmetry property.** T2-engine §4 requires
+  "role-direction symmetry (swapping parties and mirroring direction
+  yields the mirrored result)". Audit r2 correctly held that this
+  child plan may not weaken an accepted T2's property on its own
+  authority. The mathematical facts for the ruling: (a) a full
+  price-axis mirror symmetry cannot hold for a faithful port — the
+  prototype's geometric means (layer 1 and consensus) and low-oriented
+  grid tie-breaks are not reflection-invariant; (b) argument-order
+  invariance (`reconcile(a,b) ≡ reconcile(b,a)`) IS a true, testable
+  invariant guaranteeing the engine has no positional bias between the
+  two directional roles. Proposed ruling (needs Alastair): amend T2 §4
+  to read "argument-order invariance: swapping the two parties'
+  argument positions yields the identical role-keyed result", recorded
+  as a T2 addendum. Alternatives: (b2) additionally require a
+  reflection property restricted to the reflection-invariant methods
+  (midpoint, Nash, KS, flexibility) as a second, weaker invariant; or
+  (c) some other reading the operator intends. Implementation may
+  proceed under the provisional property 4; the T2 amendment is the
+  operator's ceremony.

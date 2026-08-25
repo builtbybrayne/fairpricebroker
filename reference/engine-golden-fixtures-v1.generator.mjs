@@ -218,6 +218,14 @@ const FIXTURES = [
 ];
 
 const out = {
+    anchors: {
+        inflection: "reconciliation",
+        algorithmVersion: "reconciliation/1",
+        numericPolicyVersion: "np/1",
+        honestySignalSetVersion: "honesty/1",
+        engineVersion: "0.1.0",
+        note: "These vectors anchor exactly these versions (T2-engine s2.4). A change to any anchored version requires a new fixture archive (v2), never an edit to this one.",
+    },
     provenance: {
         source: "/Users/al/Studio/projects/vwpa/product/vwpa.jsx",
         source_lines: "5-225 (maths only, copied verbatim)",

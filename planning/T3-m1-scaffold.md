@@ -27,6 +27,12 @@ operator-assisted brief).
 > 3 high / 1 medium / 1 low). Every command in §2 was executed verbatim
 > against the pinned tool versions on 20 Aug 2026 in a clean directory;
 > "verified" below means exit 0 was observed, not inferred from docs.
+> Revised again same day addressing audit r2 (verdict: revise; 1 high /
+> 3 medium): every remaining mutation is now a literal command (dirs,
+> .env construction, staging allowlist, commit, clean-tree assertion);
+> the dev probe uses `--strictPort` with a bounded readiness loop and a
+> cleanup trap; verification is an explicitly numbered V1–V5 suite; a
+> Docker-blocked run can no longer count as Done.
 
 ## 1. Environment facts (pinned, verified 20 Aug 2026)
 
@@ -125,34 +131,46 @@ node -e 'const [M,m]=process.versions.node.split(".").map(Number); process.exit(
    grep -q "@sveltejs/adapter-vercel" vite.config.ts && ! grep -q "adapter-auto" package.json && echo "ADAPTER OK"
    ```
    Pass criterion: prints `ADAPTER OK`.
-5. **Directory skeleton** (empty dirs carry a `.gitkeep`):
-   `src/lib/server/engine/` (the pure engine — server-only by path
-   convention: SvelteKit never serves `src/lib/server/**` to the client,
-   satisfying T2-engine §2.2's packaging rule; note the Vitest `server`
-   project covers tests here), `src/lib/server/data/`,
-   `src/lib/server/catalogue/`, `src/routes/api/`, `tests/e2e/`
-   (Playwright matches `**/*.e2e.ts` anywhere; this dir is the home for
-   future non-demo e2e).
+5. **Directory skeleton** — exact commands (`src/lib/server/**` is
+   server-only by SvelteKit path convention, satisfying T2-engine §2.2's
+   packaging rule; the Vitest `server` project covers tests there;
+   Playwright matches `**/*.e2e.ts` anywhere, so `tests/e2e/` is the
+   home for future non-demo e2e):
+   ```bash
+   mkdir -p src/lib/server/engine src/lib/server/data src/lib/server/catalogue src/routes/api tests/e2e
+   touch src/lib/server/engine/.gitkeep src/lib/server/data/.gitkeep src/lib/server/catalogue/.gitkeep src/routes/api/.gitkeep tests/e2e/.gitkeep
+   ```
 6. **Local Supabase** — gated on Docker:
    ```bash
    docker info >/dev/null 2>&1 || echo "DOCKER UNAVAILABLE"
    ```
    If `DOCKER UNAVAILABLE`: skip to step 7, still create `.env.example`
-   as below, and record step 6 as blocked in the step-8 capture (that is
-   a REVISE-state completion, not silent success). Otherwise:
+   as below, and record step 6 as blocked in the step-9 capture — a
+   REVISE-state outcome that is never Done (§4). Otherwise:
    ```bash
    npx -y supabase@2.115.0 init
    npx -y supabase@2.115.0 start
    npx -y supabase@2.115.0 status -o env
    ```
-   Write `.env` (gitignored) by mapping the printed variables BY NAME:
-   the API/project URL variable → `PUBLIC_SUPABASE_URL`; the anon —
-   or, in the newer key era, publishable (`sb_publishable_…`) — key →
-   `PUBLIC_SUPABASE_ANON_KEY`; the service_role — or secret
-   (`sb_secret_…`) — key → `SUPABASE_SERVICE_ROLE_KEY`; the Postgres
-   connection URL → `SUPABASE_DB_URL`. If the output matches neither
-   naming era, STOP and report the literal variable names printed —
-   do not guess a mapping. Then create `.env.example` with names only:
+   Construct `.env` (gitignored) mechanically from the env-format
+   output — this script handles both CLI key eras (anon/service_role
+   and publishable/secret) and aborts rather than guessing:
+   ```bash
+   npx -y supabase@2.115.0 status -o env > /tmp/sb-status.env
+   getvar() { grep -E "^$1=" /tmp/sb-status.env | head -1 | cut -d= -f2- | tr -d '"'; }
+   SB_URL="$(getvar API_URL)"
+   SB_ANON="$(getvar ANON_KEY)"; [ -n "$SB_ANON" ] || SB_ANON="$(getvar PUBLISHABLE_KEY)"
+   SB_SR="$(getvar SERVICE_ROLE_KEY)"; [ -n "$SB_SR" ] || SB_SR="$(getvar SECRET_KEY)"
+   SB_DB="$(getvar DB_URL)"
+   if [ -z "$SB_URL" ] || [ -z "$SB_ANON" ] || [ -z "$SB_SR" ] || [ -z "$SB_DB" ]; then
+     echo "ABORT: unmapped supabase status variables; names present:"; cut -d= -f1 /tmp/sb-status.env; exit 1
+   fi
+   printf 'PUBLIC_SUPABASE_URL=%s\nPUBLIC_SUPABASE_ANON_KEY=%s\nSUPABASE_SERVICE_ROLE_KEY=%s\nSUPABASE_DB_URL=%s\n' \
+     "$SB_URL" "$SB_ANON" "$SB_SR" "$SB_DB" > .env
+   ```
+   On the ABORT branch: STOP and report the printed variable NAMES (the
+   values are secrets — never paste them into a report). Then create
+   `.env.example` with names only:
    ```bash
    cat > .env.example <<'EOF'
    PUBLIC_SUPABASE_URL=
@@ -176,28 +194,61 @@ node -e 'const [M,m]=process.versions.node.split(".").map(Number); process.exit(
    Leave the sv-generated example tests (`src/lib/vitest-examples/`,
    `src/routes/demo/`) in place — they are part of proving the wiring;
    the engine brief replaces the smoke test, not these.
-8. **Verify, capture, commit.** Five checks, each with a mechanical pass
-   criterion:
+8. **Verify.** One setup command, then five numbered checks; each check
+   has a mechanical pass criterion, and `verification.tested` in step 9
+   records exactly these five by number.
+   Setup (not a check — downloads the browser the Vitest client project
+   and Playwright both use):
    ```bash
-   npm run test:unit -- --run     # PASS: exit 0
    npx playwright install chromium
-   npm run test:e2e               # PASS: exit 0 (self-installs browsers; builds + previews on :4173)
-   npm run lint                   # PASS: exit 0
-   npm run dev > /tmp/fairprice-dev.log 2>&1 & echo $! > /tmp/fairprice-dev.pid
-   sleep 8
-   curl -sf --max-time 10 -o /dev/null -w "%{http_code}\n" http://localhost:5173/   # PASS: prints 200
-   kill "$(cat /tmp/fairprice-dev.pid)"
    ```
-   (If :5173 is occupied, the dev server picks another port and the curl
-   fails — check `/tmp/fairprice-dev.log` for the actual port, re-curl
-   it, and note the substitution in the capture.)
-   Then capture via the **apv-capture skill**
+   - **V1 — unit tests:** `npm run test:unit -- --run` → PASS: exit 0.
+   - **V2 — e2e tests:** `npm run test:e2e` → PASS: exit 0 (the script
+     self-runs `playwright install`; builds + previews on :4173).
+   - **V3 — lint:** `npm run lint` → PASS: exit 0.
+   - **V4 — dev server serves:** strict port, bounded readiness loop,
+     guaranteed cleanup:
+     ```bash
+     npm run dev -- --port 5173 --strictPort > /tmp/fairprice-dev.log 2>&1 &
+     DEV_PID=$!
+     trap 'kill "$DEV_PID" 2>/dev/null' EXIT
+     DEV_OK=""
+     for i in $(seq 1 30); do
+       curl -sf --max-time 2 -o /dev/null http://localhost:5173/ && { DEV_OK=1; break; }
+       kill -0 "$DEV_PID" 2>/dev/null || break
+       sleep 1
+     done
+     kill "$DEV_PID" 2>/dev/null; trap - EXIT
+     if [ -n "$DEV_OK" ]; then echo "V4 PASS"; else echo "V4 FAIL"; tail -20 /tmp/fairprice-dev.log; fi
+     ```
+     PASS: prints `V4 PASS`. `--strictPort` makes an occupied :5173 a
+     fast, honest failure (Vite exits; the loop sees the dead PID) —
+     there is no silent-rebind or wrong-service false positive. On FAIL,
+     report the tail; do not probe other ports.
+   - **V5 — adapter wiring** (step 4's assertion, re-run now as part of
+     the suite):
+     ```bash
+     grep -q "@sveltejs/adapter-vercel" vite.config.ts && ! grep -q "adapter-auto" package.json && echo "V5 PASS"
+     ```
+     PASS: prints `V5 PASS`.
+9. **Capture and commit.** Capture via the **apv-capture skill**
    (`exfu-agent-plan-visualiser:apv-capture`; `/apv-capture` is its
    Claude-Code alias — in a client without the alias, read and follow
    the skill source per CLAUDE.md). Event: `entity.progressed` (or
-   `entity.completed` if step 6 also ran) against THIS plan id, with
-   `verification.tested` recording the five checks. Commit first line:
-   `feat(scaffold): SvelteKit app skeleton with vitest/playwright/adapter-vercel`
+   `entity.completed` only under §4's Done condition), with
+   `verification.tested` recording V1–V5 by number and result. The
+   capture appends to `.apv/events.jsonl` — stage it with the allowlist
+   below (this is the §3 guard's one sanctioned `.apv` write). Then:
+   ```bash
+   git add package.json package-lock.json .gitignore vite.config.ts playwright.config.ts tsconfig.json eslint.config.js prettier.config.js .npmrc .prettierignore README.md .vscode src static tests supabase .env.example .apv/events.jsonl
+   git status --porcelain | grep -Ev '^[AM]  ' && { echo "ABORT: unexpected paths above are unstaged/untracked - resolve before committing"; exit 1; } || true
+   git commit -m "feat(scaffold): SvelteKit app skeleton with vitest/playwright/adapter-vercel"
+   test -z "$(git status --porcelain)" && echo "TREE CLEAN"
+   ```
+   (`git add` with a missing path — e.g. no `supabase/` on a
+   Docker-blocked run — errors; drop only the absent path from the
+   list and note it in the capture.) PASS: commit succeeds and
+   `TREE CLEAN` prints.
 
 ## 3. Out of scope (do not touch)
 
@@ -218,9 +269,12 @@ node -e 'const [M,m]=process.versions.node.split(".").map(Number); process.exit(
 
 ## 4. Verification & failure protocol
 
-Done = all five step-8 checks pass + `git status` clean after the commit
-+ step 6 either green or explicitly recorded as Docker-blocked in the
-capture. Any other failure: stop, capture what was done as
-`entity.progressed`, and report the exact failing command and its
-output. Never mark this brief complete with a failing check
-unreported.
+**Done** (= `entity.completed`) requires ALL of: V1–V5 pass, the step-9
+commit lands with `TREE CLEAN`, AND step 6 ran green (local Supabase up,
+`.env` written). A Docker-blocked run is **never Done**: it is an
+incomplete, REVISE-state outcome — record `entity.progressed` with the
+blocked step named, still create `.env.example`, still run V1–V5 and
+commit, and report that M1 item 1 remains open pending Docker. Any other
+failure: stop, capture what was done as `entity.progressed`, and report
+the exact failing command and its output. Never mark this brief complete
+with a failing or skipped check unreported.
