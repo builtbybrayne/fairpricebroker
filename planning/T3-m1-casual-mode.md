@@ -37,6 +37,21 @@ status: draft
 > capability-catalogue rate-limit wiring as an explicit M1 blocker in
 > Stage 2's Done condition. Return:
 > `.exfu/returns/t3-m1-casual-mode-audit-r2.json`.
+>
+> **Post-cap revision r4, 7 Sep 2026, addressing audit r3 (unaudited —
+> for operator acceptance): concurrency-safe `completeCasualPlay`
+> (advisory lock, conflict re-read, `share_ref`-not-`ref_code` replay
+> value, unknown-after-transport-failure framing) plus a concurrent-call
+> V16 case; `refCodes.ts`'s exact body now pinned verbatim in this brief
+> with a first-lander-create/second-verify instruction and a
+> grammar/byte-identity test; the ref-rejected client transition now
+> guards on a stable machine-readable `{ error: "invalid-ref" }` body
+> rather than status-plus-non-null-ref, with a new negative test for a
+> valid ref alongside a separately malformed field; the host-visible
+> catalogue-handler sentence is removed from §2 (this brief's consumers
+> are casual UI/HTTP/MCP only); and §6's inbound-ref-capture note is
+> corrected to `+page.ts` (matching §7, which was always right). Return:
+> `.exfu/returns/t3-m1-casual-mode-audit-r3.json`.
 
 ## 0. Human summary (plain language)
 
@@ -139,7 +154,16 @@ stateless-server-computation constraint (T2-data-layer §2.6 R1's
 freestanding public capability):** `handleCasualReconcile` (§4) is a
 **named shared casual capability contract** — the same function
 T2-agent-distribution's MCP "run a casual reconciliation" tool (§2.3's
-casual exception) and any future host-visible catalogue handler consume.
+casual exception) and this route both consume. **Its consumers are
+casual UI, HTTP, and MCP adapters only (r4, addressing the r3 audit's
+medium finding)** — a future host-visible catalogue handler is
+explicitly NOT a consumer of this seam: a host-visible session
+(T2-product-surfaces §7 R7/§9 R11) is an **invited**-orchestration
+mode requiring auth, session persistence, and the invited
+payload-authorisation path (`T3-m1-data-core` §2.7's
+`constructInvitedPayload`/`resolveInvitedViewer`), never casual's
+stateless, unauthenticated seam — this brief does not widen
+`handleCasualReconcile` toward it, now or by implication.
 `src/routes/api/casual/reconcile/+server.ts` is a **same-origin UI
 adapter over that contract**, not an independently defined public HTTP
 capability: it does no more than parse the browser's JSON body, call
@@ -194,8 +218,8 @@ tab).
 | `handover-ready` | — | `handover` → `party-b-entry` | none |
 | `b-submit` | tuple valid per the same client mirror | `party-b-entry` → `both-look-now` | mint `idempotencyKey` (a client-side `crypto.randomUUID()`) **once, here** — the only mint point in the whole flow; fire `POST /api/casual/reconcile` (§4) immediately carrying it; store the pending promise, do not await it before the transition |
 | `outcome-received` | `fetch` resolved with a parseable JSON body (ok or error) | `both-look-now` → `both-look-now` (internal) | store `CasualReconcileResponse` in state; does not by itself advance the screen |
-| `ref-rejected` (medium finding, new — a DISTINCT transition from `transport-failed`) | response is `HTTP 400` AND the request's `ref` field was non-null (§4's malformed-ref case, NOT the malformed-JSON/tuple-shape case, which has no stored `ref` to discard and falls through to `transport-failed` below like any other 400) | `both-look-now` → `both-look-now` (internal, auto-retry) | discard the stored `attributionRef` from memory (set to `null`); immediately re-fire `POST /api/casual/reconcile` with the **same** `idempotencyKey`, `ref: null`; this is automatic, no user-visible error screen — a corrupted/tampered inbound ref must never trap the pair on an unusable-ref loop (the finding's "can trap the B-correction path with the same unusable ref"), and retrying with `ref: null` is always the legitimate no-attribution path (§4), never itself rejected |
-| `transport-failed` | `fetch` rejected (network error) OR the response body failed to parse as JSON OR the response was `HTTP 400` for a reason OTHER than the ref (malformed JSON, wrong tuple shape) OR the response was a 4xx/5xx the client didn't expect (§4's transport policy — anything other than the documented 400/200 shapes) | `both-look-now` → `transport-error` | preserve `idempotencyKey` and both stored tuples unchanged; no seam was reached, nothing to roll back |
+| `ref-rejected` (medium finding, new — a DISTINCT transition from `transport-failed`; guard corrected r4 per the r3 audit's medium finding) | response is `HTTP 400` AND the response body deep-equals `{ error: "invalid-ref" }` — the stable, machine-readable code §4 now returns for exactly this case (§4). **Never** inferred from "status 400 plus a non-null stored `ref`": that pairing cannot distinguish an invalid-ref 400 from a malformed-tuple-shape 400 that happens to also carry a valid ref, and guarding on it would silently discard a valid ref alongside an unrelated structural-400 retry (the r3 finding's named risk) | `both-look-now` → `both-look-now` (internal, auto-retry) | discard the stored `attributionRef` from memory (set to `null`); immediately re-fire `POST /api/casual/reconcile` with the **same** `idempotencyKey`, `ref: null`; this is automatic, no user-visible error screen — a corrupted/tampered inbound ref must never trap the pair on an unusable-ref loop (the finding's "can trap the B-correction path with the same unusable ref"), and retrying with `ref: null` is always the legitimate no-attribution path (§4), never itself rejected |
+| `transport-failed` | `fetch` rejected (network error) OR the response body failed to parse as JSON OR the response was `HTTP 400` for a reason OTHER than `{ error: "invalid-ref" }` (malformed JSON, wrong tuple shape, or a well-formed valid ref alongside a separately malformed field — the r4 negative test, §8 V12c) OR the response was a 4xx/5xx the client didn't expect (§4's transport policy — anything other than the documented 400/200 shapes) | `both-look-now` → `transport-error` | preserve `idempotencyKey` and both stored tuples unchanged; **no seam was reached, nothing to roll back is the UI's operating assumption, not a proven fact** — a rejected fetch does not prove the server-side transaction never committed (it may still have been in flight, or committed with the response lost in transit); the seam's true state after a transport failure is UNKNOWN (r4, §6), which is exactly why `retry` below always resends the SAME `idempotencyKey` rather than minting a fresh one |
 | `retry` | in `transport-error` | `transport-error` → `both-look-now` | re-fire `POST /api/casual/reconcile` with the **same** `idempotencyKey` (§6's idempotency contract exists precisely so this retry cannot duplicate a completion event or double-issue a ref) |
 | `give-up` | in `transport-error` | `transport-error` → `idle` | clears both tuples, the response, and `idempotencyKey` from memory (return-to-entry path) |
 | `continue` | `outcome-received` has occurred AND response was `ok: true` | `both-look-now` → `reveal` | stop the elapsed-time clock |
@@ -275,15 +299,20 @@ export function handleCasualReconcile(
    `ReconcileResult` never leaves this function.
 
 **Transport policy (fixed — the r1 contradiction between §4 and V3 is
-resolved to exactly this):**
+resolved to exactly this; the 400 body is now split in two, r4):**
+- A `ref` present but not `null` and not matching `isRefCode` → **HTTP
+  400** with the distinct flat body `{ error: "invalid-ref" }` (r4 —
+  never the `EngineError`-shaped body below, so the client can guard
+  the `ref-rejected` transition on this exact shape, per §3).
 - Malformed JSON, or a request shape that fails structural validation
-  (wrong array lengths, non-string tuple elements, a `ref` present but
-  not `null` and not matching `isRefCode`) → **HTTP 400** with
-  `{ ok: false, error: { kind: "malformed-decimal", detail: "..." } }`
+  for any OTHER reason (wrong array lengths, non-string tuple elements
+  — including when a VALID ref is also present, §8 V12c) → **HTTP 400**
+  with `{ ok: false, error: { kind: "malformed-decimal", detail: "..." } }`
   (the same `EngineError` shape, so the client has one error type to
-  handle), returned **before** `handleCasualReconcile` is invoked — this
-  is a transport-level rejection of a request the server cannot even
-  attempt, not an engine outcome.
+  handle for every non-ref structural failure), returned **before**
+  `handleCasualReconcile` is invoked — this is a transport-level
+  rejection of a request the server cannot even attempt, not an engine
+  outcome.
 - A well-formed request that the **engine** rejects (e.g. a non-ascending
   tuple) → **HTTP 200** with `{ ok: false, error }` — engine-level
   rejection is not an HTTP error, it is a valid, expected response the
@@ -306,13 +335,27 @@ resolved to exactly this):**
    policy, split (seam contract v2's fix for the r1 contradiction
    between "400 never null" and "becomes null"):** a `ref` that is
    PRESENT but fails `isRefCode` (wrong length/charset, an object, a
-   string encoding tuple data) → **HTTP 400**, `handleCasualReconcile`
-   never invoked, neither the completer nor `reconcile` reached; a `ref`
-   that is OMITTED or explicitly `null` → passes through as `null` and
-   proceeds through `handleCasualReconcile` normally, which is the
-   LEGITIMATE no-attribution case, never an error. The two are never
-   conflated: a malformed ref is a client bug or a tampered URL, a null
-   ref is an ordinary organic visit.
+   string encoding tuple data) → **HTTP 400 with body `{ error:
+   "invalid-ref" }`** (r4, addressing the r3 audit's medium finding —
+   this exact, flat, machine-readable shape, distinct from every other
+   400/200 body this route returns, so the client's `ref-rejected`
+   transition (§3) can guard on the body's content rather than on
+   status-plus-non-null-ref, which cannot tell an invalid-ref 400 apart
+   from a malformed-tuple-shape 400 that also happens to carry a ref);
+   `handleCasualReconcile` never invoked, neither the completer nor
+   `reconcile` reached. A request that carries a VALID ref (passes
+   `isRefCode`) alongside a SEPARATELY malformed field (e.g. a
+   wrong-length tuple array) is **not** this case — it returns the
+   ordinary structural-400 body (below), never `{ error: "invalid-ref"
+   }`, and the stored ref must survive that path unchanged (§3's
+   `transport-failed` transition, §8 V12c). A `ref` that is OMITTED or
+   explicitly `null` → passes through as `null` and proceeds through
+   `handleCasualReconcile` normally, which is the LEGITIMATE
+   no-attribution case, never an error. The three are never conflated:
+   a malformed ref alone is a client bug or a tampered URL (the
+   distinct `invalid-ref` code); a valid ref alongside some other
+   malformed field is an ordinary structural-400 that must not cost the
+   ref; a null ref is an ordinary organic visit.
 3. Calls `handleCasualReconcile` and returns its result verbatim as `200`
    JSON in both the `ok: true` and `ok: false` cases, per the policy
    above.
@@ -447,6 +490,13 @@ close to the source):
 - PASS: `npm run test:unit -- --run` includes V0a–V0b green (folded into
   §8's overall unit-test PASS criterion).
 
+**`src/lib/server/refCodes.test.ts` (r4, new — see §6/§7):** a grammar
+test asserting `isRefCode` returns `true` for a fixture matching
+`REF_CODE_REGEX` and `false` for a fixture that does not (mirroring
+`T3-m1-data-core`'s own `refCodes.test.ts`); when this brief lands
+second, an additional byte-identity assertion that the file's on-disk
+content deep-equals §6's pinned body verbatim.
+
 T2-data-layer's payload constructor is not invoked: there is no stored
 classified result for it to read (casual computes and returns in one
 request), so `buildCasualResultPayload` is a second, narrower disclosure
@@ -507,12 +557,55 @@ to reconcile between them:
 > wiring test (V16) simulating response-loss-after-commit: assert one
 > event, one ref, identical returned ref.
 >
+> **Concurrency (r4, addressing the r3 audit's high finding on
+> `completeCasualPlay`):** the operation serializes writers on the key
+> by taking `pg_advisory_xact_lock(hashtextextended(idempotencyKey::text,
+> 0))` at the top of its single transaction, so two concurrent FIRST
+> calls for the same `idempotencyKey` never race the unique index — the
+> second blocks on the lock until the first commits, then its own
+> idempotency read finds the just-committed row and returns THAT row's
+> value rather than attempting a second insert. If a unique-index
+> conflict is nonetheless observed (belt-and-braces, e.g. a caller that
+> bypassed the lock), the function re-reads by `idempotencyKey` and
+> returns the winning row's value rather than raising — every caller,
+> first or concurrent, resolves to the SAME value. That replay read is
+> admitted by its own narrow, role-scoped RLS policy (a
+> `casual_writer`-scoped SELECT on `events`, restricted to
+> `session_id is null and event_type = 'reconciliation_completed'`),
+> never a wider grant. The value returned on ANY replay — first call,
+> lock-waiter, or conflict-recovery — is always the persisted event
+> row's `payload ->> 'share_ref'` field, **never** the inbound
+> `ref_code` (the two are distinct: `ref_code` is the caller's
+> attribution input, `share_ref` is this operation's own minted output,
+> and a replay must never substitute one for the other). A rejected
+> transport call does NOT prove the underlying transaction never
+> committed — it may still have been in flight, or committed with the
+> response lost before the caller observed it; the seam's outcome after
+> a transport failure is **UNKNOWN**, never assumed "not committed,"
+> which is exactly why every retry — sequential or concurrent — must
+> carry the SAME `idempotencyKey` rather than minting a fresh one.
+> Casual's V16 gains a concurrent-call case in addition to its existing
+> sequential-retry case: two callers fire `completeCasualPlay` with the
+> SAME `idempotencyKey` at the same time; both must resolve to the SAME
+> `shareRef`, matching the persisted ref and event payload, and exactly
+> one event row and one `share_refs` row must exist afterward.
+>
 > Invalid-ref policy, everywhere in both briefs: a present-but-malformed
-> `ref` (fails `isRefCode`) → HTTP 400, never null-coercion; `ref:
-> null`/absent is legitimate and proceeds. The casual client gets a
-> distinct transition for that 400 which DISCARDS the stored ref and
-> retries without it. V10 is split into malformed (400, zero seam
-> calls) and legitimate-null (proceeds, seam called) cases.
+> `ref` (fails `isRefCode`) → HTTP 400 with the distinct, flat,
+> machine-readable body `{ error: "invalid-ref" }` (r4, addressing the
+> r3 audit's medium finding), never null-coercion; `ref: null`/absent is
+> legitimate and proceeds. The casual client's distinct transition for
+> that 400 guards on this exact body — never on "status 400 plus a
+> non-null stored ref," which cannot distinguish an invalid-ref 400 from
+> some other structural 400 that happens to also carry a valid ref —
+> and DISCARDS the stored ref, retrying without it. A request carrying a
+> VALID ref alongside a separately malformed field enters the ordinary
+> transport-error path with the ref intact, never the ref-rejected one
+> (a dedicated negative test, per brief). V10 is split into malformed
+> (400 `{ error: "invalid-ref" }`, zero seam calls), valid-ref-plus-
+> malformed-field (400, ordinary `EngineError` body, ref discarded by
+> neither transition), and legitimate-null (proceeds, seam called)
+> cases.
 >
 > Canonical casual payload: casual-mode's `buildCasualResultPayload`
 > (the eleven-field allowlist) is THE casual constructor for UI, HTTP,
@@ -591,6 +684,11 @@ Done with no owner; r2 adds the rate-limit blocker):**
      returns): a retried call with the SAME `idempotencyKey` returns
      the IDENTICAL `shareRef`, and exactly one completion event row and
      one `share_refs` row exist afterward — never two of either.
+   - **V16b (r4, new)** — the concurrent-call case (§8): both calls
+     resolve to the same `shareRef`, matching the persisted event
+     payload's `share_ref` field, with exactly one event and one
+     `share_refs` row. Stage 2 is not complete until V16 AND V16b both
+     pass, not V16 alone.
    - **Rate-limit wiring** (medium finding, new): the casual route must
      be re-pointed through T2-agent-distribution's capability-catalogue
      dispatcher and its shared `compute` rate-limit budget (§2's
@@ -602,15 +700,52 @@ Done with no owner; r2 adds the rate-limit blocker):**
    Until BOTH of these land, M1 item 4's landing-event requirement is
    **not** satisfied by this brief alone.
 
-**Inbound ref capture:** `src/routes/+page.svelte`'s `load` reads
+**Inbound ref capture (fixed r4 — this note previously named the wrong
+file; §7 was always correct):** `src/routes/+page.ts`'s `load` reads
 `url.searchParams.get('ref')` and threads it as a prop into
-`CasualFlow.svelte`, which carries it unmodified (not user-editable, per
-T2-product-surfaces §3.1) into the `POST` body's `ref` field at the
-`b-submit` transition; the route (§4) is what actually validates it
-against `isRefCode` before it reaches `handleCasualReconcile`.
+`+page.svelte`, which mounts `CasualFlow.svelte` with it; `CasualFlow`
+carries it unmodified (not user-editable, per T2-product-surfaces §3.1)
+into the `POST` body's `ref` field at the `b-submit` transition; the
+route (§4) is what actually validates it against `isRefCode` before it
+reaches `handleCasualReconcile`.
+
+**`refCodes.ts` pinned verbatim, shared-file ownership (r4, addressing
+the r3 audit's medium finding — the "pinned verbatim in both briefs"
+claim in prior revisions was false; only `T3-m1-data-core` actually
+carried the body).** The exact module body, copied verbatim from
+`T3-m1-data-core` §2.8 so both briefs implement byte-identical content:
+```typescript
+declare const refCodeBrand: unique symbol;
+export type RefCode = string & { readonly [refCodeBrand]: 'RefCode' };
+export const REF_CODE_REGEX = /^[a-z2-7]{10}$/;
+export function isRefCode(x: unknown): x is RefCode {
+	return typeof x === 'string' && REF_CODE_REGEX.test(x);
+}
+```
+Landing-order instructions (unchanged from §1/seam contract v2, restated
+here since the file is now listed in §7): whichever of this brief and
+`T3-m1-data-core` lands FIRST creates `src/lib/server/refCodes.ts` with
+exactly this body; whichever lands SECOND does not recreate it — it
+reads the file and asserts byte-identity against the body above before
+writing anything that imports it. `refCodes.test.ts` (§7, §8) covers
+both directions: a grammar test (`REF_CODE_REGEX`/`isRefCode` against a
+valid and an invalid sample, matching data-core's own `refCodes.test.ts`
+assertion) and, when this brief lands second, a byte-identity check
+(the file's on-disk content deep-equals the body above, verbatim,
+whitespace included) run once at the top of this brief's own test
+setup — a mismatch here is a STOP-and-report condition, not a silent
+overwrite.
 
 ## 7. Component breakdown (files to create)
 
+- `src/lib/server/refCodes.ts` — **shared with `T3-m1-data-core`, r4
+  addition (this was omitted from this brief's own file list in every
+  prior revision, per the r3 audit's medium finding)**. §6's verbatim
+  body; this brief CREATES it if it lands first, or VERIFIES
+  byte-identity against `T3-m1-data-core`'s copy if it lands second —
+  never a second, independently-authored copy. `refCodes.test.ts`
+  alongside it covers the grammar check (and the byte-identity check
+  when landing second), per §6/§8.
 - `src/lib/client/casual/casualTemplate.ts` — the M1 casual template as a
   static config object matching the shape T2-product-surfaces §2.5
   defines for templates generally (four question texts, party labels,
@@ -693,26 +828,40 @@ V0a–V0b per §4.1's negative-test spec.
   now resolved: 400 is reserved for malformed/malshaped requests (V10
   below), 200 for every engine outcome including rejection.
 - **V10 (high finding, ref boundary — split per seam contract v2 into
-  malformed vs. legitimate-null, exactly as the contract specifies)** —
-  three sub-cases against the `+server.ts` route:
-  - **Malformed (400, zero seam calls):** a request body with `ref` set
-    to a string of the wrong length or charset (e.g. `"abc123"`, which
-    is neither 10 characters nor restricted to `[a-z2-7]`) → **HTTP
-    400**; `CasualPlayCompleter.completeCasualPlay` called zero times
-    (spy assertion).
-  - **Malformed (400, zero seam calls):** a request body with `ref` set
-    to a JSON object or array encoding tuple-shaped data (an attempted
-    smuggling case the finding named explicitly) → **HTTP 400**;
-    `completeCasualPlay` called zero times.
+  malformed vs. legitimate-null, exactly as the contract specifies; body
+  shape and the new valid-ref-plus-malformed-field case corrected r4 per
+  the r3 audit's medium finding)** — four sub-cases against the
+  `+server.ts` route:
+  - **Malformed (400, `{ error: "invalid-ref" }`, zero seam calls):** a
+    request body with `ref` set to a string of the wrong length or
+    charset (e.g. `"abc123"`, which is neither 10 characters nor
+    restricted to `[a-z2-7]`) → **HTTP 400** with body deep-equal to
+    `{ error: "invalid-ref" }`; `CasualPlayCompleter.completeCasualPlay`
+    called zero times (spy assertion).
+  - **Malformed (400, `{ error: "invalid-ref" }`, zero seam calls):** a
+    request body with `ref` set to a JSON object or array encoding
+    tuple-shaped data (an attempted smuggling case the finding named
+    explicitly) → **HTTP 400** with the same `{ error: "invalid-ref" }`
+    body; `completeCasualPlay` called zero times.
   - **Legitimate-null (proceeds, seam called):** a request body with
     `ref` omitted or explicitly `null` → passes through as `null` and
     reaches `handleCasualReconcile` normally on a valid tuple pair;
     `completeCasualPlay` IS called exactly once with `ref: null` —
     asserting the legitimate no-ref path still works and is never
     conflated with the malformed cases above.
-  PASS: the two malformed sub-cases return 400 before
-  `handleCasualReconcile` is invoked at all; the null sub-case proceeds
-  normally.
+  - **V10d (r4, new — valid ref plus a separately malformed field, the
+    r3 audit's named risk):** a request body with a VALID `ref` (passes
+    `isRefCode`) but a wrong-length `partyATuple` array → **HTTP 400**
+    with the ORDINARY `{ ok: false, error: { kind: "malformed-decimal",
+    ... } }` body, NOT `{ error: "invalid-ref" }`; `completeCasualPlay`
+    called zero times. This is the regression test for the r3 finding:
+    a client guarding on "400 + non-null ref" alone would misclassify
+    this case as `ref-rejected` and silently discard a valid ref;
+    asserting the body shape here proves the distinction is
+    load-bearing, not cosmetic.
+  PASS: the two `invalid-ref` sub-cases and V10d all return 400 before
+  `handleCasualReconcile` is invoked at all, with the two DIFFERENT body
+  shapes correctly distinguished; the null sub-case proceeds normally.
 - **V11 (medium finding, transport-failure and malformed-JSON split)** —
   malformed JSON body (unparseable) and a wrong-length tuple array both
   return **HTTP 400** with `{ ok: false, error: { kind:
@@ -720,8 +869,8 @@ V0a–V0b per §4.1's negative-test spec.
   request shape, not by response shape (both are the same `EngineError`
   shape, per §4's "one error type to handle" design) — the assertion
   distinguishing them is on the HTTP status code, not the body.
-- PASS: `npm run test:unit -- --run` exits 0, V0a–V0b, V1–V3, V10, V11
-  all named and green.
+- PASS: `npm run test:unit -- --run` exits 0, V0a–V0b, V1–V3, V10
+  (including V10d), V11, and `refCodes.test.ts` all named and green.
 
 **E2E (Playwright) — `tests/e2e/casual-flow.e2e.ts`:**
 - **V4 (DoD item 9, figures hidden)** — drive the flow through
@@ -774,10 +923,13 @@ V0a–V0b per §4.1's negative-test spec.
   across the failed attempt and the retry. PASS: transport-error reached,
   no figures leaked, retry succeeds, key unchanged across the retry.
 - **V12b (medium finding, ref-rejected auto-retry — distinct from
-  V12's generic transport failure)** — load `/?ref=abc123` (a
-  malformed ref: wrong length/charset), complete the flow to
-  `b-submit`; assert the FIRST `POST` carries `ref: "abc123"` and
-  receives **HTTP 400**; assert the UI does NOT show
+  V12's generic transport failure; body assertion corrected r4)** —
+  load `/?ref=abc123` (a malformed ref: wrong length/charset), complete
+  the flow to `b-submit`; assert the FIRST `POST` carries `ref:
+  "abc123"` and receives **HTTP 400 with body deep-equal to
+  `{ error: "invalid-ref" }`** (the guard the client's `ref-rejected`
+  transition actually checks, per §3/§4, r4 — not merely "status
+  400"); assert the UI does NOT show
   `TransportErrorInterstitial` at any point (the `ref-rejected`
   transition, §3, is silent/automatic, never surfaced as an error);
   assert a SECOND `POST` fires automatically with the same
@@ -828,6 +980,17 @@ marked Done):**
   retried call with the same `idempotencyKey` returns the IDENTICAL
   `shareRef`, with exactly one persisted completion event and one
   `share_refs` row — never two of either.
+- **V16b (r4, new — the r3 audit's high finding: sequential retry alone
+  does not cover overlapping first calls)** — same fixture, but fires
+  TWO `completeCasualPlay` calls concurrently with the SAME
+  `idempotencyKey` (no sequencing between them — e.g. `Promise.all`
+  against two separate connections) instead of one call followed by a
+  retry: asserts BOTH calls resolve to the SAME `shareRef`, that value
+  matches the persisted event row's `payload ->> 'share_ref'` (never the
+  inbound `ref_code`), and exactly one event row and one `share_refs`
+  row exist afterward — proving the advisory-lock/conflict-re-read
+  mechanism (§6) actually serializes concurrent first-callers rather
+  than letting one win the unique-index race and the other error.
 - **V17 (medium finding, rate-limit wiring — owned by the M1
   agent-doorway brief, tracked here as a named blocker)** — once that
   brief lands, a test asserting the casual route's requests are
