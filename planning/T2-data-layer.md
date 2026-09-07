@@ -233,3 +233,22 @@ T2-platform's backup contract.)*
   *invited* shape; this plan's retention and sweeper rulings apply to
   invited sessions unchanged. The credit balance lives on account
   identities; the billing-reference seam is unchanged.
+
+## 7. Rulings (7 Sep 2026, operator, in-chat — buildpad canvas review)
+
+- **R4 — host-full payload class** (implements T1 Addendum 7 /
+  T2-product-surfaces §7 R7): the payload constructor (§2.2) gains a
+  **host-full** class — both parties' raw inputs plus full outcome —
+  constructed ONLY when the session's persisted mode carries a
+  host-visibility configuration of `host-visible` (a template setting
+  fixed at creation, e.g. the recruitment vertical) AND the
+  server-derived role is host. Blind-host remains the default; party
+  payload classes are unchanged in every invited mode. Adversarial tests
+  extend accordingly: host-full must be unreachable in blind-host
+  sessions and unreachable by any party role in any session.
+- **R5 — demo-flagged events and rows** (implements T2-product-surfaces
+  §7 R8): guided vertical demos write through the ordinary events
+  machinery with an explicit demo flag; demo-flagged rows are excluded
+  from activation counts (§2.6), aggregates (§2.5), and honesty-signal
+  analysis, while remaining queryable for validation learning (directed
+  question answers, per-stage abandonment).
