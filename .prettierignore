@@ -16,3 +16,6 @@ reference/
 .apv/
 CLAUDE.md
 .claude/
+
+# Canonical fixture must remain byte-for-byte identical to reference archive
+src/lib/server/engine/fixtures/golden.json
