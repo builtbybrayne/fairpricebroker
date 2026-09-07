@@ -89,31 +89,86 @@ the system — gets the most testing.
 > R7–R10/§9 R11, and T1 Addendum 7 (host-visibility persistence,
 > host-full payload class, pre-entry disclosure, demo exclusion), ruled
 > after the original draft. Return: `.exfu/returns/t3-m1-data-core-audit-r1.json`.
+>
+> **Revised 7 Sep 2026 addressing Codex audit r2 (verdict: revise; 5
+> high / 6 medium); seam contract v2 (orchestrator-ruled) adopted.**
+> Gist: fixed the invited-session bootstrap (nullable `direction` +
+> XOR, corrected migration order, explicit role-mapping args, one-time
+> plaintext token return to the email-sending caller); gave every
+> internal role (`orchestrator`, `payload_reader`, `casual_writer`)
+> the RLS policies its writes actually need; made
+> `claimAndOrchestrate` a single fenced transactional finalization
+> with per-partial-state retry behaviour; replaced the two casual
+> seams and this brief's own `constructCasualPayload` with the
+> orchestrator-ruled `completeCasualPlay` operation and explicit
+> per-class payload allowlists (deleting `constructCasualPayload` and
+> its test, delegating casual construction to the sibling brief); made
+> the authorisation matrix model target-relation and derive
+> expectations from an independently-written grant table with a
+> schema-introspection completeness check; locked down
+> `party_positions` client writes to server-derived metadata only;
+> gated `create_invited_session` behind the platform's reserve-then-
+> debit entitlement seam; folded `session_participants` into the
+> purge/erasure/export/tombstone mechanics; and hardened the nightly
+> dump pipeline against a silently-empty artefact. Return:
+> `.exfu/returns/t3-m1-data-core-audit-r2.json`.
 
 ## 1. Environment facts (pinned)
 
-**Binding cross-brief seam contract (orchestrator-pinned; the casual-mode
-brief is revised to the identical contract — quoted verbatim so both
-briefs implement one shape):**
+**Binding cross-brief seam contract v2 (orchestrator-ruled; supersedes
+v1; quoted verbatim in both briefs so both implement one shape and
+nothing is left to reconcile between them):**
 
-> Module `src/lib/server/data/refCodes.ts` is the single ref-code
-> authority: `REF_CODE_REGEX = /^[a-z2-7]{10}$/` (lowercase RFC-4648
-> base32 alphabet, 10 chars, crypto-random, server-generated only), plus
-> `isRefCode(x: unknown): x is RefCode`.
-> `issueCasualRef(): Promise<RefCode>` — persists a `share_refs` row
-> BEFORE returning the code.
-> `recordCasualCompletion(input: { refCode: RefCode | null; templateId:
-> string; idempotencyKey: string }): Promise<void>` — idempotent on
-> `idempotencyKey` (a client-minted UUID v4, minted once per completed
-> flow, resent on retries); duplicate keys are a no-op. Casual
-> completions carry NO session_id; uniqueness is on `idempotencyKey`.
-> These functions are the casual brief's only data-layer touchpoints;
-> this brief owns their implementation and their tests.
+> `src/lib/server/refCodes.ts` (note: NEUTRAL location, directly under
+> `server/`, NOT under `server/data/`) holds the ref-code authority:
+> `export const REF_CODE_REGEX = /^[a-z2-7]{10}$/;` a branded `RefCode`
+> type; `isRefCode(x: unknown): x is RefCode`. Content is pinned
+> verbatim in both briefs; whichever brief executes first CREATES it,
+> the second verifies byte-identity — shared-file ownership is
+> explicit and this resolves the compile-first problem.
+>
+> The v1 pair `issueCasualRef`/`recordCasualCompletion` is REPLACED by
+> one operation: `completeCasualPlay(input: { ref: RefCode | null;
+> templateId: string; idempotencyKey: string }): Promise<{ shareRef:
+> RefCode }>` — transactional and idempotent AS A WHOLE: replaying the
+> same `idempotencyKey` returns the SAME `shareRef` and leaves exactly
+> one completion event row and one `share_refs` row. `idempotencyKey`
+> is validated as UUID v4 at the HTTP boundary (400 otherwise).
+> Data-core owns the real transactional implementation (single SQL
+> function or single-transaction TS); casual-mode ships an in-memory
+> stand-in with identical replay semantics and a required end-to-end
+> wiring test (V16) simulating response-loss-after-commit: assert one
+> event, one ref, identical returned ref.
+>
+> Invalid-ref policy, everywhere in both briefs: a present-but-malformed
+> `ref` (fails `isRefCode`) → HTTP 400, never null-coercion; `ref:
+> null`/absent is legitimate and proceeds. The casual client gets a
+> distinct transition for that 400 which DISCARDS the stored ref and
+> retries without it. V10 is split into malformed (400, zero seam
+> calls) and legitimate-null (proceeds, seam called) cases.
+>
+> Canonical casual payload: casual-mode's `buildCasualResultPayload`
+> (the eleven-field allowlist) is THE casual constructor for UI, HTTP,
+> and future MCP. Data-core DELETES its own `constructCasualPayload`
+> and its full-object test, delegating by explicit reference ("casual
+> payloads are built by T3-m1-casual-mode's `buildCasualResultPayload`;
+> this brief constructs only stored-session payloads").
+>
+> Remove the compile-time non-assignability claim and test V0c
+> entirely (structural typing makes it false); the boundary is the
+> explicit projection + exact-key negative tests; optionally note an
+> opaque brand as future hardening, not a claim.
+>
+> Rate limiting: both briefs name, in their Done/M1-blocker language,
+> that the casual route must be re-pointed through the capability-
+> catalogue dispatcher and shared compute rate-limit budget when the M1
+> agent-doorway brief lands (no exemption per T2-agent-distribution);
+> casual's Stage-2 Done includes it.
 
-This supersedes §2.8's original `issueRef`/`recordCasualCompletion`
-sketch (nanoid, no idempotency key) — §2.8 below is rewritten to this
-contract. Q1's ref-code-scheme question is resolved by this seam: it is
-no longer open (see §6).
+This supersedes §2.8's v1 `issueCasualRef`/`recordCasualCompletion`
+sketch entirely — §2.8 below is rewritten to `completeCasualPlay`. Q1's
+ref-code-scheme question is resolved by this seam: it is no longer open
+(see §6).
 
 - Depends on `T3-m1-scaffold`'s local Supabase (`npx -y supabase@2.115.0
   start`) and its `.env` (`SUPABASE_DB_URL`, `PUBLIC_SUPABASE_URL`,
@@ -302,9 +357,16 @@ create table sessions (
   -- nullable; carries the attribution funnel's ref->visit->session key
   -- (T2-data-layer §2.6) when the session was created from a ref'd visit.
   -- Passed into create_invited_session (§2.5) as a server-held parameter
-  -- — see §2.8's fix to the visit-capture chain.
+  -- — see §2.8's fix to the visit-capture chain. UNIQUE (below, medium
+  -- finding): a visit can attribute at most ONE session, closing the
+  -- "attribution can attach to another visitor's record" path — a
+  -- caller replaying or guessing someone else's visit_id can create at
+  -- most a session no one has already claimed with it, never silently
+  -- pile a second session's activation onto a visit that already
+  -- belongs to someone else's session.
   created_at timestamptz not null default now()
 );
+create unique index sessions_visit_id_unique on sessions (visit_id) where visit_id is not null;
 alter table sessions enable row level security;
 -- Deny-by-default; see §2.4 for the narrow SELECT policy (creator and
 -- participants only, never a listing of other people's sessions).
@@ -312,8 +374,19 @@ alter table sessions enable row level security;
 (`visits` and its ref table are created in §2.2's events/attribution
 migration below; `sessions` is created after it in migration order so the
 FK resolves — sequence the migrations accordingly: attribution tables
-first, then `identities`, then `sessions`, then `session_participants`
-below, which references `sessions`.)
+first, then `identities`, then `sessions`, then `invites` (below,
+BEFORE `session_participants` — fixing finding 1's second bug: the
+pre-r2 draft presented `session_participants` before `invites` even
+though `session_participants.invite_id` references `invites(id)`; the
+actual migration order this brief creates is attribution tables →
+`identities` → `sessions` → `invites` → `session_participants` →
+`party_positions` → `results` — read the CREATE TABLE bodies below in
+that dependency order regardless of the order they are printed in this
+document, or, equivalently, defer `session_participants.invite_id`'s FK
+via a post-`invites` `ALTER TABLE ... ADD CONSTRAINT` the same way
+`share_refs_session_fk` is deferred below — either is acceptable, but
+the migration files themselves must reflect one of the two, not the
+printed order).
 
 **`session_participants`** — the authoritative membership record fixing
 finding 2 of the r1 audit (bootstrap cycle / arbitrary-direction
@@ -321,9 +394,14 @@ resolution in `session_role_for`):
 ```sql
 create table session_participants (
   session_id uuid not null references sessions(id),
-  direction text not null check (direction in ('low-preferring', 'high-preferring')),
-  -- for a HOST row: direction is null (a host is not a party direction);
-  -- modelled as a separate boolean column instead, see below.
+  direction text check (direction in ('low-preferring', 'high-preferring')),
+  -- Nullable (finding 1 of the r2 audit — the r1/pre-r2 draft declared
+  -- this NOT NULL while simultaneously requiring it null for a HOST
+  -- row, which cannot both hold; the column is executable now). Null
+  -- for a HOST row; required and one of the two directions for a
+  -- party row. The two check constraints below are the XOR that
+  -- enforces this — is_host and direction are jointly exhaustive and
+  -- mutually exclusive, never both null and never both set.
   is_host boolean not null default false,
   invite_id uuid references invites(id),
   -- the grant that authorised this membership row, when redemption is
@@ -335,6 +413,22 @@ create table session_participants (
   -- membership is established (session creation for the creator's own
   -- row; redeem_invite for an invitee row) — NEVER updatable afterward
   -- except by the one redemption transaction that first sets it.
+  -- Medium finding, fixed: this column is PII-adjacent (a durable link
+  -- from a real auth principal to every session they ever joined) and
+  -- the pre-r2 draft left it entirely outside the purge/erasure
+  -- boundary — purging an identity's `identities` row (§2.2's placeholder
+  -- mechanic) did nothing to this table, so a redacted invitee's
+  -- reconciliations remained re-identifiable via this column forever.
+  -- The erasure routine (out of THIS brief's build scope, §3 — schema
+  -- only) is now specified to null this column for every
+  -- session_participants row whose bound_auth_uid maps to a purged
+  -- identity, as part of the SAME cascade that purges `identities`
+  -- (§2.2) — recorded in `purge_tombstone_log.cascade_summary` (§2.2)
+  -- alongside the invite/attribution counts it already carries, and
+  -- excluded from the nightly export (§2.9's events-only COPY already
+  -- never touches this table; the export/tombstone mechanics this
+  -- finding names are satisfied by this column's inclusion in the
+  -- cascade contract, not by a new export step).
   created_at timestamptz not null default now(),
   check (is_host = false or direction is null),
   check (is_host = true or direction is not null),
@@ -526,7 +620,19 @@ demo-exclusion gap). One view, both funnels, demo-excluded:
 ```sql
 create view activation_events as
 select e.id, e.session_id, e.created_at,
-  case when e.session_id is null then 'casual' else 'invited' end as funnel
+  case when e.session_id is null then 'casual' else 'invited' end as funnel,
+  coalesce(
+    e.payload ->> 'ref_code',                          -- casual: the inbound ref, if any (set by completeCasualPlay)
+    (select v.ref_code from sessions s2 join visits v on v.id = s2.visit_id where s2.id = e.session_id)
+  ) as ref_code,
+  case when e.session_id is null then null
+       else (select s2.visit_id from sessions s2 where s2.id = e.session_id) end as visit_id
+  -- Medium finding, fixed: the pre-r2 view carried neither column, so
+  -- M1's "which ref/visit did this activation come from" query had no
+  -- answer at all despite the underlying chain (ref -> visit -> session
+  -- or casual completion) existing in the schema. Both columns are
+  -- nullable — an organic (no-ref) activation is legitimate and both
+  -- are null for it, never an error.
 from events e
 left join sessions s on s.id = e.session_id
 where e.event_type = 'reconciliation_completed'
@@ -535,7 +641,11 @@ where e.event_type = 'reconciliation_completed'
 -- above); casual-funnel rows are unique per idempotency_key (partial
 -- index above) — so count(*) over this view is a correct activation
 -- count with no double-counting and no demo pollution, for either
--- funnel or both combined.
+-- funnel or both combined. A dedicated test (§4) queries
+-- activation_events end to end: ref -> visit -> session/completion for
+-- the invited funnel, ref -> completion.payload for casual, and
+-- asserts a forged/nonexistent visit_id passed to create_invited_session
+-- is refused (below) rather than silently attributed.
 ```
 
 **`honesty_signal_storage`** (developer-only, T2-data-layer §3.1;
@@ -561,7 +671,10 @@ create table purge_tombstone_log (
   identity_id uuid not null references identities(id),
   purged_at timestamptz not null default now(),
   cascade_summary jsonb not null,
-  -- counts/ids of invites, attribution rows, and export bundles touched.
+  -- counts/ids of invites, attribution rows, export bundles, and
+  -- session_participants.bound_auth_uid columns nulled (medium
+  -- finding — the erasure cascade's identity-purge and this table's
+  -- bound_auth_uid sever now happen together, recorded together).
   replayed_on_restore_at timestamptz
 );
 alter table purge_tombstone_log enable row level security;
@@ -621,7 +734,45 @@ alter default privileges in schema public
 
 -- Then, and ONLY then, grant back the narrow client-facing set that has
 -- a corresponding RLS policy (§2.4) admitting the grantee role:
-grant select, insert, update on party_positions to authenticated;
+grant select on party_positions to authenticated;
+grant insert (session_id, direction, v1, v2, v3, v4) on party_positions to authenticated;
+grant update (v1, v2, v3, v4) on party_positions to authenticated;
+-- Column-scoped, not whole-row (medium finding, fixed): the pre-r2
+-- draft's blanket `insert, update` grant let an authenticated party
+-- supply/rewrite `vertical`/`currency`/`unit`/`entry_date`/`created_at`
+-- — server-derived immutable metadata snapshots the client must never
+-- author (T2-data-layer §2.4). `status`/`submitted_at` are deliberately
+-- NOT in either column list: they change only inside `submit_position`/
+-- `recall_position` (§2.5, SECURITY DEFINER, bypasses this grant
+-- entirely), never via a direct client UPDATE. `session_id`/`direction`
+-- stay client-supplied on INSERT ONLY (needed to name which row this
+-- is; the RLS policy's `session_role_for(session_id) = direction` check
+-- still constrains which values are actually accepted) and are absent
+-- from the UPDATE grant, so a party cannot move their own row to a
+-- different session/direction after creation. The metadata columns
+-- themselves are populated by a trigger, not by the client, below:
+create function party_positions_set_metadata()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  select s.template_id, s.currency into strict new.vertical, new.currency
+  from sessions s where s.id = new.session_id;
+  new.region := coalesce(new.region, 'unknown');
+  new.unit := 'currency';
+  new.entry_date := current_date;
+  new.created_at := now();
+  return new;
+end;
+$$;
+create trigger party_positions_set_metadata_trigger
+  before insert on party_positions
+  for each row execute function party_positions_set_metadata();
+-- Runs BEFORE the row is written, owned by schema_owner_internal (§2.4),
+-- so even though the client's INSERT grant does not include these
+-- columns, this fixes their value server-side regardless of what a
+-- malicious/buggy client attempts to smuggle via a column it was never
+-- granted (Postgres would reject an explicit client-supplied value for
+-- an ungranted column outright; the trigger's job is to guarantee a
+-- CORRECT value is always present, not merely to block a bad one).
 grant select on invites to authenticated;   -- policy restricts to own invite
 grant select on sessions to authenticated;  -- policy restricts to own/hosted
 -- session_participants, results, honesty_signal_storage, identities,
@@ -631,9 +782,14 @@ grant select on sessions to authenticated;  -- policy restricts to own/hosted
 -- direct table grant to a client-facing role.
 grant execute on function
   submit_position(uuid), recall_position(uuid), cancel_session(uuid),
-  redeem_invite(text, text), create_invited_session(text, text, text, uuid, text[]),
-  request_visibility_disclosure(uuid)
+  redeem_invite(text, text), request_visibility_disclosure(uuid)
   to authenticated;
+-- create_invited_session(text, text, text, uuid, text, jsonb) is
+-- deliberately NOT granted to authenticated (medium finding, entitlement
+-- bypass): it is the low-level primitive §2.5 describes, callable only
+-- by the platform-owned reserve-then-debit capability that wraps it,
+-- which runs under its OWN narrowly-scoped role — see that seam's own
+-- grant, out of this brief's build (§3), not this list.
 -- request_data_subject_export and the erasure routine are out of this
 -- brief's build scope (§3) — no grant is issued for them here; a
 -- SECURITY DEFINER function that does not exist gets no GRANT, closing
@@ -747,7 +903,85 @@ create policy results_payload_reader_read on results
 -- ONLY policy admitting any read of `results` at all — still zero rows
 -- for anon/authenticated (no policy names them), so "no SELECT policy
 -- exists for any client role" (§2.2's original comment) remains true.
+
+-- Finding 2 of the r2 audit: a GRANT without a matching policy is
+-- RLS-silenced to zero rows/zero effect for every role except the
+-- table owner — the r1/pre-r2 grant list gave `orchestrator` INSERT on
+-- results/honesty_signal_storage/events and UPDATE on
+-- sessions(state, orchestration_claimed_at), and gave `casual_writer`
+-- INSERT on events, with NO policy admitting any of those writes.
+-- Every write path §2.5's functions actually perform now gets its own
+-- named, role-scoped policy, closing the gap completely (nothing is
+-- "granted for later" — each policy below has a named caller):
+create policy results_orchestrator_write on results
+  for insert to orchestrator with check (true);
+create policy honesty_signal_storage_orchestrator_write on honesty_signal_storage
+  for insert to orchestrator with check (true);
+create policy events_orchestrator_write on events
+  for insert to orchestrator with check (session_id is not null);
+-- orchestrator only ever writes a session-bound completion/failure
+-- event (claimAndOrchestrate, §2.5) — never a casual (session_id IS
+-- NULL) event, so the policy's WITH CHECK enforces that boundary too,
+-- not just "some row can be inserted."
+create policy sessions_orchestrator_claim_and_close on sessions
+  for update to orchestrator
+  using (state = 'locked')
+  with check (state in ('locked', 'closed'));
+-- Matches exactly claimAndOrchestrate's (§2.5) two legitimate
+-- transitions (claim-in-place stays 'locked'; finalize moves to
+-- 'closed') and nothing else — an orchestrator-role connection cannot
+-- use this policy to move a session to any other state.
+create policy events_casual_writer_write on events
+  for insert to casual_writer with check (session_id is null);
+create policy share_refs_casual_writer_write on share_refs
+  for insert to casual_writer with check (true);
+-- completeCasualPlay (§2.8, seam contract v2) is the ONLY caller of
+-- both — it inserts the casual completion event AND issues the
+-- share_refs row in one transaction under this role. The events policy's
+-- WITH CHECK mirrors the orchestrator one's inverse: casual_writer may
+-- only ever write session_id IS NULL rows.
+create policy visits_ref_writer_write on visits
+  for insert to ref_writer with check (true);
+-- recordVisit (§2.8, unrelated to completeCasualPlay) is ref_writer's
+-- only caller; ref_writer no longer touches share_refs (folded into
+-- casual_writer above per seam contract v2 — one function, one role,
+-- one transaction).
 ```
+**Sequence privileges, function ownership, and role assumption
+(finding 2's other half — a `GRANT`+policy pair is still incomplete
+without these):** every table above with a `bigserial`/`gen_random_uuid()`
+default needs its owning sequence's `USAGE`/`SELECT` granted to the
+role performing the insert (Postgres does not infer this from a table
+`INSERT` grant alone for `bigserial` columns — `gen_random_uuid()`
+needs no sequence grant, but `events.id bigserial` does):
+```sql
+grant usage, select on sequence events_id_seq to orchestrator, casual_writer;
+```
+Every `SECURITY DEFINER` function in this brief (`session_role_for`,
+`is_session_host`, `is_developer`, `submit_position`, `recall_position`,
+`cancel_session`, `redeem_invite`, `create_invited_session`,
+`request_visibility_disclosure`) is owned by a single migration-created
+role, `schema_owner_internal` — never `postgres`, never the Supabase
+default migration-runner role — created `NOLOGIN NOINHERIT` with no
+grants beyond what it needs to own these objects; this is the role
+whose privileges each function actually runs with (per `SECURITY
+DEFINER`'s "runs with the privileges of the function's owner"
+semantics), so the safe role-assumption path is: the calling
+`authenticated`/`anon` role is granted `EXECUTE` only (§2.3), the
+function body runs as `schema_owner_internal`, and `schema_owner_internal`
+itself is never a login role and is never the target of a client
+`SET ROLE`. `orchestrator`/`payload_reader`/`casual_writer`/
+`ref_writer`/`scorecard_reader` are a separate, parallel set of
+`NOLOGIN` roles (§2.5) assumed only by server-side connections (`SET
+ROLE` or a dedicated connection string, per §2.5's VERIFY note) — never
+by a `SECURITY DEFINER` function body, and never reachable from a
+client JWT. **VERIFY AT EXECUTION:** confirm `create function ...
+security definer` without an explicit owner assignment defaults to the
+migration-running role's ownership, not `schema_owner_internal` —
+if so, each function needs an explicit `ALTER FUNCTION ... OWNER TO
+schema_owner_internal` immediately after creation (or the migration
+must run authenticated as `schema_owner_internal` itself), and this
+step must be added to every function definition in §2.5, not assumed.
 
 Policies for client-facing roles (deny-by-default; each table gets
 exactly the policies below, nothing broader):
@@ -824,8 +1058,24 @@ granted only to `authenticated` (the sole exception,
 target at all).
 
 - `create_invited_session(template_id text, currency text, composition
-  text, visit_id uuid, party_or_host_emails text[]) returns uuid` —
-  **`visit_id` is now a parameter (finding 8 fix):** the caller (the
+  text, visit_id uuid, creator_direction text, invite_grants jsonb)
+  returns table (session_id uuid, invite_id uuid, role text, plaintext_token
+  text)` — **signature corrected (finding 1's third bug):** the r1/pre-r2
+  draft took an untyped `party_or_host_emails text[]` with no way to say
+  which email gets which role/direction, and no way for the creator's
+  own direction (when `composition = 'creator-as-party'`) to be supplied
+  at all — both are now explicit parameters. `creator_direction` is
+  `'low-preferring' | 'high-preferring'` when `composition =
+  'creator-as-party'`, and `null` when `composition = 'creator-as-host'`
+  (validated against `composition` at the top of the function body, not
+  merely assumed consistent by the caller). `invite_grants` is a
+  validated JSON array of `{ role: 'low-preferring' | 'high-preferring'
+  | 'host', email: text | null }` objects — exactly the grants
+  T2-product-surfaces §2.10's cardinality rule requires for this
+  `composition` (one grant for creator-as-party, two for
+  creator-as-host) — resolved explicitly, never inferred positionally
+  from an untyped array.
+  **`visit_id` is a parameter (finding 8 fix):** the caller (the
   session-creation API route) resolves it server-side from the visit
   cookie/record established by `recordVisit` (§2.8) BEFORE calling this
   function, and passes it through; the function itself never reads a
@@ -839,24 +1089,39 @@ target at all).
   template catalogue is fixed and small, §3 — custom template authoring
   is out of scope; this map is the executor's single source of truth
   until custom templates exist, at which point it moves to the template
-  table). Creates the `sessions` row (`state = 'open'`, `host_visibility`
-  and `visit_id` set as above), **then atomically inserts the creator's
-  own `session_participants` row** (`is_host = true` if
-  `composition = 'creator-as-host'`, else `is_host = false, direction =
-  <the creator's chosen direction>`) — this is the bootstrap fix for
-  finding 2: the creator's membership exists from the same transaction
-  that creates the session, never resolved later by an arbitrary lookup.
-  Then creates the matching `invites` row(s) per §2.2's cardinality rule
-  (one grant for creator-as-party, two for creator-as-host —
-  T2-product-surfaces §2.10), each with a fresh 32-byte crypto-random
-  token (`gen_random_bytes(32)`, base64url-encoded for the URL,
-  `sha256`-hashed for `token_hash` — per §1 D1) and `expires_at` set to
-  the ruled default (§6 — 14 days, pending operator confirmation).
-  **Credit debit is explicitly NOT this function's job** — T2-platform
-  §2.3 owns entitlement debit and is out of scope here (§3); this
-  function creates the session unconditionally in M1 (free launch
-  credits, no checkout — M1 item 5/§3 defers the entitlement gate to
-  T2-platform's own T3).
+  table). **Entitlement gate (medium finding, fixed):** before creating
+  anything, calls the platform seam `reserve_launch_credit(account
+  identity)` (T2-platform §2.3's reserve-then-debit contract — this
+  function is a stub in M1, §3, but its call site is pinned here so the
+  path is never a silent unconditional grant): the reservation is
+  released if any step below fails, and debited only after the session
+  row commits; `create_invited_session` itself is `REVOKE`d from
+  `PUBLIC`/`authenticated` (§2.3) and reachable ONLY through the
+  platform-owned public capability that performs the reserve/debit
+  around this call — this function is the low-level, privately-granted
+  primitive, never the public entry point. Creates the `sessions` row
+  (`state = 'open'`, `host_visibility` and `visit_id` set as above),
+  **then atomically inserts the creator's own `session_participants`
+  row** (`is_host = true` if `composition = 'creator-as-host'`, else
+  `is_host = false, direction = creator_direction`) — this is the
+  bootstrap fix for finding 2: the creator's membership exists from the
+  same transaction that creates the session, never resolved later by an
+  arbitrary lookup. Then creates the matching `invites` row(s) from
+  `invite_grants`, each with a fresh 32-byte crypto-random token
+  (`gen_random_bytes(32)`, base64url-encoded for the URL, `sha256`-hashed
+  for `token_hash` — per §1 D1) and `expires_at` set to the ruled default
+  (§6 — 14 days, pending operator confirmation). **Return shape fixed
+  (finding 1's fourth bug):** the pre-r2 draft returned only the session
+  UUID, discarding the plaintext tokens it generated — nothing downstream
+  could ever construct a `/join/{token}` URL or send an invite email. This
+  function now returns one row per created invite, each carrying that
+  invite's PLAINTEXT token exactly once — the caller (the session-creation
+  API route, a trusted server context) reads these rows, builds each
+  `/join/{token}` URL, and hands it to the email-sending step; the
+  function itself never logs or persists the plaintext (only
+  `token_hash`, per §1 D1), so this one row set, returned once at
+  creation time, is the only place a plaintext token ever exists outside
+  the URL itself.
 - `redeem_invite(token text, invitee_email text default null) returns
   uuid` — implements §1 D1's protocol. Looks up by `token_hash =
   sha256($1)`, never by a client-supplied id. Checks `expires_at > now()`,
@@ -931,49 +1196,89 @@ target at all).
   the original draft's correction). It is invoked ONLY through the
   claim wrapper below, never called directly by a route.
 
-  **Atomic, idempotently-claimable handoff (finding 6's fix — the actual
-  new mechanism, replacing the r1 draft's implicit same-transaction
-  call):**
+  **Atomic, fenced, idempotently-claimable handoff (finding 6 of r1,
+  finding 3 of r2 — the r1 revision left the CLAIM atomic but the
+  FINALIZE step as several separate statements, which the r2 audit
+  correctly rejected: a crash between the `results` insert and the
+  `sessions.state = 'closed'` update leaves a session that already has
+  a result row but never closes, and nothing stopped a second, slower
+  worker's finalize from racing a first worker's own finalize once both
+  had independently passed the claim check on a stale window. This
+  revision makes the FINALIZE step itself one transaction, fenced by
+  the exact claim it belongs to, so no partial-write state and no
+  double-finalize can occur regardless of ordering):**
   ```sql
   alter table sessions add column orchestration_claimed_at timestamptz;
+  alter table sessions add column orchestration_fence bigint;
+  create sequence orchestration_fence_seq;
   ```
   `claimAndOrchestrate(sessionId: string): Promise<void>` in
-  `src/lib/server/data/orchestrator.ts`:
-  1. Atomically claims, under the `orchestrator` role: `UPDATE sessions
-     SET orchestration_claimed_at = now() WHERE id = $1 AND state =
-     'locked' AND orchestration_claimed_at IS NULL RETURNING id`. Zero
-     rows returned ⇒ someone else already claimed or completed this
-     session (a concurrent retry, or a recovered crash) — return
-     immediately, a true no-op. Exactly one row ⇒ proceed; no two
-     callers can ever proceed for the same session.
+  `src/lib/server/data/orchestrator.ts`, all steps run under the
+  `orchestrator` role's connection:
+  1. **Claim (its own short transaction, unchanged in shape from r1):**
+     `UPDATE sessions SET orchestration_claimed_at = now(),
+     orchestration_fence = nextval('orchestration_fence_seq') WHERE id =
+     $1 AND state = 'locked' AND (orchestration_claimed_at IS NULL OR
+     orchestration_claimed_at < now() - interval '5 minutes') RETURNING
+     orchestration_fence`. Zero rows returned ⇒ someone else holds a
+     live (non-stale) claim, or the session already reached `closed` —
+     return immediately, a true no-op. Exactly one row ⇒ proceed,
+     carrying the returned `orchestration_fence` value (the fencing
+     token) forward to step 3 — this value, not merely "I hold the
+     claim," is what step 3 checks, which is what makes a stale reclaim
+     safe even against a slow original worker (below).
   2. Reads both parties' `party_positions` rows (via the `orchestrator`-
      scoped policy, §2.4), builds `DirectionalParty` values, calls the
-     pure engine's `reconcile()` (imported from `src/lib/server/engine`).
-  3. On `{ok:true}`: inserts into `results` and `honesty_signal_storage`,
-     inserts the idempotent `reconciliation_completed` event (§2.2's
-     partial unique index makes a second insert for the same session a
-     no-op via `on conflict (session_id) where event_type =
-     'reconciliation_completed' do nothing`), then sets `sessions.state
-     = 'closed'`.
-  4. On `{ok:false}` (should be unreachable given upstream validation,
-     but handled per T2-product-surfaces §2.2's "stays `locked` with an
-     operator-visible error state, never a silent close"): writes a
-     `computation_failed` event; `sessions.state` stays `'locked'`
-     (the claim timestamp remains set — see recovery below).
-  5. **Recovery guard (crash safety, closing "leave a session silently
-     locked if the route crashes before orchestration"):** a claim older
-     than a fixed staleness window (5 minutes — a named constant, not a
-     magic number) with `state` still `'locked'` and no
-     `reconciliation_completed`/`computation_failed` event is presumed
-     abandoned (the process died mid-step); the NEXT call to
-     `claimAndOrchestrate` for that session (triggered by a party
-     reloading the reveal page, which re-checks session state and
-     re-invokes the claim, per the route's own retry logic — built with
-     the route, out of this brief's exact wiring but the mechanism and
-     its staleness constant are pinned here) is allowed to re-claim by
-     widening step 1's `WHERE` to `(orchestration_claimed_at IS NULL OR
-     orchestration_claimed_at < now() - interval '5 minutes')`. A test
-     in §2.10/§2.12 exercises this staleness re-claim directly.
+     pure engine's `reconcile()` (imported from `src/lib/server/engine`)
+     — pure, no I/O, cannot itself fail against valid stored data.
+  3. **Finalize — ONE transaction, fenced (the actual fix):**
+     ```sql
+     BEGIN;
+     -- Re-check the fence before writing anything: if a second worker
+     -- reclaimed this session as stale WHILE this worker was between
+     -- steps 1 and 3 (the race the r2 finding named — "5-minute
+     -- reclaim can race a slow live worker"), this worker's fence no
+     -- longer matches sessions.orchestration_fence and every write
+     -- below is skipped, never partially applied.
+     SELECT orchestration_fence FROM sessions WHERE id = $1 FOR UPDATE;
+     -- if the fetched value <> the fence this worker was carrying: ROLLBACK, return (superseded-claim no-op, not an error)
+     INSERT INTO results (...) VALUES (...);
+     INSERT INTO honesty_signal_storage (...) VALUES (...);
+     INSERT INTO events (session_id, event_type, ...) VALUES ($1, 'reconciliation_completed', ...)
+       ON CONFLICT (session_id) WHERE event_type = 'reconciliation_completed' DO NOTHING;
+     UPDATE sessions SET state = 'closed' WHERE id = $1;
+     COMMIT;
+     ```
+     Because this is one transaction, there is no state where `results`
+     exists but `sessions.state` is not yet `'closed'` after a crash —
+     either the whole transaction lands (Postgres's own atomicity) or
+     none of it does, and a retried `claimAndOrchestrate` call for the
+     same session re-enters step 1, which now finds `state = 'locked'`
+     still (nothing committed) and a fresh, non-stale claim it can
+     re-take immediately (no need to wait out the 5-minute window for a
+     crash that happened INSIDE step 3, only for one that happened
+     between steps 1 and 3 with the claim held but no finalize attempted
+     — see the retry table below).
+  4. On `{ok:false}` from the engine (should be unreachable given
+     upstream validation, but handled per T2-product-surfaces §2.2's
+     "stays `locked` with an operator-visible error state, never a
+     silent close"): the same fenced-transaction pattern, writing only a
+     `computation_failed` event; `sessions.state` stays `'locked'` (the
+     claim/fence remain set — a human operator, not an automatic retry,
+     resolves this per T2-product-surfaces §2.2).
+
+  **Retry behaviour, enumerated per partial state (finding 3's other
+  requirement — no state is left undefined):**
+  | Crash point | Session left in | Next `claimAndOrchestrate` call |
+  |---|---|---|
+  | Before step 1's `UPDATE` commits | `locked`, claim unset | Claims immediately (step 1's `IS NULL` branch), proceeds normally. |
+  | After step 1 commits, before step 3's transaction opens | `locked`, claim/fence set, no result/event | Denied until the claim goes stale (5 min); then a NEW claim (new fence) supersedes it and proceeds — the old worker, if it wakes up, fails its fence re-check in step 3 and no-ops. |
+  | Inside step 3's transaction, before COMMIT | `locked`, claim/fence set, **no partial rows** (Postgres rolled the whole transaction back) | Same as the row above — denied until stale, then a fresh claim retries the read+compute+finalize from scratch. |
+  | After step 3's `COMMIT` | `closed`, one result, one event | Step 1's `WHERE state = 'locked'` no longer matches — any further call is a no-op by construction, not by a race-prone timestamp check. |
+  A test in §2.10/§4 exercises the fence-mismatch no-op directly: hold a
+  stale claim, let a second call reclaim (new fence), then let the FIRST
+  worker's (superseded) finalize attempt run — assert it writes nothing
+  and the second worker's finalize is the one that lands.
   Uses a dedicated Postgres connection `SET ROLE`'d to (or logged in
   directly as, per the VERIFY note below) the narrow `orchestrator` role,
   which has `SELECT` on `party_positions` (§2.4's role-scoped policy),
@@ -999,14 +1304,20 @@ grant select on events, share_refs, visits, activation_events to scorecard_reade
 -- or the nightly export (both remain available)" — this creates the
 -- role; wiring an actual scorecard agent/credential is out of scope (§3).
 create role casual_writer noinherit nologin;
-grant insert on events to casual_writer;
--- Used by recordCasualCompletion (§2.8) — a stateless write path with
--- no session context at all, so it needs nothing beyond INSERT on
--- events (not party_positions, not results — casual never touches
--- either, T2-data-layer §6 R1).
+grant insert on events, share_refs to casual_writer;
+grant usage, select on sequence events_id_seq to casual_writer;
+-- Used by completeCasualPlay (§2.8, seam contract v2) — one function,
+-- one transaction, writing BOTH the casual completion event and the
+-- share_refs row (v1 split this across issueCasualRef/
+-- recordCasualCompletion and two roles; v2 folds it into one role
+-- because it is now one atomic write). Nothing on party_positions or
+-- results — casual never touches either (T2-data-layer §6 R1).
 create role ref_writer noinherit nologin;
-grant insert on share_refs, visits to ref_writer;
--- Used by issueCasualRef and recordVisit (§2.8).
+grant insert on visits to ref_writer;
+-- Used by recordVisit (§2.8) only — share_refs moved to casual_writer
+-- above; ref_writer's remaining job is unrelated attribution capture
+-- for invited-session visits, not casual ref issuance.
+grant usage, select on sequence events_id_seq to orchestrator;
 ```
 **VERIFY AT EXECUTION:** confirm the exact mechanics of a Node/`postgres`-
 js connection performing `SET ROLE orchestrator` (or `payload_reader`)
@@ -1204,51 +1515,113 @@ export async function constructInvitedPayload(sessionId: string): Promise<RoleSa
 	const result = (await readRawResult(sessionId)) as ReconcileResult;
 	return redactInvited(result, viewer);
 }
+```
+
+**Finding 4 of the r2 audit, fixed — explicit per-class allowlists,
+not "return everything."** The pre-r2 draft's `host-full` branch
+returned the ENTIRE `ReconcileResult` — including `layers`, `honesty`,
+`curves`, `hasComfortZone`, `overlap`, `gap`, every field
+`FIELD_CLASSES` marks `internal-only` — on the theory that "host-full"
+meant "no redaction." That is wrong: T2-data-layer reserves
+`internal-only` (the algorithm's audit trace) for the `developer` role
+alone; `host-full` (T2-data-layer §7 R4) means the host additionally
+sees BOTH parties' raw inputs, not the engine's internal working. Each
+class below is now a named, explicit key list — not a rule computed
+from `FIELD_CLASSES` at three different call sites that could each
+drift independently:
+
+```typescript
+// The four payload classes this brief issues, as explicit key lists —
+// each is checked against a golden `Object.keys(...)` test (§2.11),
+// exactly as the casual sibling's CasualResultPayload is (its allowlist
+// is authoritative for casual; this table is authoritative for every
+// stored-session class):
+const PER_PARTY_SAFE_KEYS = [
+	'zone', 'fairPrice', 'convergenceAchieved', 'convergedTrivially', 'meta'
+] as const; // owner: 'both' in FIELD_CLASSES — safe for any invited viewer.
+const OWN_DISTANCE_KEY = (role: Role) => `distances.${role}` as const;
+// per-party-safe, owner-scoped — each party sees only their own distance.
+const RAW_INPUT_KEYS = ['input.low-preferring', 'input.high-preferring'] as const;
+// internal-only in FIELD_CLASSES for the GENERAL invited rule, but the
+// documented, R4-ruled exception for host-full specifically (never for
+// blind-host, never for a party role).
+const DEVELOPER_ONLY_KEYS = [
+	'hasComfortZone', 'overlap', 'overlapLow', 'overlapHigh', 'dealLow',
+	'dealHigh', 'gap', 'layers', 'honesty.low-preferring',
+	'honesty.high-preferring', 'curves'
+] as const; // every FIELD_CLASSES 'internal-only' entry NOT already
+            // covered by RAW_INPUT_KEYS — developer-only, full stop;
+            // NEVER reachable by host-full (host-full's raw-input
+            // exception is `input.*` only, not the algorithm's audit
+            // trace).
+
+// Party payload: PER_PARTY_SAFE_KEYS + this viewer's own distance only.
+// Blind-host payload: PER_PARTY_SAFE_KEYS + BOTH parties' distances
+//   (the union T2-product-surfaces §2.4 calls "host-safe") — no
+//   `input.*`, no DEVELOPER_ONLY_KEYS.
+// Host-full payload (T2-data-layer §7 R4): blind-host's set above PLUS
+//   RAW_INPUT_KEYS — still NO DEVELOPER_ONLY_KEYS. This is the fix:
+//   host-full = "both parties' raw tuples + the party-safe outcome
+//   set," per the orchestrator's directive, not "everything."
+// Developer payload: PER_PARTY_SAFE_KEYS + both distances + RAW_INPUT_KEYS
+//   + DEVELOPER_ONLY_KEYS — i.e. the complete ReconcileResult, since
+//   internal-only's entire purpose (T3-m1-engine-port §2.2) is to be
+//   developer-reachable and nothing else.
 
 function redactInvited(result: ReconcileResult, viewer: InvitedViewer): RoleSafePayload {
-	if (viewer.kind === 'developer') return { ...result };
-	if (viewer.kind === 'host' && viewer.hostFull) return { ...result };
-	// host-full (T2-data-layer §7 R4): both parties' raw inputs plus
-	// full outcome, issued ONLY when hostFull was proven true by the
-	// atomic query above — never reachable by a blind-host session or
-	// by any party role, in any session, regardless of what a caller
-	// might otherwise ask for (there is no caller-supplied path to this
-	// branch at all now — hostFull is a resolveInvitedViewer output,
-	// not an input).
 	const out: RoleSafePayload = {};
-	for (const [path, cls] of Object.entries(FIELD_CLASSES)) {
-		const include =
-			cls.class === 'per-party-safe' &&
-			(viewer.kind === 'host' || // blind-host: union of both parties' party-safe fields
-				cls.owner === 'both' ||
-				(viewer.kind === 'party' && cls.owner === viewer.role));
-		if (include) assignByPath(out, path, readByPath(result, path));
+	const assign = (path: string) => assignByPath(out, path, readByPath(result, path));
+	for (const path of PER_PARTY_SAFE_KEYS) assign(path);
+	if (viewer.kind === 'party') {
+		assign(OWN_DISTANCE_KEY(viewer.role));
+	} else if (viewer.kind === 'host' || viewer.kind === 'developer') {
+		assign(OWN_DISTANCE_KEY('low-preferring'));
+		assign(OWN_DISTANCE_KEY('high-preferring'));
+	}
+	if ((viewer.kind === 'host' && viewer.hostFull) || viewer.kind === 'developer') {
+		// host-full (T2-data-layer §7 R4): issued ONLY when hostFull was
+		// proven true by resolveInvitedViewer's atomic query — never
+		// reachable by a blind-host session or any party role, and
+		// re-checked here against the ACTUAL viewer value passed in
+		// (never trusted from a second, separately-computed flag) so a
+		// caller cannot construct `{ kind: 'host', hostFull: true }` by
+		// hand and bypass the atomic check (§2.11's regression test for
+		// this).
+		for (const path of RAW_INPUT_KEYS) assign(path);
+	}
+	if (viewer.kind === 'developer') {
+		for (const path of DEVELOPER_ONLY_KEYS) assign(path);
 	}
 	return out;
 }
 ```
+**Golden per-class key-set tests (§2.11) assert the exact `Object.keys`
+set for each of the four classes against a fixture** — the same
+exact-key discipline the casual sibling's `CasualResultPayload` V0a/V0b
+use, so a field added to the engine cannot silently widen any class by
+default (a new `ReconcileResult` field with no `FIELD_CLASSES` entry at
+all fails the schema-introspection check in §2.10, not merely "happens
+not to appear here").
 
-**`constructCasualPayload`** — a SEPARATE function, not a `Viewer`
-branch, closing the "casual sessions have no stored result" half of
-finding 1. Casual is computed and returned in the same request (T2-data-
-layer §6 R1: stateless); there is no `sessionId`, no `results` row, and
-therefore nothing for `readRawResult` to ever read for a casual play —
-the r1 draft's `viewer.kind === 'casual'` branch inside `constructPayload`
-implied a code path that could never actually execute correctly, since
-it still took a `sessionId` its caller had no casual session to supply:
-```typescript
-export function constructCasualPayload(result: ReconcileResult): RoleSafePayload {
-	// Full-detail exception (T2-data-layer §2.2/§6 R1) — operates
-	// directly on the in-memory ReconcileResult the casual route just
-	// computed, never touching the database. Casual outcome UI default
-	// (T2-product-surfaces §6 R6 — hide raw figures by default, an
-	// explicit "show the numbers" control reveals them) is a presentation
-	// concern for the surface, not a redaction concern here: this
-	// function still returns the complete result, since R6's default is
-	// about what renders, not what the payload contains.
-	return { ...result };
-}
-```
+**Casual construction is DELETED from this brief (seam contract v2,
+resolving finding 4's sibling-conflict half and the casual-mode
+brief's own high finding on the same point).** The pre-r2 draft shipped
+`constructCasualPayload(result)` returning the complete `ReconcileResult`
+verbatim — a SECOND, wider casual disclosure boundary that directly
+contradicted `T3-m1-casual-mode`'s own eleven-field
+`CasualResultPayload` allowlist (§4.1 there), which excludes
+`layers`/`honesty`/`curves`/`hasComfortZone`/`overlap`/`gap`. Two
+briefs each claiming to be "the" casual disclosure boundary, with two
+different actual boundaries, is exactly the kind of drift the
+orchestrator's seam contract v2 closes: **casual payloads are built by
+`T3-m1-casual-mode`'s `buildCasualResultPayload`
+(`src/lib/server/casual/casualPayload.ts`); this brief constructs only
+stored-session payloads** (party/blind-host/host-full/developer, all
+above). `constructCasualPayload` and its full-object golden test are
+removed from this brief entirely — there is no casual entry point in
+`src/lib/server/data/` at all, by design, since casual never persists a
+`results` row for this module to read (T2-data-layer §6 R1) and now
+has exactly one canonical constructor, owned by the other brief.
 
 **`getVisibilityDisclosure(sessionId)`** — the pre-entry disclosure
 fact (T2-product-surfaces §9 R11, finding 1's other requirement),
@@ -1285,9 +1658,13 @@ contract").
 
 ### 2.8 Events and attribution module (rewritten this round — finding 8, and to the §1 seam contract)
 
-**`refCodes.ts`** — supersedes the r1 draft's unpinned `issueRef`; this
-IS the binding cross-brief seam (§1), so its shape is fixed, not
-proposed:
+**`src/lib/server/refCodes.ts`** — NEUTRAL location (seam contract v2,
+§1): directly under `server/`, not `server/data/`, because both this
+brief and `T3-m1-casual-mode` import it and neither owns the other's
+directory. Whichever brief lands first creates it; this brief, landing
+either first or second, either creates it verbatim or verifies
+byte-identity against the sibling's copy before proceeding — never
+diverges even by a comment:
 ```typescript
 declare const refCodeBrand: unique symbol;
 export type RefCode = string & { readonly [refCodeBrand]: 'RefCode' };
@@ -1295,18 +1672,12 @@ export const REF_CODE_REGEX = /^[a-z2-7]{10}$/;
 export function isRefCode(x: unknown): x is RefCode {
 	return typeof x === 'string' && REF_CODE_REGEX.test(x);
 }
-
-export async function issueCasualRef(): Promise<RefCode> {
-	// Generate 10 chars from the lowercase RFC-4648 base32 alphabet
-	// (a-z, 2-7) via crypto-random bytes (no external dependency needed
-	// — Q1 is resolved by this seam, not left to nanoid/base62 debate).
-	// INSERT INTO share_refs (ref_code, issued_for_session_id)
-	// VALUES ($1, NULL) — persisted BEFORE returning, per the seam
-	// contract ("persists a share_refs row BEFORE returning the code").
-	// Runs under a narrow 'ref_writer' role granted INSERT on share_refs
-	// only (create alongside orchestrator/payload_reader in §2.5).
-}
 ```
+No `issueCasualRef` here anymore — v1's standalone issuer is retired;
+ref issuance is now one step inside `completeCasualPlay` below (seam
+contract v2), because issuing a ref and recording the completion it
+belongs to must commit or fail together, not as two separately-awaited
+calls a lost response could split.
 
 **`visits.ts`** — the visit-capture half of finding 8's fix (no prior
 operation recorded an inbound ref as a visit; `create_invited_session`
@@ -1328,32 +1699,70 @@ export async function recordVisit(refCode: RefCode | null): Promise<string | nul
 }
 ```
 
-**`events.ts`** — `recordCasualCompletion` now matches the §1 seam
-contract exactly (idempotency key, not just a JSON-embedded ref code —
-closing finding 8's replay-duplication bug):
+**`events.ts`** — `completeCasualPlay` (seam contract v2, §1),
+superseding v1's separately-called `issueCasualRef`/
+`recordCasualCompletion` entirely. This is the medium finding's actual
+fix: the v1 pair called an UNKEYED ref issuance BEFORE the idempotent
+completion write, so a lost response after the first call but before
+the second committed a ref with no matching completion, and a retry of
+the whole flow (which necessarily re-called both) issued a SECOND ref
+for the same logical play. `completeCasualPlay` closes this by making
+"issue a ref" and "record the completion" ONE transaction, keyed by the
+caller's idempotency key from the start — a replay either lands the
+whole thing once, or (if it already landed) returns the SAME `shareRef`
+without writing anything a second time:
 ```typescript
-export async function recordCasualCompletion(input: {
-	refCode: RefCode | null;
+export async function completeCasualPlay(input: {
+	ref: RefCode | null;
 	templateId: string;
-	idempotencyKey: string; // client-minted UUID v4, minted once, resent on retries
-}): Promise<void> {
-	// INSERT INTO events (session_id, event_type, payload, idempotency_key)
-	// VALUES (NULL, 'reconciliation_completed',
-	//         jsonb_build_object('template_id', input.templateId, 'ref_code', input.refCode),
-	//         input.idempotencyKey)
-	// ON CONFLICT (idempotency_key) WHERE session_id IS NULL AND event_type = 'reconciliation_completed'
-	// DO NOTHING
-	// -- casual carries no session_id (T2-data-layer §2.8); dedup is now
-	// -- on idempotency_key (§2.2's partial index), not on session_id
-	// -- (which is always NULL for casual and could never dedup a
-	// -- retry). A genuinely NEW casual play mints its OWN idempotency
-	// -- key client-side, so distinct plays are never conflated with
-	// -- each other — only a retry of the SAME completed flow (same
-	// -- key, resent) is a true no-op.
-	// Runs under a narrow 'casual_writer' role granted INSERT on events
-	// only (create alongside orchestrator/payload_reader in §2.5).
+	idempotencyKey: string; // validated as UUID v4 at the HTTP boundary
+	                        // (casual-mode's +server.ts, seam contract v2)
+	                        // — this function additionally re-validates
+	                        // the shape at its own boundary (belt-and-
+	                        // braces against a future non-HTTP caller,
+	                        // e.g. an MCP doorway adapter, that might skip
+	                        // the route's own check) and throws on a
+	                        // non-UUID-v4 string rather than silently
+	                        // proceeding.
+}): Promise<{ shareRef: RefCode }> {
+	// ONE transaction, under the 'casual_writer' role (§2.5):
+	// BEGIN;
+	//   -- Idempotency check FIRST, inside the transaction, not as a
+	--   -- separate pre-check (closing the TOCTOU gap a check-then-act
+	--   -- pair would have):
+	//   SELECT ref_code FROM events e WHERE e.idempotency_key = $1
+	--     AND e.session_id IS NULL AND e.event_type = 'reconciliation_completed'
+	--     -- (ref_code read from the SAME row events.payload carries,
+	--     -- or a dedicated column — VERIFY AT EXECUTION which shape is
+	--     -- cheaper to query; either satisfies "returns the SAME
+	--     -- shareRef on replay")
+	--     FOR UPDATE;
+	//   IF a row was found: COMMIT; return { shareRef: <that row's ref_code> };  -- true no-op replay
+	//   -- Otherwise, first time this idempotencyKey is seen:
+	//   generate a fresh RefCode (10 chars, [a-z2-7], crypto-random);
+	//   INSERT INTO share_refs (ref_code, issued_for_session_id) VALUES ($new_ref, NULL);
+	//   INSERT INTO events (session_id, event_type, payload, idempotency_key)
+	//     VALUES (NULL, 'reconciliation_completed',
+	//             jsonb_build_object('template_id', input.templateId, 'ref_code', input.ref, 'share_ref', $new_ref),
+	//             input.idempotencyKey);
+	// COMMIT;
+	// return { shareRef: $new_ref };
+	//
+	// The partial unique index events_one_casual_completion_per_idempotency_key
+	// (§2.2) plus this function's own SELECT...FOR UPDATE inside one
+	// transaction together guarantee: at most one share_refs row and at
+	// most one completion event ever exist per idempotencyKey, and every
+	// caller (first attempt or any replay) receives the identical
+	// shareRef — the exact guarantee seam contract v2 and V16 require.
 }
 ```
+Note the parameter name is `ref` (the INBOUND attribution ref, already
+validated by `isRefCode` at the casual-mode HTTP boundary before this
+function is ever called — never re-validated here beyond a type check,
+since re-deriving that policy in two places was the seam-contract
+problem in the first place), not to be confused with the RETURNED
+`shareRef` this call mints — the two are never the same value and never
+conflated in the payload or the event row.
 The completion event's idempotency for INVITED sessions is enforced at
 the database (§2.2's partial unique index on `session_id`), not in this
 TypeScript layer — `claimAndOrchestrate` (§2.5) is the only writer of a
@@ -1421,18 +1830,51 @@ scheduling is cloud-side and out of scope, §3):
      the capture (§4) — never invent a "real" recipient key.
    - **No residual plaintext (fixed):** the dump is streamed directly
      into `age` — never written unencrypted to `/tmp` or anywhere else,
-     even transiently:
+     even transiently. **Medium finding, fixed:** the pre-r2 pipeline
+     had no `pipefail`, checked no child's exit code independently, and
+     wrote directly to its final filename — a failed `db dump` (network
+     hiccup, a locked table) could still leave `age` successfully
+     encrypting an EMPTY stdin into a structurally-valid, apparently-
+     fine `.sql.age` artefact that decrypts to nothing useful, with the
+     script itself exiting 0 the whole way:
      ```bash
-     npx -y supabase@2.115.0 db dump --local | age -r "$AGE_RECIPIENT" -o "<path>/fairprice-dump-<date>.sql.age"
+     set -euo pipefail   # pipefail is the load-bearing addition: without
+                         # it, `cmd1 | cmd2` reports cmd2's exit code
+                         # only, so a failed dump piped into a
+                         # successful (on empty input) age invocation
+                         # would report success.
+     command -v age >/dev/null || { echo "age not installed" >&2; exit 1; }
+     part="<path>/fairprice-dump-<date>.sql.age.part"
+     final="<path>/fairprice-dump-<date>.sql.age"
+     trap 'rm -f "$part"' EXIT   # remove the partial on ANY exit path,
+                                 # success included (renamed away by then)
+                                 # or failure (nothing durable left behind)
+     npx -y supabase@2.115.0 db dump --local | age -r "$AGE_RECIPIENT" -o "$part"
+     dump_status=${PIPESTATUS[0]}; age_status=${PIPESTATUS[1]}
+     [ "$dump_status" -eq 0 ] && [ "$age_status" -eq 0 ] || {
+       echo "dump (exit $dump_status) or age (exit $age_status) failed" >&2; exit 1;
+     }
+     # Structural validation of the decrypted content BEFORE the rename
+     # (closes "an apparently valid empty .sql.age" directly — an empty
+     # or truncated dump fails this check and never becomes the final
+     # artefact at all):
+     age -d -i "$AGE_IDENTITY_FOR_SELFCHECK" "$part" | head -c 1 | grep -q . || {
+       echo "decrypted dump is empty — refusing to publish artefact" >&2; exit 1;
+     }
+     mv "$part" "$final"   # atomic rename on success only, per the trap
+                           # above's `.part` cleanup never firing once
+                           # this line has run
      ```
-     `command -v age` is still checked first (no confirmed install at
-     authoring time); absence fails the step loudly — an unencrypted
-     dump artefact is a data exposure, not a degraded convenience, and
-     this pipeline construction means there is never a plaintext
-     intermediate file to accidentally leave behind even on a partial
-     failure (the shell pipe has nothing to clean up — `age`'s stdin
-     ends when `pg_dump`'s does, and a failure on either side produces
-     no output file rather than a half-written plaintext one).
+     An unencrypted dump artefact is a data exposure, not a degraded
+     convenience, and this construction means: no plaintext intermediate
+     file ever exists (the pipe streams straight into `age`); no partial
+     `.age` file is ever mistaken for a complete one (the `.part` suffix
+     plus atomic `mv`); and a silently-empty dump can never masquerade as
+     a successful backup (the decrypt-and-check-non-empty gate runs
+     before the file is ever renamed into its final, discoverable name).
+     `AGE_IDENTITY_FOR_SELFCHECK` is the LOCAL private half of
+     `AGE_RECIPIENT` for exactly this self-check — never the production
+     private key, which this script never holds.
 4. **Explicitly stops here.** No upload to Backblaze B2 (T2-platform §6
    R4 — cloud target, credentials, and scheduling are that layer's, per
    T2-data-layer §2.9's stated interface: "a dump artefact per day,
@@ -1459,7 +1901,22 @@ export type MatrixRole =
 	| 'other-session-party-low' | 'other-session-party-high'  // cross-session attacker
 	| 'host-blind' | 'host-visible'        // host in a blind vs host-visible session
 	| 'developer' | 'unrelated-authenticated'
-	| 'orchestrator' | 'payload_reader' | 'scorecard_reader';
+	| 'orchestrator' | 'payload_reader' | 'casual_writer' | 'ref_writer'
+	| 'scorecard_reader';
+// casual_writer/ref_writer added (finding 5 — the pre-r2 matrix omitted
+// them entirely despite both being real internal roles with real
+// grants, §2.5).
+
+// Finding 5's other structural gap: cells could not encode WHICH row a
+// role is attempting to reach relative to itself — "party-low denied on
+// party_positions" is meaningless without saying own-row vs
+// counterparty-row vs a row in a different session entirely, and the
+// pre-r2 matrix conflated all three into one implicit "own session"
+// assumption. This dimension is now explicit and required on every
+// resource that has row-level structure (every table cell; views/rpcs
+// that are session-scoped by argument use 'other-session'/'forged' on
+// MatrixResource itself instead, unchanged):
+export type TargetRelation = 'own-row' | 'counterparty-row' | 'other-session-row' | 'not-applicable';
 
 export type MatrixResource =
 	| { kind: 'table'; name: string; op: 'select' | 'insert' | 'update' }
@@ -1473,11 +1930,64 @@ export type InviteState = 'unredeemed' | 'redeemed' | 'expired' | 'revoked' | 'w
 export interface MatrixCell {
 	readonly role: MatrixRole;
 	readonly resource: MatrixResource;
+	readonly targetRelation: TargetRelation;
 	readonly sessionState: SessionState;
 	readonly hostVisibility: HostVisibility;
 	readonly inviteState?: InviteState;   // only meaningful for redeem_invite cells
 	readonly expected: 'allow' | 'deny';
 	readonly citation: string;  // traces to a T2/finding reference, e.g. "T2-data-layer §2.2"
+}
+
+// Finding 5's core fix: `expectedFor` (the decision function §2.10's
+// generator calls) no longer encodes the rules itself — that was the
+// "bug duplicated in oracle" the audit named, since a bug in §2.3/§2.4
+// would then also silently exist in the very matrix meant to catch it.
+// GRANT_TABLE is an INDEPENDENTLY-WRITTEN enumeration (authored by
+// reading T2-data-layer/T2-product-surfaces directly, not by reading
+// §2.3/§2.4's SQL) of every legitimate grant, each citing its source;
+// `expectedFor` derives 'allow'/'deny' by looking a cell up against
+// THIS table, so a matrix cell and the schema it's checking are two
+// independently-derived artefacts that must agree, not one artefact
+// checking itself:
+export const GRANT_TABLE: ReadonlyArray<{
+	readonly role: MatrixRole;
+	readonly resource: MatrixResource['kind'] extends 'table' ? string : never | string;
+	readonly op: string;
+	readonly targetRelation: TargetRelation;
+	readonly citation: string;
+}> = [
+	{ role: 'party-low', resource: 'party_positions', op: 'select', targetRelation: 'own-row', citation: 'T2-data-layer §2.4 — a party reads only their own tuple/status' },
+	{ role: 'party-low', resource: 'party_positions', op: 'insert', targetRelation: 'own-row', citation: 'T2-data-layer §2.4' },
+	{ role: 'party-low', resource: 'party_positions', op: 'update', targetRelation: 'own-row', citation: 'T2-data-layer §2.4, T2-product-surfaces §2.2 (draft/recalled only)' },
+	{ role: 'host-blind', resource: 'party_positions', op: 'select', targetRelation: 'not-applicable', citation: 'no grant — a blind host never reads party_positions directly, only the payload constructor\'s union (T2-product-surfaces §2.4)' },
+	{ role: 'host-visible', resource: 'party_positions', op: 'select', targetRelation: 'not-applicable', citation: 'no grant — host-full is a payload-constructor path (T2-data-layer §7 R4), never a direct table read' },
+	{ role: 'orchestrator', resource: 'party_positions', op: 'select', targetRelation: 'not-applicable', citation: 'T2-data-layer §2.2 — the narrow orchestrator is the only privileged direct reader of both rows together' },
+	{ role: 'orchestrator', resource: 'results', op: 'insert', targetRelation: 'not-applicable', citation: 'T2-data-layer §2.2' },
+	{ role: 'orchestrator', resource: 'honesty_signal_storage', op: 'insert', targetRelation: 'not-applicable', citation: 'T2-data-layer §2.2' },
+	{ role: 'orchestrator', resource: 'events', op: 'insert', targetRelation: 'not-applicable', citation: 'T2-data-layer §2.6 — session-bound completion/failure events only' },
+	{ role: 'orchestrator', resource: 'sessions', op: 'update', targetRelation: 'not-applicable', citation: 'T2-product-surfaces §2.2 — locked→closed only, via the fenced claim (§2.5)' },
+	{ role: 'payload_reader', resource: 'results', op: 'select', targetRelation: 'not-applicable', citation: 'T2-data-layer §2.2 — the payload constructor\'s sole read path' },
+	{ role: 'casual_writer', resource: 'events', op: 'insert', targetRelation: 'not-applicable', citation: 'T2-data-layer §2.6/§2.8, seam contract v2 — completeCasualPlay' },
+	{ role: 'casual_writer', resource: 'share_refs', op: 'insert', targetRelation: 'not-applicable', citation: 'seam contract v2 — completeCasualPlay issues the ref in the same transaction' },
+	{ role: 'ref_writer', resource: 'visits', op: 'insert', targetRelation: 'not-applicable', citation: 'T2-data-layer §2.6 — recordVisit' },
+	{ role: 'scorecard_reader', resource: 'events', op: 'select', targetRelation: 'not-applicable', citation: 'T2-data-layer §2.7' },
+	{ role: 'scorecard_reader', resource: 'share_refs', op: 'select', targetRelation: 'not-applicable', citation: 'T2-data-layer §2.7' },
+	{ role: 'scorecard_reader', resource: 'visits', op: 'select', targetRelation: 'not-applicable', citation: 'T2-data-layer §2.7' }
+	// Every row above has a citation; every row NOT listed here, for
+	// every role×resource×op combination the schema/RLS defines, is a
+	// hard 'deny' by construction — `expectedFor` treats absence from
+	// GRANT_TABLE as the default, never as "unspecified."
+];
+
+export function expectedFor(cell: Omit<MatrixCell, 'expected' | 'citation'>): 'allow' | 'deny' {
+	// Looks up (cell.role, cell.resource, cell.targetRelation) against
+	// GRANT_TABLE; 'allow' only on an exact match whose own row-state/
+	// invite-state/host-visibility guards (encoded per-entry, elided
+	// above for brevity — VERIFY AT EXECUTION the full per-entry guard
+	// shape before treating this sketch as complete) also hold for this
+	// cell's sessionState/hostVisibility/inviteState; 'deny' otherwise.
+	// This function does NOT re-derive §2.3/§2.4's SQL — it is the
+	// independent oracle finding 5 required.
 }
 
 // Resources enumerated exhaustively — every table/view/function this
@@ -1517,34 +2027,54 @@ export const RESOURCES: MatrixResource[] = [
 
 // Generation rule (this IS the "every granted and non-granted cell"
 // finding 6 demands): the full cross-product of RESOURCES × every
-// MatrixRole × every SessionState × every HostVisibility, computed
-// programmatically, each cell's `expected` derived from a pure decision
-// function `expectedFor(cell)` that encodes the SAME rules §2.3/§2.4/
-// §2.5 implement (so the matrix is checkable against the schema by
-// construction, not a second hand-maintained copy that can silently
-// drift) — e.g. `expectedFor` returns 'allow' for
-// {role:'party-low', resource:{kind:'table',name:'party_positions',op:'select'}}
-// ONLY when there also exists a party_positions row for THIS session
-// with direction='low-preferring' (the fixture setup step, not the
-// decision function, supplies that row) — every other role/resource
-// combination for that same cell defaults to 'deny' unless explicitly
-// justified. `export const AUTHZ_MATRIX: MatrixCell[] = generateMatrix();`
+// MatrixRole × every SessionState × every HostVisibility ×
+// TargetRelation, computed programmatically, each cell's `expected`
+// derived from `expectedFor` above (the independently-written
+// GRANT_TABLE oracle, finding 5's fix — NOT a restatement of §2.3/2.4's
+// SQL) — every role/resource/target-relation combination defaults to
+// 'deny' unless GRANT_TABLE explicitly justifies it.
+// `export const AUTHZ_MATRIX: MatrixCell[] = generateMatrix();`
+
+// Schema-introspection completeness check (finding 5's other
+// requirement): before the matrix even runs, a setup step queries
+// Postgres's own catalogue —
+//   select table_name from information_schema.tables where table_schema = 'public'
+//   select routine_name from information_schema.routines where routine_schema = 'public' and security_type = 'DEFINER'
+// — and asserts every name returned appears in RESOURCES (as a table)
+// or the rpc list, respectively. A table or SECURITY DEFINER function
+// added by a future migration with NO matching RESOURCES entry FAILS
+// this check immediately (not silently defaulted to 'deny' and never
+// tested at all) — this is what makes "a NEW table added later without
+// a matrix entry is a missing-coverage bug the generator can assert
+// against" actually true, rather than aspirational:
+export async function assertSchemaCoverage(): Promise<void> {
+	// Implementation queries information_schema as above (via the
+	// migration-owner connection, the only one with catalogue read
+	// access broad enough) and throws, listing every uncovered name, if
+	// the two sets are not equal. Run once at the top of
+	// tests/rls/matrix.test.ts, before any cell is exercised.
+}
 // A handful of cells are listed here as WORKED EXAMPLES (not the
 // complete set — the generator produces the rest):
 export const WORKED_EXAMPLES: MatrixCell[] = [
 	{ role: 'party-high', resource: { kind: 'table', name: 'party_positions', op: 'select' },
+	  targetRelation: 'counterparty-row',
 	  sessionState: 'open', hostVisibility: 'blind', expected: 'deny',
 	  citation: 'T2-data-layer §2.2 no-deal/blindness contract — party-high reading party-low\'s row' },
 	{ role: 'unrelated-authenticated', resource: { kind: 'table', name: 'results', op: 'select' },
+	  targetRelation: 'not-applicable',
 	  sessionState: 'closed', hostVisibility: 'blind', expected: 'deny',
 	  citation: 'T2-data-layer §2.2 — results has no client-facing SELECT policy at all' },
 	{ role: 'other-session-party-low', resource: { kind: 'rpc', fn: 'submit_position', args: 'other-session' },
+	  targetRelation: 'other-session-row',
 	  sessionState: 'open', hostVisibility: 'blind', expected: 'deny',
 	  citation: 'finding 2 — session_participants scoping must refuse cross-session identity reuse' },
 	{ role: 'host-blind', resource: { kind: 'rpc', fn: 'is_session_host', args: 'forged' },
+	  targetRelation: 'own-row',
 	  sessionState: 'open', hostVisibility: 'host-visible', expected: 'deny',
 	  citation: 'T2-data-layer §4 forged role/mode — a party asserting a host claim' },
 	{ role: 'host-visible', resource: { kind: 'view', name: 'aggregate_fair_price_published' },
+	  targetRelation: 'not-applicable',
 	  sessionState: 'closed', hostVisibility: 'host-visible', expected: 'deny',
 	  citation: 'finding 5 — the view is hard-disabled, no role is granted access, host included' }
 ];
@@ -1652,15 +2182,25 @@ doesn't back):
     (a forged/mismatched principal) → the payload constructor throws
     (finding 1's core fix: `resolveInvitedViewer` returns `'none'`, which
     is a hard error, not an empty-but-successful payload).
-- **Casual is tested separately** (`constructCasualPayload`, never
-  through `constructInvitedPayload`/`resolveInvitedViewer` — there is no
-  `sessionId` and no database round-trip involved at all): given an
-  in-memory `ReconcileResult`, `constructCasualPayload(result)` returns
-  every field (full-detail exception, T2-data-layer §2.2/§6 R1). A
-  separate test asserts `constructCasualPayload` performs NO import of
-  `rawResultReader.ts` transitively (grep/AST check as below) — closing
-  finding 1's "casual sessions have no stored result" gap by construction
-  rather than by convention.
+- **Casual has no test in this suite at all (seam contract v2):** this
+  brief ships no casual constructor to test — `T3-m1-casual-mode`'s own
+  `casualPayload.test.ts` (V0a/V0b) is the sole golden test for the
+  casual class, against its `buildCasualResultPayload`. A test here
+  instead asserts the NEGATIVE: `grep -RL "constructCasualPayload" src`
+  (or an equivalent AST check) finds no occurrence anywhere in this
+  brief's own tree — proving the deleted function was actually removed,
+  not merely unexported.
+- **Per-class golden key-set tests (finding 4's fix):** for each of the
+  four classes (party, blind-host, host-full, developer), assert
+  `Object.keys(payload)` deep-equals exactly that class's key list from
+  §2.7 (`PER_PARTY_SAFE_KEYS` (+ own or both distances) for party/
+  blind-host, `+ RAW_INPUT_KEYS` for host-full, `+ DEVELOPER_ONLY_KEYS`
+  for developer) against the same `comfort`/`deal`/`no-deal` fixtures —
+  no more, no fewer, mirroring the casual sibling's V0a/V0b discipline
+  exactly. Specifically assert `layers`/`honesty`/`curves` are absent
+  from the host-full payload (the r1/pre-r2 bug this finding named
+  directly) even though they are present in the developer payload for
+  the same fixture.
 - No-deal specific: assert the `no-deal` fixture's low-preferring-party
   payload's `distances["low-preferring"]` is present and non-zero while
   `distances["high-preferring"]` is absent from that payload object
@@ -1728,22 +2268,34 @@ npx -y supabase@2.115.0 db reset
 PASS: exit 0, and every migration in §2.2–2.6 applied without error.
 
 - **V1 — authorisation matrix suite:** `npm run test:unit -- --run
-  tests/rls` → PASS: exit 0, every cell in `AUTHZ_MATRIX` (§2.10)
-  asserted per its `expected`, including the named required scenarios
-  (cross-session identity reuse, full invite-lifecycle, forged-claim,
-  aggregate-view universal denial, staleness re-claim).
+  tests/rls` → PASS: exit 0, `assertSchemaCoverage()` (§2.10) passes
+  first, every cell in `AUTHZ_MATRIX` (§2.10) asserted per `expectedFor`
+  against the independent `GRANT_TABLE` oracle, including the named
+  required scenarios (cross-session identity reuse, full
+  invite-lifecycle, forged-claim, aggregate-view universal denial,
+  staleness re-claim) and every `targetRelation` variant (own-row,
+  counterparty-row, other-session-row) for every row-structured
+  resource.
 - **V2 — payload-construction golden suite:** `npm run test:unit --
   --run tests/payload` → PASS: exit 0, every case in §2.11 passing
   (both `host_visibility` modes, the forged/mismatched-principal error
-  case, the casual/invited split, the egress check for both
-  `rawResultReader` and the `hostFull` computation site).
+  case, the four per-class golden key-sets — party/blind-host/host-full/
+  developer — with `layers`/`honesty`/`curves` absent from host-full
+  specifically, the negative `constructCasualPayload`-deletion check,
+  and the egress check for both `rawResultReader` and the `hostFull`
+  computation site).
 - **V3 — transition-function suite:** direct Vitest/`postgres`-js tests
-  exercising the full §2.2 happy path (create → redeem [including OTP
-  email-match] → submit both → auto-lock → `claimAndOrchestrate` →
-  auto-close → single completion event) plus the guard failures named in
-  §2.10 that overlap lifecycle (double-submit, recall-then-resubmit,
+  exercising the full §2.2 happy path (create [via the reserve-then-debit
+  seam, §2.5] → redeem [including OTP email-match] → submit both →
+  auto-lock → `claimAndOrchestrate`'s fenced finalize → auto-close →
+  single completion event) plus the guard failures named in §2.10 that
+  overlap lifecycle (double-submit, recall-then-resubmit,
   recall-after-other-submitted, cancel-with-one-submitted-allowed,
-  cancel-with-both-submitted-refused) → PASS: exit 0.
+  cancel-with-both-submitted-refused) plus the fenced-finalize race
+  (finding 3, §2.5's retry table): a stale claim reclaimed by a second
+  worker while the first worker's finalize is still in flight leaves
+  exactly one result row, one completion event, and a `closed` session,
+  written by whichever worker's fence actually matched → PASS: exit 0.
 - **V4 — aggregate mechanism suite:** fixture tests against
   `aggregate_fair_price_by_cell`/`_published` proving the FIXED mechanics
   in isolation — distinct-subject counting (not row counting) at 19 vs.
@@ -1856,6 +2408,28 @@ the same reason — treat it as a security finding, not a lint nit.
   imperfection never actually reaches a published number. Turning
   publication on is future work, gated on an actual privacy review — not
   a decision this brief makes by building the sketch.
+- **D6 (new, r2) — casual payload construction is deleted from this
+  brief, per seam contract v2 (§1, §2.7).** Resolves the r2 audit's
+  finding 4 sibling-conflict: `T3-m1-casual-mode`'s
+  `buildCasualResultPayload` is now the ONE canonical casual
+  constructor; this brief's `constructCasualPayload` and its golden
+  test are removed rather than reconciled field-by-field, because
+  maintaining two independently-evolving allowlists for the same
+  disclosure boundary is itself the risk, not merely today's mismatch.
+- **D7 (new, r2) — `completeCasualPlay` replaces the v1
+  `issueCasualRef`/`recordCasualCompletion` pair (§1, §2.8).** The two
+  functions could not be made idempotent as a PAIR without either a
+  distributed lock this brief has no mechanism for, or collapsing them
+  into one transaction — this brief takes the latter, simpler path,
+  which is why the operation is now named for what it does
+  (`completeCasualPlay`) rather than for its two internal side effects.
+- **D8 (new, r2) — `orchestration_fence` is a monotonic sequence value,
+  not a second timestamp (§2.5).** A second `orchestration_claimed_at`-
+  style timestamp compared with `<`/`>` risks a same-millisecond tie
+  under concurrent claims; a `bigint` from a dedicated sequence has no
+  tie case by construction, at the cost of one extra column and
+  sequence — judged worth it for a fencing token's one job (proving
+  "am I still the claim that finalize should trust").
 
 ## 6. Open questions (HITL)
 
@@ -1887,7 +2461,7 @@ needed for them):**
   the cross-brief seam both this brief and the casual-mode brief
   implement identically — not a per-brief choice, and not `nanoid`
   (superseded). Verification criterion: `isRefCode` round-trips every
-  code `issueCasualRef` produces; the regex is asserted against both a
+  code `completeCasualPlay` produces; the regex is asserted against both a
   valid and an invalid sample in `refCodes.test.ts`.
 - **Developer-role mapping mechanism: DECIDED — `developer_grants` table,
   not `current_user`.** §2.4 adopts the data-driven allowlist as the

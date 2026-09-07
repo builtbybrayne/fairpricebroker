@@ -23,6 +23,20 @@ status: draft
 > transition is added; and verification gains mobile-viewport,
 > accessibility, and 4-d.p.-precision coverage plus the ref-boundary and
 > transport-failure tests the findings demanded.
+>
+> **Revised 7 Sep 2026 addressing Codex audit r2 (verdict: revise; 2
+> high / 3 medium); seam contract v2 (orchestrator-ruled) adopted.**
+> Gist: dropped the false compile-time non-assignability claim and V0c
+> entirely; moved the shared ref-code module to the neutral
+> `src/lib/server/refCodes.ts` (not under data-core's directory) so this
+> brief stays self-executable regardless of landing order; replaced the
+> two v1 seams with the single transactional `completeCasualPlay`
+> operation and added the Stage-2 V16 response-loss-after-commit test;
+> split the invalid-ref case into malformed (400, discard-and-retry
+> client transition) vs legitimate-null (proceeds); and named the
+> capability-catalogue rate-limit wiring as an explicit M1 blocker in
+> Stage 2's Done condition. Return:
+> `.exfu/returns/t3-m1-casual-mode-audit-r2.json`.
 
 ## 0. Human summary (plain language)
 
@@ -42,8 +56,16 @@ The pair can share the result. Nothing anyone typed is ever saved.
 > `reconcile`, `DirectionalParty`, `ReconcileOutcome`, `ReconcileResult`,
 > `PricePoint`, `FIELD_CLASSES` — consumed as-is, never redefined). Coupled,
 > not blocked, by `T3-m1-data-core` (drafted in parallel): this brief
-> declares the two seams it needs from the data layer (§2.6) and ships
-> self-executable stand-ins so it does not wait on landing order.
+> declares the one seam it needs from the data layer (§2.6, seam
+> contract v2's `completeCasualPlay`) and ships a self-executable
+> stand-in so it does not wait on landing order. The one genuinely
+> shared file, `src/lib/server/refCodes.ts`, is NEUTRAL (fixing the r2
+> audit's high finding that this brief could not compile if it landed
+> first): it lives directly under `server/`, not under data-core's
+> `server/data/` directory, and whichever brief lands first creates it
+> — this brief creates it if it lands first, or verifies byte-identity
+> against data-core's copy if it lands second — so landing order never
+> blocks either brief.
 
 ## 1. Environment facts (pinned)
 
@@ -104,8 +126,8 @@ stateless-server-computation constraint (T2-data-layer §2.6 R1's
    endpoint with a stable request/response contract (§4) is the shape
    that doorway wraps; a form action returning SvelteKit's action-result
    envelope is not.
-3. The endpoint performs no I/O beyond the pure engine call and the two
-   seam calls (§2.6) — it never reads or writes `src/lib/server/data/`
+3. The endpoint performs no I/O beyond the pure engine call and the one
+   seam call (§2.6) — it never reads or writes `src/lib/server/data/`
    session tables, so it carries none of form actions' session/CSRF
    machinery that exists for stateful mutations.
 - The endpoint takes no cookies, issues no session, and is retry-safe
@@ -172,7 +194,8 @@ tab).
 | `handover-ready` | — | `handover` → `party-b-entry` | none |
 | `b-submit` | tuple valid per the same client mirror | `party-b-entry` → `both-look-now` | mint `idempotencyKey` (a client-side `crypto.randomUUID()`) **once, here** — the only mint point in the whole flow; fire `POST /api/casual/reconcile` (§4) immediately carrying it; store the pending promise, do not await it before the transition |
 | `outcome-received` | `fetch` resolved with a parseable JSON body (ok or error) | `both-look-now` → `both-look-now` (internal) | store `CasualReconcileResponse` in state; does not by itself advance the screen |
-| `transport-failed` | `fetch` rejected (network error) OR the response body failed to parse as JSON OR the response was a 4xx/5xx the client didn't expect (§4's transport policy — anything other than the documented 400/200 shapes) | `both-look-now` → `transport-error` | preserve `idempotencyKey` and both stored tuples unchanged; no seam was reached, nothing to roll back |
+| `ref-rejected` (medium finding, new — a DISTINCT transition from `transport-failed`) | response is `HTTP 400` AND the request's `ref` field was non-null (§4's malformed-ref case, NOT the malformed-JSON/tuple-shape case, which has no stored `ref` to discard and falls through to `transport-failed` below like any other 400) | `both-look-now` → `both-look-now` (internal, auto-retry) | discard the stored `attributionRef` from memory (set to `null`); immediately re-fire `POST /api/casual/reconcile` with the **same** `idempotencyKey`, `ref: null`; this is automatic, no user-visible error screen — a corrupted/tampered inbound ref must never trap the pair on an unusable-ref loop (the finding's "can trap the B-correction path with the same unusable ref"), and retrying with `ref: null` is always the legitimate no-attribution path (§4), never itself rejected |
+| `transport-failed` | `fetch` rejected (network error) OR the response body failed to parse as JSON OR the response was `HTTP 400` for a reason OTHER than the ref (malformed JSON, wrong tuple shape) OR the response was a 4xx/5xx the client didn't expect (§4's transport policy — anything other than the documented 400/200 shapes) | `both-look-now` → `transport-error` | preserve `idempotencyKey` and both stored tuples unchanged; no seam was reached, nothing to roll back |
 | `retry` | in `transport-error` | `transport-error` → `both-look-now` | re-fire `POST /api/casual/reconcile` with the **same** `idempotencyKey` (§6's idempotency contract exists precisely so this retry cannot duplicate a completion event or double-issue a ref) |
 | `give-up` | in `transport-error` | `transport-error` → `idle` | clears both tuples, the response, and `idempotencyKey` from memory (return-to-entry path) |
 | `continue` | `outcome-received` has occurred AND response was `ok: true` | `both-look-now` → `reveal` | stop the elapsed-time clock |
@@ -199,13 +222,18 @@ Pure-ish orchestration function, unit-testable without spinning up a
 SvelteKit request — the `+server.ts` route is a thin adapter over it.
 
 ```typescript
-import { isRefCode, type RefCode } from '$lib/server/data/refCodes';
+import { isRefCode, type RefCode } from '$lib/server/refCodes';
+// NEUTRAL location (seam contract v2) — this brief creates this file
+// if it lands first, or verifies byte-identity against T3-m1-data-core's
+// copy if it lands second. Never `$lib/server/data/refCodes` — that
+// path is data-core's own directory, which this brief does not write
+// inside (§1).
 
 export interface CasualReconcileRequest {
   partyATuple: readonly [string, string, string, string];
   partyBTuple: readonly [string, string, string, string];
   ref: RefCode | null; // inbound attribution ref, validated at the HTTP boundary (below)
-  idempotencyKey: string; // client-minted UUID v4, §3 b-submit
+  idempotencyKey: string; // client-minted UUID v4, §3 b-submit, validated as UUID v4 at the HTTP boundary
 }
 
 export type CasualReconcileResponse =
@@ -214,7 +242,7 @@ export type CasualReconcileResponse =
 
 export function handleCasualReconcile(
   req: CasualReconcileRequest,
-  deps: { completions: CasualCompletionRecorder; refCodes: CasualRefIssuer }
+  deps: { completer: CasualPlayCompleter }
 ): Promise<CasualReconcileResponse>;
 ```
 
@@ -227,18 +255,24 @@ export function handleCasualReconcile(
    checks).
 2. Calls `reconcile(partyA, partyB)` (default tolerance, `relative-r1`,
    per T3-m1-engine-port §2.5 ruling §6 R1).
-3. On `{ ok: false }`: returns `{ ok: false, error }` unchanged. Neither
-   seam is called — no completion event, no ref code, per §2.6's
-   ok-path-only rule.
-4. On `{ ok: true }`: calls `deps.refCodes.issueCasualRef()` for
-   `shareRef`, then `deps.completions.recordCasualCompletion({ refCode:
+3. On `{ ok: false }`: returns `{ ok: false, error }` unchanged. The
+   seam is not called at all — no completion event, no ref code, per
+   §2.6's ok-path-only rule.
+4. On `{ ok: true }`: calls `deps.completer.completeCasualPlay({ ref:
    req.ref, templateId: CASUAL_TEMPLATE_ID, idempotencyKey:
    req.idempotencyKey })` (awaited — the response is not returned until
-   this settles, so a caller's 200 is proof the completion event was
-   accepted; §6 covers the exact idempotency contract). Projects `result`
-   through the `CasualResultPayload` allowlist (§4.1) before returning
-   `{ ok: true, result, shareRef }` — the full `ReconcileResult` never
-   leaves this function.
+   this settles, so a caller's 200 is proof the completion was accepted
+   and `shareRef` is the value the seam returned, not independently
+   generated; §6 covers the exact idempotency contract) — **medium
+   finding, fixed:** v1 called an unkeyed `issueCasualRef()` BEFORE the
+   idempotent completion write, so a lost response between the two
+   calls, followed by a retry, issued a SECOND persisted ref for the
+   same logical play; `completeCasualPlay` is one call, keyed by
+   `idempotencyKey` from the start, so a retry can only ever observe
+   the SAME `shareRef` it got (or would have gotten) the first time.
+   Projects `result` through the `CasualResultPayload` allowlist (§4.1)
+   before returning `{ ok: true, result, shareRef }` — the full
+   `ReconcileResult` never leaves this function.
 
 **Transport policy (fixed — the r1 contradiction between §4 and V3 is
 resolved to exactly this):**
@@ -260,14 +294,25 @@ resolved to exactly this):**
 `src/routes/api/casual/reconcile/+server.ts`:
 1. Parses the JSON body; a parse failure is the 400 case above.
 2. Validates shape: `partyATuple`/`partyBTuple` are exactly
-   4-element string arrays, `idempotencyKey` is a non-empty string,
-   and `ref` is **either `null` or a value for which
+   4-element string arrays; `idempotencyKey` matches the UUID v4
+   pattern (medium finding, fixed — v1 accepted any non-empty string,
+   which the sibling data-core brief's `completeCasualPlay` stores in a
+   `uuid`-typed column; a non-UUID string is now rejected at THIS
+   boundary, before it can ever reach the seam or its idempotency
+   check); and `ref` is **either `null` or a value for which
    `isRefCode(ref)` is `true`** (the shared ref-code authority,
-   `src/lib/server/data/refCodes.ts`, `REF_CODE_REGEX =
-   /^[a-z2-7]{10}$/`) — any other `ref` value (a longer/shorter string,
-   an object, a string encoding tuple data) is rewritten to the 400 case
-   **before** `handleCasualReconcile` is called; it is never passed
-   through as `null` and never reaches either seam.
+   `src/lib/server/refCodes.ts` — the NEUTRAL location, seam contract
+   v2, §1/§6 — `REF_CODE_REGEX = /^[a-z2-7]{10}$/`). **Invalid-ref
+   policy, split (seam contract v2's fix for the r1 contradiction
+   between "400 never null" and "becomes null"):** a `ref` that is
+   PRESENT but fails `isRefCode` (wrong length/charset, an object, a
+   string encoding tuple data) → **HTTP 400**, `handleCasualReconcile`
+   never invoked, neither the completer nor `reconcile` reached; a `ref`
+   that is OMITTED or explicitly `null` → passes through as `null` and
+   proceeds through `handleCasualReconcile` normally, which is the
+   LEGITIMATE no-attribution case, never an error. The two are never
+   conflated: a malformed ref is a client bug or a tampered URL, a null
+   ref is an ordinary organic visit.
 3. Calls `handleCasualReconcile` and returns its result verbatim as `200`
    JSON in both the `ok: true` and `ok: false` cases, per the policy
    above.
@@ -284,12 +329,27 @@ under T2-product-surfaces §2.1/§6 R6 is scoped to *raw inputs and range
 geometry for the reveal presentation*, not to the algorithm's internal
 working.
 
-`src/lib/server/casual/casualPayload.ts` defines the allowlist as a typed
-projection, so an added `ReconcileResult` field cannot leak into casual
-output by default (TypeScript's structural typing plus the explicit
-`Pick`-shaped interface below force a compile error on
-`buildCasualResultPayload` the moment a caller tries to pass through
-anything not named here):
+`src/lib/server/casual/casualPayload.ts` defines the allowlist as an
+explicit runtime projection — a fixed destructure-and-reassemble, never
+a spread. **High finding of the r2 audit, corrected:** the r1 revision
+claimed TypeScript's structural typing plus this `Pick`-shaped
+interface "force a compile error... the moment a caller tries to pass
+through anything not named here." That claim is false: `ReconcileResult`
+is structurally assignable to `CasualResultPayload` (every field
+`CasualResultPayload` names is present on `ReconcileResult` with a
+compatible type), so a caller CAN write `return result as
+CasualResultPayload` — or even, with a sufficiently permissive
+signature, pass `result` through unchanged — without TypeScript
+objecting; only the runtime tests below (V0a/V0b) actually catch a
+regression. The boundary this brief relies on is the explicit
+`const { ... } = result; return { ... };` destructure in
+`buildCasualResultPayload`'s own body (below) PLUS those exact-key
+runtime tests — not a compile-time guarantee, which this brief no
+longer claims. A future hardening option, noted but not built here, is
+an opaque brand on `CasualResultPayload` (a unique symbol field no
+plain object literal or cast can supply) that would make an
+accidental full pass-through a real type error — left as a documented
+possibility, not a claim this revision makes:
 
 ```typescript
 export interface CasualResultPayload {
@@ -371,13 +431,20 @@ close to the source):
   `'curves' in payload`, `'hasComfortZone' in payload`, `'overlap' in
   payload`, and `'gap' in payload` are all `false` against the same
   fixture. PASS: every excluded key absent.
-- **V0c** — a TypeScript compile-time check (a `.test-d.ts` or an
-  `expectTypeOf`-style assertion, whichever the scaffold's Vitest config
-  already supports per T3-m1-scaffold) that `CasualResultPayload` is not
-  structurally assignable from `ReconcileResult` without narrowing —
-  i.e. the allowlist is a real type boundary, not just a runtime object
-  spread that happens to match today.
-- PASS: `npm run test:unit -- --run` includes V0a–V0c green (folded into
+- **V0c removed (high finding of the r2 audit).** The r1 revision's
+  V0c asserted `CasualResultPayload` is "not structurally assignable
+  from `ReconcileResult` without narrowing" — that assertion cannot
+  pass, because it IS structurally assignable (every field
+  `CasualResultPayload` names exists, compatibly typed, on
+  `ReconcileResult`); TypeScript's structural type system has no way to
+  reject a strict subset of an object's fields as "not assignable." A
+  test asserting a false proposition either fails honestly or is
+  written loosely enough to pass while proving nothing — neither is
+  acceptable, so V0c is deleted outright rather than weakened. V0a/V0b's
+  runtime exact-key checks are the real boundary (§4.1's revised
+  framing above); an opaque brand is noted there as optional future
+  hardening, not built or tested here.
+- PASS: `npm run test:unit -- --run` includes V0a–V0b green (folded into
   §8's overall unit-test PASS criterion).
 
 T2-data-layer's payload constructor is not invoked: there is no stored
@@ -403,95 +470,137 @@ permitted in casual per the design-brief ruling) renders from
 `numbersShown` — R6 conceals the four raw entry figures specifically, not
 the range geometry (§4.1) the animation already encodes.
 
-## 6. Two cross-brief seams — the binding orchestrator-pinned contract
+## 6. The cross-brief seam — binding orchestrator-ruled contract v2
 
-**High finding, corrected.** The r1 draft's seams (a fire-and-forget
-`emit`, a sync unpersisted `generate()`) were incompatible with the
-parallel data-core draft and carried no idempotency identity, so a retry
-would have duplicated completion events despite §2's idempotent-safe
-claim. This section now states the **exact** contract both this brief and
-the (separately revised) data-core brief implement — verbatim, so there
-is nothing left to reconcile between them:
+**High finding of r1, corrected there; medium finding of r2, corrected
+here.** The r1 draft's seams (a fire-and-forget `emit`, a sync
+unpersisted `generate()`) were incompatible with the parallel data-core
+draft. The r1→r2 revision's fix — a pair, `issueCasualRef` called
+before the idempotent `recordCasualCompletion` — was STILL not
+idempotent as a whole: a lost response between the two calls, followed
+by a client retry, issued a SECOND persisted ref for the same logical
+play, because the ref issuance itself carried no idempotency key. Seam
+contract v2 (below) fixes this by collapsing the pair into one
+transactional operation, keyed from the start. This section states the
+**exact** v2 contract both this brief and the (separately revised)
+data-core brief implement — quoted verbatim, so there is nothing left
+to reconcile between them:
 
-- `src/lib/server/data/refCodes.ts` is the single ref-code authority:
-  `REF_CODE_REGEX = /^[a-z2-7]{10}$/`, `isRefCode(x: unknown): x is
-  RefCode`. Inbound `ref` MUST be validated with it at the HTTP boundary
-  (§4); anything else becomes `null` before reaching any seam.
-- `issueCasualRef(): Promise<RefCode>` — persists before returning.
-- `recordCasualCompletion(input: { refCode: RefCode | null; templateId:
-  string; idempotencyKey: string }): Promise<void>` — idempotent on
-  `idempotencyKey`: a client-minted UUID v4, minted ONCE when the flow
-  reaches `both-look-now` (§3's `b-submit` transition), resent unchanged
-  on retries (§3's `retry` transition).
+> `src/lib/server/refCodes.ts` (NEUTRAL location, directly under
+> `server/`, NOT under `server/data/`) holds the ref-code authority:
+> `export const REF_CODE_REGEX = /^[a-z2-7]{10}$/;` a branded `RefCode`
+> type; `isRefCode(x: unknown): x is RefCode`. Content is pinned
+> verbatim in both briefs; whichever brief executes first CREATES it,
+> the second verifies byte-identity — shared-file ownership is
+> explicit and this resolves the compile-first problem.
+>
+> The v1 pair `issueCasualRef`/`recordCasualCompletion` is REPLACED by
+> one operation: `completeCasualPlay(input: { ref: RefCode | null;
+> templateId: string; idempotencyKey: string }): Promise<{ shareRef:
+> RefCode }>` — transactional and idempotent AS A WHOLE: replaying the
+> same `idempotencyKey` returns the SAME `shareRef` and leaves exactly
+> one completion event row and one `share_refs` row. `idempotencyKey`
+> is validated as UUID v4 at the HTTP boundary (400 otherwise).
+> Data-core owns the real transactional implementation (single SQL
+> function or single-transaction TS); casual-mode ships an in-memory
+> stand-in with identical replay semantics and a required end-to-end
+> wiring test (V16) simulating response-loss-after-commit: assert one
+> event, one ref, identical returned ref.
+>
+> Invalid-ref policy, everywhere in both briefs: a present-but-malformed
+> `ref` (fails `isRefCode`) → HTTP 400, never null-coercion; `ref:
+> null`/absent is legitimate and proceeds. The casual client gets a
+> distinct transition for that 400 which DISCARDS the stored ref and
+> retries without it. V10 is split into malformed (400, zero seam
+> calls) and legitimate-null (proceeds, seam called) cases.
+>
+> Canonical casual payload: casual-mode's `buildCasualResultPayload`
+> (the eleven-field allowlist) is THE casual constructor for UI, HTTP,
+> and future MCP. Data-core DELETES its own `constructCasualPayload`
+> and its full-object test, delegating by explicit reference ("casual
+> payloads are built by T3-m1-casual-mode's `buildCasualResultPayload`;
+> this brief constructs only stored-session payloads").
+>
+> Remove the compile-time non-assignability claim and test V0c
+> entirely (structural typing makes it false); the boundary is the
+> explicit projection + exact-key negative tests; optionally note an
+> opaque brand as future hardening, not a claim.
+>
+> Rate limiting: both briefs name, in their Done/M1-blocker language,
+> that the casual route must be re-pointed through the capability-
+> catalogue dispatcher and shared compute rate-limit budget when the M1
+> agent-doorway brief lands (no exemption per T2-agent-distribution);
+> casual's Stage-2 Done includes it.
 
-Both seams get this real interface plus a local, self-executing stand-in
-so this brief ships without waiting on `T3-m1-data-core`'s landing order.
-Both interfaces are **async** (matching data-core's persisted
-implementations exactly — no sync/async mismatch to paper over at
-wiring time) and live in
-`src/lib/server/casual/casualCompletionSeams.ts`:
+This brief gets the real `completeCasualPlay` interface plus a local,
+self-executing stand-in so it ships without waiting on
+`T3-m1-data-core`'s landing order. The interface is **async** (matching
+data-core's persisted implementation exactly — no sync/async mismatch
+to paper over at wiring time) and lives in
+`src/lib/server/casual/casualCompletionSeam.ts`:
 
 ```typescript
-export interface CasualCompletionRecorder {
-  recordCasualCompletion(input: {
-    refCode: RefCode | null;
+export interface CasualPlayCompleter {
+  completeCasualPlay(input: {
+    ref: RefCode | null;
     templateId: string;
     idempotencyKey: string;
-  }): Promise<void>;
-}
-
-export interface CasualRefIssuer {
-  issueCasualRef(): Promise<RefCode>;
+  }): Promise<{ shareRef: RefCode }>;
 }
 ```
 
-**6.1 Completion recording — stand-in.** This brief ships
-`inMemoryCasualCompletionRecorder`: an in-process `Set<idempotencyKey>`
-guarding a `console.info` of the event (`templateId`, `occurredAt:
-new Date().toISOString()`, `refCode`) so the endpoint is fully testable
-and demoable, AND so its idempotency behaviour (second call with the same
-key is a no-op) is real and testable now, not deferred to integration
-time. Satisfies T2-data-layer §2.6 ("casual sessions... the only
-persisted trace is an anonymous completion event") and §2.8 ("casual
-sessions store no price data at all") for the stand-in's own scope;
-`T3-m1-data-core`'s output is the durable, cross-process idempotency
-store behind the same `recordCasualCompletion` signature.
-
-**6.2 Ref issuance — stand-in.** This brief ships
-`inMemoryCasualRefIssuer`: generates a `RefCode` matching
-`REF_CODE_REGEX` (10 lowercase base32-ish characters,
-`crypto.randomUUID()` reduced to the `[a-z2-7]` alphabet) and records it
-in an in-process `Set` before resolving, so `issueCasualRef`'s "persists
-before returning" contract is honoured even by the stand-in (an
-in-memory persistence, but a real one — collision-checked against the
-Set, not merely generated and forgotten). `T3-m1-data-core`'s output
-swaps the in-memory `Set` for the durable `share_refs` store behind the
-same signature.
+**6.1 Stand-in — `inMemoryCasualPlayCompleter`.** An in-process
+`Map<idempotencyKey, RefCode>` guarding both the ref-mint and a
+`console.info` of the completion event (`templateId`, `occurredAt:
+new Date().toISOString()`, `ref`), so the endpoint is fully testable
+and demoable, AND so the WHOLE-OPERATION idempotency behaviour
+(replaying an `idempotencyKey` returns the identical `shareRef` from
+the Map rather than minting a new one) is real and testable now, not
+deferred to integration time — this is the exact shape seam contract
+v2 requires: first call mints a fresh `RefCode`, checks it is not
+already a Map value (collision-checked, not merely generated and
+forgotten), stores `idempotencyKey -> shareRef`, and returns it; every
+subsequent call with the SAME `idempotencyKey` returns the stored value
+without touching the ref-minting path at all. Satisfies T2-data-layer
+§2.6 ("casual sessions... the only persisted trace is an anonymous
+completion event") and §2.8 ("casual sessions store no price data at
+all") for the stand-in's own scope; `T3-m1-data-core`'s output is the
+durable, cross-process, transactional implementation behind the same
+`completeCasualPlay` signature.
 
 **Wiring — a one-line import swap, not a redesign.** Whichever brief
-lands second replaces `inMemoryCasualCompletionRecorder`/
-`inMemoryCasualRefIssuer` with the data-core implementations in
-`src/routes/api/casual/reconcile/+server.ts`'s constructor call;
-`handleCasualReconcile`'s signature (§4) never changes, because both
-stand-ins and both real implementations satisfy the same two interfaces
-above.
+lands second replaces `inMemoryCasualPlayCompleter` with data-core's
+implementation in `src/routes/api/casual/reconcile/+server.ts`'s
+constructor call; `handleCasualReconcile`'s signature (§4) never
+changes, because both the stand-in and the real implementation satisfy
+the same `CasualPlayCompleter` interface.
 
 **Two-stage Done condition (fixes the r1 gap — wiring was excluded from
-Done with no owner):**
+Done with no owner; r2 adds the rate-limit blocker):**
 1. **Stage 1 (this brief, M1 item 4 partial):** `handleCasualReconcile`
-   works end-to-end against the in-memory stand-ins; §8's V1–V9 (plus the
-   new V10–V14) pass against them.
+   works end-to-end against the in-memory stand-in; §8's V1–V9 (plus
+   V10–V15) pass against it.
 2. **Stage 2 (required before M1 item 4 is marked Done, owned by
-   whichever of this brief/`T3-m1-data-core` lands second):** an
-   end-to-end **wiring test** — `casualReconcileWiring.e2e.ts` or
-   equivalent — that runs the full flow against the REAL
-   `issueCasualRef`/`recordCasualCompletion` (data-core's durable
-   implementations, not the stand-ins), asserting: a ref issued by a
-   completed run is persisted and resolvable; a retried POST with the
-   same `idempotencyKey` produces exactly one persisted completion event,
-   not two. Until this test exists and passes, M1 item 4's landing-event
-   requirement is **not** satisfied by this brief alone — this is now an
-   explicit, owned dependency rather than a silently deferred one.
+   whichever of this brief/`T3-m1-data-core` lands second):**
+   - **V16 — end-to-end wiring test** (`casualReconcileWiring.e2e.ts` or
+     equivalent) against the REAL `completeCasualPlay` (data-core's
+     transactional implementation, not the stand-in), simulating
+     response-loss-after-commit (the transaction commits, but the
+     caller never observes the response — e.g. kill the connection
+     immediately after the seam's promise resolves, before the route
+     returns): a retried call with the SAME `idempotencyKey` returns
+     the IDENTICAL `shareRef`, and exactly one completion event row and
+     one `share_refs` row exist afterward — never two of either.
+   - **Rate-limit wiring** (medium finding, new): the casual route must
+     be re-pointed through T2-agent-distribution's capability-catalogue
+     dispatcher and its shared `compute` rate-limit budget (§2's
+     `CASUAL_RECONCILE_CAPABILITY.rateLimitClass`) once the M1
+     agent-doorway brief lands — T2-agent-distribution grants casual NO
+     exemption from cross-adapter budget sharing. This is named here as
+     an explicit M1 blocker owned by the doorway brief, not a silent
+     "later," and Stage 2 is not complete until it is verified wired.
+   Until BOTH of these land, M1 item 4's landing-event requirement is
+   **not** satisfied by this brief alone.
 
 **Inbound ref capture:** `src/routes/+page.svelte`'s `load` reads
 `url.searchParams.get('ref')` and threads it as a prop into
@@ -543,9 +652,9 @@ against `isRefCode` before it reaches `handleCasualReconcile`.
 - `src/lib/server/casual/casualPayload.ts` — §4.1's `CasualResultPayload`
   allowlist type and `buildCasualResultPayload` projection.
 - `src/lib/server/casual/casualReconcile.ts` — §4's orchestration.
-- `src/lib/server/casual/casualCompletionSeams.ts` — §6's
-  `CasualCompletionRecorder`/`CasualRefIssuer` interfaces plus
-  `inMemoryCasualCompletionRecorder`/`inMemoryCasualRefIssuer` stand-ins.
+- `src/lib/server/casual/casualCompletionSeam.ts` — §6's
+  `CasualPlayCompleter` interface plus the `inMemoryCasualPlayCompleter`
+  stand-in.
 - `src/routes/api/casual/reconcile/+server.ts` — §2's same-origin UI
   adapter: JSON parse, shape/ref validation (§4), calls
   `handleCasualReconcile`.
@@ -557,7 +666,7 @@ against `isRefCode` before it reaches `handleCasualReconcile`.
 ## 8. Verification (mechanical pass criteria)
 
 **Unit (Vitest, `server` project) — `src/lib/server/casual/casualPayload.test.ts`:**
-V0a–V0c per §4.1's negative-test spec.
+V0a–V0b per §4.1's negative-test spec.
 
 **Unit (Vitest, `server` project) — `src/lib/server/casual/casualReconcile.test.ts`:**
 - **V1** — a valid comfort-zone pair (any T3-m1-engine-port golden
@@ -565,13 +674,17 @@ V0a–V0c per §4.1's negative-test spec.
   `{ ok: true, result, shareRef }` where `result` deep-equals
   `buildCasualResultPayload(reconcile(...))` for the same inputs (§4.1 —
   NOT the raw `ReconcileResult`), `shareRef` matches `REF_CODE_REGEX`,
-  the stub `CasualCompletionRecorder`'s `recordCasualCompletion` was
-  called exactly once with `templateId === CASUAL_TEMPLATE_ID`, the
-  passed-through `refCode`, and the same `idempotencyKey`.
+  the stub `CasualPlayCompleter`'s `completeCasualPlay` was called
+  exactly once with `templateId === CASUAL_TEMPLATE_ID`, the
+  passed-through `ref`, and the same `idempotencyKey`.
+- **V1b (medium finding, replay)** — the same `idempotencyKey` is
+  submitted a second time (same tuples): `completeCasualPlay` is called
+  again but the stand-in's Map returns the SAME `shareRef` as V1
+  without minting a new one; asserts the response's `shareRef` is
+  byte-identical across both calls.
 - **V2** — an invalid pair (e.g. a non-ascending tuple) returns
   `{ ok: false, error }` with `error.kind` matching the engine's own
-  classification, and `recordCasualCompletion` was called zero times,
-  and `issueCasualRef` was called zero times.
+  classification, and `completeCasualPlay` was called zero times.
 - **V3** — the `+server.ts` route: a well-formed request with a
   non-ascending tuple (an **engine**-level rejection) returns **HTTP
   200** with `{ ok: false, error }` (§4's transport policy). PASS
@@ -579,20 +692,24 @@ V0a–V0c per §4.1's negative-test spec.
   simultaneously required 400 for the same case — that contradiction is
   now resolved: 400 is reserved for malformed/malshaped requests (V10
   below), 200 for every engine outcome including rejection.
-- **V10 (high finding, ref boundary)** — three sub-cases against the
-  `+server.ts` route, none reaching either seam (spy assertion on both
-  `CasualCompletionRecorder` and `CasualRefIssuer`, zero calls in every
-  sub-case):
-  - a request body with `ref` set to a string of the wrong length or
-    charset (e.g. `"abc123"`, which is neither 10 characters nor
-    restricted to `[a-z2-7]`) → **HTTP 400**.
-  - a request body with `ref` set to a JSON object or array encoding
-    tuple-shaped data (an attempted smuggling case the finding named
-    explicitly) → **HTTP 400**.
-  - a request body with `ref` omitted or explicitly `null` → passes
-    through as `null` and reaches `handleCasualReconcile` normally (this
-    sub-case DOES call the seams on a valid tuple pair — asserting the
-    legitimate no-ref path still works).
+- **V10 (high finding, ref boundary — split per seam contract v2 into
+  malformed vs. legitimate-null, exactly as the contract specifies)** —
+  three sub-cases against the `+server.ts` route:
+  - **Malformed (400, zero seam calls):** a request body with `ref` set
+    to a string of the wrong length or charset (e.g. `"abc123"`, which
+    is neither 10 characters nor restricted to `[a-z2-7]`) → **HTTP
+    400**; `CasualPlayCompleter.completeCasualPlay` called zero times
+    (spy assertion).
+  - **Malformed (400, zero seam calls):** a request body with `ref` set
+    to a JSON object or array encoding tuple-shaped data (an attempted
+    smuggling case the finding named explicitly) → **HTTP 400**;
+    `completeCasualPlay` called zero times.
+  - **Legitimate-null (proceeds, seam called):** a request body with
+    `ref` omitted or explicitly `null` → passes through as `null` and
+    reaches `handleCasualReconcile` normally on a valid tuple pair;
+    `completeCasualPlay` IS called exactly once with `ref: null` —
+    asserting the legitimate no-ref path still works and is never
+    conflated with the malformed cases above.
   PASS: the two malformed sub-cases return 400 before
   `handleCasualReconcile` is invoked at all; the null sub-case proceeds
   normally.
@@ -603,7 +720,7 @@ V0a–V0c per §4.1's negative-test spec.
   request shape, not by response shape (both are the same `EngineError`
   shape, per §4's "one error type to handle" design) — the assertion
   distinguishing them is on the HTTP status code, not the body.
-- PASS: `npm run test:unit -- --run` exits 0, V0a–V0c, V1–V3, V10, V11
+- PASS: `npm run test:unit -- --run` exits 0, V0a–V0b, V1–V3, V10, V11
   all named and green.
 
 **E2E (Playwright) — `tests/e2e/casual-flow.e2e.ts`:**
@@ -656,6 +773,19 @@ V0a–V0c per §4.1's negative-test spec.
   inspection on both attempts) the `idempotencyKey` field is **identical**
   across the failed attempt and the retry. PASS: transport-error reached,
   no figures leaked, retry succeeds, key unchanged across the retry.
+- **V12b (medium finding, ref-rejected auto-retry — distinct from
+  V12's generic transport failure)** — load `/?ref=abc123` (a
+  malformed ref: wrong length/charset), complete the flow to
+  `b-submit`; assert the FIRST `POST` carries `ref: "abc123"` and
+  receives **HTTP 400**; assert the UI does NOT show
+  `TransportErrorInterstitial` at any point (the `ref-rejected`
+  transition, §3, is silent/automatic, never surfaced as an error);
+  assert a SECOND `POST` fires automatically with the same
+  `idempotencyKey` and `ref: null`; assert the flow reaches `reveal`
+  normally from that second call. PASS: no error screen shown, exactly
+  two requests observed, the second succeeds with `ref: null` — proving
+  a corrupted/tampered inbound ref never traps the pair (the finding's
+  named risk).
 - **V13 (mobile viewport)** — repeat V4–V7's core assertions (figures
   hidden through handover, numbers-hidden-by-default, show-the-numbers
   reveal) at a 375×812 mobile viewport (T2-product-surfaces §2.7
@@ -684,16 +814,29 @@ V0a–V0c per §4.1's negative-test spec.
   surfaces §2.8/§4 "precision is presentation-transformed, never lost").
   PASS: entry, reconciliation, hidden-default, and shown states all
   preserve the 4 d.p. values unchanged.
-- PASS overall: `npm run test:e2e` exits 0 with V4–V9 and V12–V15 all
-  green.
+- PASS overall: `npm run test:e2e` exits 0 with V4–V9 and V12–V15
+  (including V12b) all green.
 
-**Stage-2 wiring test (§6's two-stage Done condition, run once
-`T3-m1-data-core` lands — not part of this brief's own PASS gate but a
-named blocker on M1 item 4 being marked Done):**
+**Stage-2 wiring and rate-limit tests (§6's two-stage Done condition,
+run once `T3-m1-data-core`/the M1 agent-doorway brief land — not part
+of this brief's own PASS gate but named blockers on M1 item 4 being
+marked Done):**
 - **V16** — `casualReconcileWiring.e2e.ts` (or equivalent) against the
-  REAL `issueCasualRef`/`recordCasualCompletion`: a completed run's
-  `shareRef` is persisted and resolvable; a retried POST with the same
-  `idempotencyKey` produces exactly one persisted completion event.
+  REAL `completeCasualPlay` (data-core's transactional implementation):
+  simulates response-loss-after-commit (kill the connection right after
+  the seam's promise resolves, before the route returns) and asserts a
+  retried call with the same `idempotencyKey` returns the IDENTICAL
+  `shareRef`, with exactly one persisted completion event and one
+  `share_refs` row — never two of either.
+- **V17 (medium finding, rate-limit wiring — owned by the M1
+  agent-doorway brief, tracked here as a named blocker)** — once that
+  brief lands, a test asserting the casual route's requests are
+  actually counted against T2-agent-distribution's shared `compute`
+  budget (a burst of requests exceeding the budget is throttled
+  identically whether it originates from this route or another
+  catalogue adapter sharing the same budget) — proving the "no
+  exemption" rule is wired, not merely declared in §2's
+  `CASUAL_RECONCILE_CAPABILITY`.
 
 ## 9. Out of scope (do not touch)
 
@@ -706,10 +849,10 @@ named blocker on M1 item 4 being marked Done):**
   placeholder config (§7), not the toy.
 - Custom template authoring (bound architecture, later milestone,
   T2-product-surfaces §3.7).
-- The real `issueCasualRef`/`recordCasualCompletion` implementations
-  (`T3-m1-data-core`'s output) — this brief only declares and stubs the
-  seams (§6) against the binding contract; wiring them is §6's Stage 2,
-  explicitly tracked, not silently deferred.
+- The real `completeCasualPlay` implementation (`T3-m1-data-core`'s
+  output) — this brief only declares and stubs the seam (§6) against
+  the binding contract; wiring it is §6's Stage 2, explicitly tracked,
+  not silently deferred.
 - The MCP/HTTP agent-doorway adapter itself (T2-agent-distribution) —
   this brief only shapes `handleCasualReconcile` (§4) as the shared
   capability contract (§2) so that a later doorway brief can wrap it
@@ -740,13 +883,17 @@ named blocker on M1 item 4 being marked Done):**
   carve-out is now scoped by the explicit `CasualResultPayload` allowlist
   (§4.1), not "return everything" — the deviation is bypassing the
   constructor's *mechanism*, not its *discipline*.
-- **D3 — outbound ref codes now persist, format is pinned.** §6.2
-  (superseding r1's "unpersisted, format-unverified" version, which the
-  high finding correctly rejected): `issueCasualRef` persists before
-  returning, per the binding orchestrator contract; the format
-  (`REF_CODE_REGEX = /^[a-z2-7]{10}$/`) is pinned by
-  `src/lib/server/data/refCodes.ts`, the single ref-code authority, not
-  chosen independently by this brief.
+- **D3 — outbound ref codes now persist, format is pinned, issuance is
+  folded into one transactional operation (§6).** Superseding r1's
+  "unpersisted, format-unverified" version (which the r1 audit's high
+  finding correctly rejected) and r1→r2's separately-called
+  `issueCasualRef` (which the r2 audit's medium finding correctly
+  rejected as non-idempotent-as-a-pair): `completeCasualPlay` persists
+  the ref as part of the SAME transaction that records the completion,
+  per seam contract v2; the format (`REF_CODE_REGEX =
+  /^[a-z2-7]{10}$/`) is pinned by `src/lib/server/refCodes.ts` — the
+  NEUTRAL, non-data-core-owned location (r2's other high finding) — the
+  single ref-code authority, not chosen independently by this brief.
 - **D4 — hardcoded M1 casual template, not the template system.** §7;
   matches the *shape* T2-product-surfaces §2.5 defines for templates so
   a later swap to the real system is a data change, not a redesign.
@@ -768,6 +915,23 @@ named blocker on M1 item 4 being marked Done):**
   this route and the future MCP/HTTP catalogue adapters call, with the
   catalogue entry's shape (auth tier, rate-limit class, payload class)
   declared here as a dependency, not built here.
+- **D7 (new, r2) — the compile-time payload-boundary claim (V0c) is
+  withdrawn, not replaced with a weaker version.** §4.1/§6; the r2
+  audit showed the claim was false (structural typing makes
+  `CasualResultPayload` assignable from `ReconcileResult`), so rather
+  than soften the assertion into something that trivially passes, this
+  revision removes it and relies solely on the runtime exact-key tests
+  (V0a/V0b) — an opaque brand is noted as optional future hardening,
+  a decision for a later revision to make deliberately, not a claim
+  smuggled in now.
+- **D8 (new, r2) — the two v1 seams collapse into one
+  `completeCasualPlay` operation.** §6; a pair of calls cannot be made
+  idempotent as a unit without either a distributed lock (unavailable
+  to a stateless route) or collapsing them into a single keyed
+  transaction — this brief and its sibling take the latter, simpler
+  path, which is why Stage 2's Done condition now names a
+  response-loss-after-commit test (V16) rather than two separate
+  idempotency tests.
 
 ## 11. Open questions (HITL)
 
@@ -791,7 +955,7 @@ named blocker on M1 item 4 being marked Done):**
 
 ## 12. Capture and commit
 
-Verify §8's V0a–V0c, V1–V3, V10–V15 all pass (this brief's own Stage 1
+Verify §8's V0a–V0b, V1–V3, V10–V15 all pass (this brief's own Stage 1
 gate; V16 is Stage 2, tracked separately per §6 and not required for this
 brief's own commit). Then capture via the apv-capture skill
 (`exfu-agent-plan-visualiser:apv-capture`; `/apv-capture` is its
