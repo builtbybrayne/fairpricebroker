@@ -1,0 +1,18 @@
+# Package Managers
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+bun.lock
+bun.lockb
+
+# Miscellaneous
+/static/
+
+# Non-app content — planning corpus, reference archives, delegation artifacts
+planning/
+docs/
+reference/
+.exfu/
+.apv/
+CLAUDE.md
+.claude/

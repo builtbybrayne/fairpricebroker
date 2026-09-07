@@ -320,3 +320,31 @@ run, and M1 item 1 reported open pending Docker. Any other failure:
 stop, capture what was done as `entity.progressed`, and report the
 exact failing command and its output. Never mark this brief complete
 with a failing or skipped check unreported.
+
+## 5. Erratum (execution, 7 Sep 2026)
+
+Two §1/§2 facts corrected by the first execution (orchestrator-run; the
+Codex implement round returned honestly blocked — its sandbox has no
+network for npx/npm):
+
+1. **adapter-vercel has a build-time Node gate the plan missed.** The
+   Vite engines floor (`^20.19.0 || >=22.12.0`) passes Node v25.9.0, but
+   `@sveltejs/adapter-vercel` refuses to *infer a runtime* under a
+   non-LTS local Node ("use Node 20, 22, or 24 ... or explicitly specify
+   a runtime"). No installed Node satisfied both gates. Fix, sanctioned
+   by the error message and now applied: `adapter({ runtime:
+   'nodejs22.x' })` in `vite.config.ts` — an explicit production
+   runtime pin, committed. §3's "no config edits" guard is amended
+   accordingly: this one-line runtime option is part of the scaffold's
+   deliverable; everything else in the generated configs stays
+   untouched.
+2. **Step 6 ran the Docker-blocked branch** (Docker Desktop not
+   running): local Supabase pending, `.env.example` created, plan
+   remains `progressed` per §4 — M1 item 1 stays open until a
+   Supabase-green run.
+3. **Lint needed scoping.** The generated `npm run lint` runs Prettier
+   over the whole repo, which would reformat the planning corpus,
+   reference archives, and delegation artifacts. `.prettierignore` now
+   excludes `planning/`, `docs/`, `reference/`, `.exfu/`, `.apv/`,
+   `.claude/`, and `CLAUDE.md` — the app is linted, the record is not
+   touched. V3 passes with this scoping.

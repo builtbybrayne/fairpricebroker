@@ -13,3 +13,18 @@
 .apv/cache.sqlite
 .apv/projection.json
 .apv/summary.md
+
+# App — SvelteKit scaffold (appended by T3-m1-scaffold)
+node_modules
+.output
+.vercel
+/.svelte-kit
+/build
+.env
+.env.*
+!.env.example
+!.env.test
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+test-results
+Thumbs.db
