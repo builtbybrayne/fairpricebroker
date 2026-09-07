@@ -299,3 +299,50 @@ a clean written IP record inside WhaleyBear is part of the discipline.
 Consequence: the Managed Payments application (T2-platform §6 R3) is no
 longer entity-blocked; its timing remains "as the paid phase approaches".
 Business record: scope note "Entity Decision -- 20 Aug 2026".
+
+### Addendum 7 (7 Sep 2026 — buildpad canvas rulings)
+
+Context: the operator worked the venture's GTM questions through
+buildpad.io and exported the canvas to
+`reference/fair-pricebroker-canvas/`. Ruled framing: **that material is a
+continuation of the operator's thinking steered by GTM process, not an
+alternative plan** — this corpus remains governing; the canvas is input.
+The interview data in the export is dummy data from testing buildpad's
+interview process and is to be ignored entirely; its only yield was the
+operator's conclusion that AI-led interviews are not a good enough
+validation strategy, which led to the guided-demo concept below.
+
+Operator rulings (in-chat, 7 Sep 2026):
+
+- **§2.1 blindness refined — host visibility is per-vertical
+  configuration.** Whether a host (broker) may see the parties' raw
+  inputs is a template/vertical configuration, fixed at session creation
+  and enforced server-side exactly as before. Blind-host remains the
+  default for new templates. The **recruitment vertical configures
+  host-visible**: the recruiter needs the numbers ("of course they need
+  to see the numbers"); other broker verticals may not be automatically
+  authorised and stay blind. Casual/co-present is therefore no longer the
+  *sole* full-detail exception — the enumerated exceptions are casual
+  mode and host-visible-configured verticals. Party-to-party raw
+  disclosure remains forbidden in every invited mode. (Consequences
+  recorded in T2-product-surfaces §7 and T2-data-layer §6.)
+- **§2.2/§2.6 refined — homepage speaks the core first.** The engine
+  (two-party blind reconciliation) is the primary vehicle; the product
+  homepage presents the core concept first, then the verticals as
+  variation options, with **recruitment as the first variation**.
+  Recruitment is a beachhead GTM strategy built on the core, never the
+  product's identity.
+- **Vertical demos are innate product.** Every vertical should in
+  principle carry a guided demo walkthrough as part of the public
+  website experience — a product-led concept, not a marketing side
+  artefact and **not a fork** (no separate demo codebase). A vertical
+  demo is NOT casual mode: casual is the non-vertical toy; a demo is
+  vertical-specific and carries content the core engine doesn't know
+  about. (Architecture: T2-product-surfaces §7.)
+- **Post-pricing workflows are vertical content, never engine.**
+  Outcome-guidance layers (e.g. recruitment's non-remuneration steer)
+  belong to the vertical template, not the core engine.
+- **Founders is the second vertical**, with its own peculiarities
+  (survey-mode substrate). The marketing wedge *order* beyond
+  "recruitment first variation" stays a business-side matter in the
+  library scope.

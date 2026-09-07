@@ -303,3 +303,64 @@ ruling.)*
   else. The both-range animation remains permitted in casual (it encodes
   ranges, which the pair chose to reconcile co-presently); the default
   conceals the four-point inputs themselves.
+
+## 7. Rulings (7 Sep 2026, operator, in-chat — buildpad canvas review; see T1 Addendum 7 for context)
+
+- **R7 — host visibility is template configuration.** The template schema
+  (§2.5) gains a **host-visibility** setting: `blind` (default — today's
+  behaviour, host-safe payloads only) or `host-visible` (the host's
+  payload class includes both parties' raw inputs and full outcome). The
+  setting is part of the persisted session mode, fixed at creation,
+  resolved server-side by the payload constructor (T2-data-layer §2.2) —
+  templates still have no disclosure power of their own; they select a
+  configuration the server enforces. The role matrix's host row
+  (§2.4) reads as the blind case; a host-visible session issues the host
+  a new **host-full** payload class instead. Party payload classes are
+  unchanged in both cases — parties never see each other's raw inputs in
+  any invited mode. The **recruitment template configures host-visible**;
+  the **founder/survey and generic templates stay blind-host**.
+  Verification (§4) extends: payload-safety fixtures for both
+  host-visibility settings, asserting host-full appears only when the
+  persisted mode configures it.
+- **R8 — vertical demo walkthroughs are a first-class surface.** Each
+  vertical template should in principle carry a **guided demo**: a
+  public, no-signup walkthrough on the vertical's page in which one
+  visitor plays every role in sequence (recruitment: broker enters the
+  client budget → "now switch hats" → candidate answers → host-full
+  outcome), with embedded directed questions and comment boxes at each
+  stage and **progressive submission** so abandoned flows still yield
+  events (rides the §2/T2-data-layer events machinery — no separate
+  codebase, no external form tool). A demo is NOT casual mode: casual is
+  the non-vertical co-present toy; a demo is vertical-specific, may
+  exercise vertical-only content (R9 guidance, vertical copy), and its
+  entries are demo-flagged so they never pollute real session data or
+  aggregates. The **recruitment demo ships first**; its seed content is
+  `reference/fair-pricebroker-canvas/documents/recruiter-demo-build-spec-and-outreach.md`
+  (stage framing, directed questions). Architecture is bound here;
+  shipping milestone is deferred to the milestone plans (NOT added to
+  M1).
+- **R9 — post-pricing guidance is template content.** A vertical template
+  may define an **outcome-guidance layer**: copy mapped from the engine's
+  outcome classes (deal zone / stretch / no overlap) to
+  vertical-specific next-step guidance. The engine computes; the template
+  interprets. Recruitment's layer: the two-dimensional read — overlap
+  level, plus whether non-remuneration factors (equity, flexibility,
+  culture, purpose) need to be meaningfully in play to bridge the gap.
+  Recruitment's candidate-facing copy carries the **load-bearing
+  incentive argument** — an explicit explanation of why naming a lower
+  figure is in the candidate's interest (signals openness, increases
+  match chances); it must never be left implicit (operator's buildpad
+  note, canvas `notes/`).
+- **R10 — founders is the second vertical.** Its substrate is survey mode
+  (§3.5) with its own peculiarities and, per R8, in principle its own
+  demo. Build order stays as ruled (T1 Q2: two-party first, survey
+  fast-follow); this ruling assigns vertical order, not build order.
+
+## 8. Open questions (HITL, 7 Sep 2026)
+
+- **Q2 — host-visible disclosure to the invitee.** In a host-visible
+  session (recruitment), must the party-facing surface explicitly tell
+  the invitee that the host can see their raw figures? Leaning: yes —
+  honesty about visibility is the trust thesis, and the candidate-side
+  incentive copy (R9) only works if the candidate knows who sees what.
+  Not yet ruled.
