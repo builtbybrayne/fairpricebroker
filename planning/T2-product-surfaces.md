@@ -364,3 +364,13 @@ ruling.)*
   honesty about visibility is the trust thesis, and the candidate-side
   incentive copy (R9) only works if the candidate knows who sees what.
   Not yet ruled.
+
+## 9. Rulings (7 Sep 2026, later, operator, in-chat)
+
+- **R11 (Q2 — host-visible disclosure): RULED — yes.** If the host can
+  see the answers, every party in a host-visible session must be told
+  so, on the party-facing surface, before they enter figures. This is
+  binding template copy for every host-visible vertical (recruitment
+  included), not optional per template. Verification (§4) extends:
+  party-flow fixtures for host-visible sessions assert the disclosure
+  renders pre-entry; blind-host sessions must not render it.
