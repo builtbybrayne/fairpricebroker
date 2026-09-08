@@ -1,0 +1,45 @@
+Response 1 (abandoned, Sep 05, 2026)
+====================================
+Interviewer: Hey, thanks for taking the time to chat today! I'm going to ask you a few questions about your experience as a recruiter — it should only take around five minutes.
+
+To start, can you tell me a bit about your recruiting work? Specifically, are you working agency side or contingency, placing candidates with client companies — rather than working in-house at a single employer?
+
+
+Response 2 (abandoned, Sep 05, 2026)
+====================================
+Interviewer: Hey, thanks for taking the time today! Quick question to kick things off — are you working as an agency or contingency recruiter, meaning you place candidates with client companies and only earn when a placement goes through?
+Respondent: Correct.
+Interviewer: Great, good to know.—
+Respondent: Yeah.
+Interviewer: Great! So let me ask you this -- how often does salary mismatch actually kill a deal for you, and at what point in the process does it usually blow up?
+Respondent: Okay. So this is just a test, uh, from me. So, um, I don't know. Um...
+I'm gonna pretend to say...
+Uh, yeah, happens like one in four, um, usually somewhere at the beginning.
+Interviewer: That makes sense, one in four is pretty significant when every placement counts. Now let me give you a quick concept and get your gut reaction. The idea is this: you submit the employer's budget range, the candidate answers a few questions about what salary feels right to them, neither side sees the other's raw numbers, and both get a simple signal showing whether there's overlap or not. Would you actually use something like that with your candidates?
+Respondent: Honestly,
+I think that was poorly pitched.
+Interviewer: Fair enough! What felt off about it to you?
+
+
+Response 3 (abandoned, Sep 05, 2026)
+====================================
+Interviewer: Hey, thanks for joining! Quick question to kick things off: are you working as an agency or contingency recruiter, meaning you're placing candidates with client companies and earning on placement? Or are you more on the in-house side?
+Respondent: Third party.
+Interviewer: Perfect, that's exactly who we're looking to talk to. So let me start with something you're probably familiar with: how often does salary misalignment blow up a placement for you, and when in the process does it usually hit?
+Respondent: Depends.
+Um, happens a lot, can be upfront.
+Can be a bit later.
+Interviewer: Yeah, that makes sense. When it hits later, how painful is that for you? Like have you had a situation where you've invested real time and then the money just didn't work out?
+Respondent: Yeah. Yeah.
+Interviewer: Totally. So let me tell you about something we're testing and get your honest reaction. The idea is this: you enter the employer's budget on your side, the candidate answers a few questions about their salary expectations on their side, and neither of you sees the other's raw numbers. You just get a simple signal on how well the two align, and whether non-salary stuff like flexibility or equity needs to be in play to make it work. What's your gut reaction to that?
+
+
+Response 4 (abandoned, Sep 05, 2026)
+====================================
+Interviewer: Hey, thanks for making the time! Quick question to kick things off: are you working as an agency or third-party recruiter, or are you more on the in-house side?
+Respondent: Third party.
+Interviewer: Perfect, that's exactly who I'm keen to talk to. So tell me, how often does salary misalignment cause a placement to fall apart for you? Is it a regular headache or more of an occasional thing?
+Respondent: Very regular.
+Interviewer: Yeah I'd imagine. When does it tend to blow up, is it early in the process or does it usually surface later, like at offer stage?
+Respondent: Uh, either early or late.
+Interviewer: That's the worst of both worlds really. Okay, let me describe something and get your gut reaction. So the idea is a tool where you enter the hiring company's salary budget, then send the candidate a private link. The candidate answers a few quick questions about their salary expectations, and neither of you sees the other's raw numbers directly. You just get a simple signal showing how well the two sides overlap, and whether the gap can be closed on salary alone or whether other things like flexibility or equity need to come into play. Does that solve a real problem for you, or does it feel like something you'd work around?

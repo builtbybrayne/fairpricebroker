@@ -1,0 +1,1 @@
+**For build phase:** The candidate-facing copy must explicitly explain why naming a lower salary figure is in their interest — it signals openness to the right opportunity and increases match chances. This is load-bearing for the incentive alignment argument. Don't leave it implicit.
