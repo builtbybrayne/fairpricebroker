@@ -260,3 +260,16 @@ is a product-surface rule):
   product-surface presentation option only. §3.3 carries the binding text.
   The N≥20 rule remains in force where it always lived: published
   aggregates (T2-data-layer).
+
+## 7. Addendum (8 Sep 2026, operator ruling — closes T3-m1-engine-port Q1)
+
+- **§4's "role-direction symmetry" property is AMENDED.** A full price-axis
+  mirror symmetry is provably not an invariant of the ported algorithm (the
+  geometric-mean methods and low-oriented grid tie-breaks are not
+  reflection-invariant), so the binding property is now
+  **argument-order invariance**: swapping the two directional parties'
+  argument positions yields the identical role-keyed result — the engine has
+  no positional bias between roles. The implemented property test
+  (T3-m1-engine-port §2.12 property 4) is thereby canonical, no longer
+  provisional. Ruled by Alastair in-chat, 7–8 Sep 2026, adopting the
+  orchestrator's recommendation after the r2/r3 audit escalation.
