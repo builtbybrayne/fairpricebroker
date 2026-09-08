@@ -1,0 +1,8 @@
+{
+ "prompt": "Reveal-first variant: first viewport dominated by a full-width deep-navy canvas panel: headline + gold CTA on the left, the living reveal drawn large on the right (blue and terracotta bars with wakes, glowing deal zone, lit gold \u00a3512.50 chip with pointer, tick marks); beneath, two smaller sealed meter panels YOUR METER / THEIR METER with the three-step progress row. Same Instrument world.",
+ "generator": "codex image_generation (gpt-6-astra)",
+ "surface": "src/routes/+page.svelte",
+ "variant": "C: reveal-first",
+ "approved": true,
+ "approval": "Operator (Alastair) approved comp C on 8 Sep 2026 in-chat; A and B declined. Stated correction: the comp's slider labels (Minimum acceptable / Ideal price / Maximum acceptable / Other factors) are comp artefacts \u2014 the build uses the real four Van Westendorp price points."
+}

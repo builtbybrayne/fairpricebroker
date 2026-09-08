@@ -1,0 +1,202 @@
+/* Fair Price Broker — "The Instrument" design tokens and base.
+   Source of truth for the visual world: docs/design-brief.md (ruled 19 Aug 2026)
+   and the approved homepage comp (.impeccable/mocks/homepage/homepage-C.png). */
+
+@import '@fontsource/sora/500.css';
+@import '@fontsource/sora/700.css';
+@import '@fontsource/albert-sans/400.css';
+@import '@fontsource/albert-sans/500.css';
+@import '@fontsource/albert-sans/600.css';
+
+:root {
+	color-scheme: light;
+
+	/* ground and ink */
+	--ground: #eef1f6;
+	--ground-2: #e7f3f7;
+	--ink: #23303f;
+	--slate: #5a6b80;
+	--mist: #8595a8;
+	--hairline: #dde3ec;
+
+	/* the two parties, the broker, the agreement */
+	--navy: #1d3557;
+	--navy-2: #16304f;
+	--blue: #3d5a80;
+	--blue-2: #5c8ec8;
+	--terracotta: #b76952;
+	--terracotta-2: #c67968;
+	--gold: #e8b34b;
+	--gold-2: #edc55e;
+	--gold-ink: #23303f;
+
+	/* on navy */
+	--on-navy: #f5f7f7;
+	--on-navy-soft: #99bfe5;
+	--on-navy-mute: #8fa3c2;
+
+	/* neumorphic shadow scale: light from top-left, one scale everywhere */
+	--shade: #d3dae4;
+	--shade-deep: #c8d0dc;
+	--light: #ffffff;
+	--raise-sm: 4px 4px 10px var(--shade), -4px -4px 10px var(--light);
+	--raise-md: 9px 9px 22px var(--shade), -9px -9px 22px var(--light);
+	--raise-lg: 14px 14px 34px var(--shade), -14px -14px 34px var(--light);
+	--inset-sm: inset 2px 2px 5px var(--shade), inset -2px -2px 5px var(--light);
+	--inset-md: inset 3px 3px 8px var(--shade-deep), inset -3px -3px 8px var(--light);
+	--lift-navy: 0 18px 40px rgba(29, 53, 87, 0.3);
+	--lift-gold: 0 8px 22px rgba(232, 179, 75, 0.45);
+
+	/* radii */
+	--radius-pill: 999px;
+	--radius-lg: 24px;
+	--radius-md: 16px;
+	--radius-sm: 10px;
+
+	/* type */
+	--font-display: 'Sora', 'Manrope', system-ui, sans-serif;
+	--font-body: 'Albert Sans', 'Helvetica Neue', system-ui, sans-serif;
+	--track-caps: 0.22em;
+
+	/* motion */
+	--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+	--dur-fast: 180ms;
+	--dur-slow: 900ms;
+}
+
+html {
+	background: var(--ground);
+	color: var(--ink);
+	font-family: var(--font-body);
+	font-size: 16px;
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	font-variant-numeric: tabular-nums;
+	scrollbar-color: rgba(29, 53, 87, 0.28) transparent;
+	scrollbar-width: thin;
+}
+
+body {
+	margin: 0;
+	min-height: 100dvh;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+::selection {
+	background: rgba(232, 179, 75, 0.45);
+	color: var(--navy);
+}
+
+:focus-visible {
+	outline: 3px solid var(--gold);
+	outline-offset: 3px;
+	border-radius: var(--radius-sm);
+}
+
+a {
+	color: var(--blue);
+	text-underline-offset: 0.18em;
+}
+
+button,
+input,
+select,
+textarea {
+	font: inherit;
+	color: inherit;
+}
+
+button {
+	cursor: pointer;
+	border: 0;
+	background: none;
+	padding: 0;
+}
+
+h1,
+h2,
+h3 {
+	font-family: var(--font-display);
+	font-weight: 700;
+	color: var(--navy);
+	margin: 0;
+	text-wrap: balance;
+}
+
+p {
+	margin: 0;
+}
+
+/* Shared vocabulary ------------------------------------------------------ */
+
+.caps {
+	font-family: var(--font-display);
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: var(--track-caps);
+}
+
+.pill {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5em;
+	border-radius: var(--radius-pill);
+	font-family: var(--font-display);
+	font-weight: 700;
+	white-space: nowrap;
+	transition:
+		transform var(--dur-fast) var(--ease-out),
+		box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.pill:active {
+	transform: translateY(1px) scale(0.99);
+}
+
+.pill--navy {
+	background: var(--navy);
+	color: var(--on-navy);
+	box-shadow: 0 4px 12px rgba(29, 53, 87, 0.25);
+}
+
+.pill--navy:hover {
+	background: var(--navy-2);
+}
+
+.pill--gold {
+	background: var(--gold-2);
+	color: var(--gold-ink);
+	box-shadow: var(--lift-gold);
+}
+
+.pill--gold:hover {
+	background: var(--gold);
+}
+
+.raised {
+	background: var(--ground);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--raise-md);
+}
+
+.inset {
+	background: var(--ground);
+	box-shadow: var(--inset-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+}

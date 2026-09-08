@@ -1,0 +1,6 @@
+{
+ "prompt": "Instrument-first variant: centred headline line, one dominant raised neumorphic YOUR METER panel (~70% width) with four inset sliders, tabular figures, gold Seal my meter button in the panel footer; compact navy THE REVEAL band beneath with converging bars and lit gold chip. Same Instrument world (#eef1f6 / #1d3557 / #3d5a80 / #e8b34b / #b76952, Sora + Albert Sans).",
+ "generator": "codex image_generation (gpt-6-astra)",
+ "surface": "src/routes/+page.svelte",
+ "variant": "B: instrument-first"
+}
