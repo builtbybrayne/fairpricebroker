@@ -33,39 +33,39 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		height: 68px;
-		padding: 0 127px 0 130px;
+		height: calc(68 * var(--u));
+		padding: 0 calc(127 * var(--u)) 0 calc(130 * var(--u));
 	}
 
 	.wordmark {
 		display: inline-flex;
 		align-items: center;
-		gap: 12px;
+		gap: calc(12 * var(--u));
 		text-decoration: none;
 		color: var(--navy);
 		font-family: var(--font-display);
 		font-weight: 700;
-		font-size: 30px;
+		font-size: calc(30 * var(--u));
 		letter-spacing: -0.025em;
 		line-height: 1;
 	}
 
 	.wordmark__mark {
-		width: 36px;
-		height: 36px;
+		width: calc(36 * var(--u));
+		height: calc(36 * var(--u));
 	}
 
 	.topnav {
 		display: flex;
 		align-items: center;
-		gap: 46px;
+		gap: calc(46 * var(--u));
 	}
 
 	.topnav a:not(.pill) {
 		color: var(--slate);
 		text-decoration: none;
 		font-weight: 500;
-		font-size: 18px;
+		font-size: calc(18 * var(--u));
 	}
 
 	.topnav a:not(.pill):hover {
@@ -73,10 +73,16 @@
 	}
 
 	.topnav__cta {
-		height: 46px;
-		padding: 0 30px;
-		font-size: 19px;
+		height: calc(46 * var(--u));
+		padding: 0 calc(30 * var(--u));
+		font-size: calc(19 * var(--u));
 		text-decoration: none;
+	}
+
+	@media (max-width: 1024px) {
+		:root {
+			--u: 1px;
+		}
 	}
 
 	@media (max-width: 900px) {

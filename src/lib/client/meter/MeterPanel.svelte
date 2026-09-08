@@ -24,7 +24,8 @@
 		max = 1000,
 		step = 1,
 		footer,
-		error = null
+		error = null,
+		labelWidth = 190
 	}: {
 		title: string;
 		rows: readonly Row[];
@@ -38,10 +39,16 @@
 		step?: number;
 		footer?: Snippet;
 		error?: string | null;
+		/** Width of the label column in design px (scaled by --u). */
+		labelWidth?: number;
 	} = $props();
 
 	const positionFor = (v: string | null, i: number) => {
-		if (v === null || v === '' || Number.isNaN(Number(v))) return 0.18 + i * 0.2;
+		// Unset rows: the thumb sits at zero in entry mode (number-first: the
+		// picture never claims a value the field does not hold); sealed demo
+		// panels use illustrative positions because they show no figures.
+		if (v === null || v === '' || Number.isNaN(Number(v)))
+			return mode === 'entry' ? 0 : 0.18 + i * 0.2;
 		return Math.max(0, Math.min(1, (Number(v) - min) / (max - min)));
 	};
 
@@ -57,6 +64,7 @@
 	class="meter raised meter--{accent}"
 	class:meter--entry={mode === 'entry'}
 	aria-label={title}
+	style:--label-w={`calc(${labelWidth} * var(--u, 1px))`}
 >
 	<header class="meter__head">
 		<h2 class="meter__title caps">{title}</h2>
@@ -79,7 +87,9 @@
 		{#each rows as row, i (row.key)}
 			<li class="row">
 				{#if mode === 'entry'}
-					<label class="row__label" for={`${title}-${row.key}`}>{row.label}</label>
+					<label class="row__label" for={`${title}-${row.key}`}
+						>{row.label}{#if row.help}<small class="row__help">{row.help}</small>{/if}</label
+					>
 					<div class="row__track inset">
 						<input
 							class="row__range"
@@ -113,7 +123,9 @@
 						/>
 					</span>
 				{:else}
-					<span class="row__label">{row.label}</span>
+					<span class="row__label"
+						>{row.label}{#if row.help}<small class="row__help">{row.help}</small>{/if}</span
+					>
 					<div class="row__track inset" aria-hidden="true">
 						<i class="row__thumb" style:left={`${positionFor(values[i], i) * 100}%`}></i>
 					</div>
@@ -144,7 +156,7 @@
 		--thumb: var(--blue);
 		--thumb-ring: rgba(61, 90, 128, 0.35);
 		--groove-fill: rgba(92, 142, 200, 0.25);
-		padding: 27px 33px 28px;
+		padding: calc(27 * var(--u, 1px)) calc(33 * var(--u, 1px)) calc(28 * var(--u, 1px));
 		width: 100%;
 	}
 
@@ -158,11 +170,11 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		margin-bottom: 22px;
+		margin-bottom: calc(22 * var(--u, 1px));
 	}
 
 	.meter__title {
-		font-size: 22px;
+		font-size: calc(22 * var(--u, 1px));
 		color: var(--navy);
 		line-height: 1;
 	}
@@ -171,10 +183,10 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 8px;
-		font-size: 13px;
+		font-size: calc(13 * var(--u, 1px));
 		letter-spacing: 0.16em;
 		color: var(--slate);
-		padding: 7px 12px;
+		padding: calc(7 * var(--u, 1px)) calc(12 * var(--u, 1px));
 		border-radius: var(--radius-pill);
 	}
 
@@ -188,33 +200,40 @@
 		margin: 0;
 		padding: 0;
 		display: grid;
-		gap: 22px;
+		gap: calc(22 * var(--u, 1px));
 	}
 
 	.row {
 		display: grid;
-		grid-template-columns: 190px 1fr 92px;
+		grid-template-columns: var(--label-w) 1fr calc(92 * var(--u, 1px));
 		align-items: center;
-		gap: 22px;
+		gap: calc(22 * var(--u, 1px));
 	}
 
 	.row__label {
-		font-size: 18px;
+		font-size: calc(18 * var(--u, 1px));
 		color: var(--ink);
 		line-height: 1.2;
 	}
 
+	.row__help {
+		display: block;
+		font-size: 0.8em;
+		color: var(--slate);
+		margin-top: 2px;
+	}
+
 	.row__track {
 		position: relative;
-		height: 12px;
+		height: calc(12 * var(--u, 1px));
 		border-radius: 6px;
 	}
 
 	.row__thumb {
 		position: absolute;
 		top: 50%;
-		width: 24px;
-		height: 24px;
+		width: calc(24 * var(--u, 1px));
+		height: calc(24 * var(--u, 1px));
 		border-radius: 50%;
 		background: var(--ground);
 		transform: translate(-50%, -50%);
@@ -226,7 +245,7 @@
 	}
 
 	.row__figure {
-		font-size: 18px;
+		font-size: calc(18 * var(--u, 1px));
 		font-weight: 600;
 		color: var(--ink);
 		text-align: right;
@@ -325,6 +344,13 @@
 		.row__figure {
 			grid-area: figure;
 		}
+		.row__help {
+			display: block;
+			font-size: 0.8em;
+			color: var(--slate);
+			margin-top: 2px;
+		}
+
 		.row__track {
 			grid-area: track;
 		}

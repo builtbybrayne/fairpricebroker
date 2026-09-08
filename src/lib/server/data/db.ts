@@ -4,6 +4,7 @@
 // service-role credential. Client-facing calls run as `authenticated`
 // with the verified JWT's claims applied (withAuthenticatedCaller).
 import postgres, { type Sql, type TransactionSql } from 'postgres';
+import { env as privateEnv } from '$env/dynamic/private';
 
 export type InternalRole = 'orchestrator' | 'payload_reader' | 'casual_writer' | 'ref_writer';
 
@@ -20,7 +21,9 @@ const ENV_KEY: Record<InternalRole, string> = {
 const pools = new Map<string, Sql>();
 
 function requireEnv(key: string): string {
-	const v = process.env[key];
+	// Vitest (via tests/helpers/env.ts) populates process.env; the SvelteKit
+	// dev/preview server exposes .env only through $env/dynamic/private.
+	const v = process.env[key] ?? privateEnv[key];
 	if (!v) throw new Error(`${key} is not set`);
 	return v;
 }

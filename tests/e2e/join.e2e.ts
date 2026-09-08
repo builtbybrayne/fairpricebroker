@@ -141,6 +141,7 @@ test('sign-in page: an email and Continue reach /app with 20 credits; sign-out r
 	const email = `e2e-signin-${randomUUID().slice(0, 8)}@example.test`;
 	await page.goto('/app');
 	await expect(page).toHaveURL(/\/signin\?next=%2Fapp/);
+	await page.waitForLoadState('networkidle'); // typing before hydration would be discarded
 	await page.getByLabel('Email').fill(email);
 	await page.getByRole('button', { name: 'Continue' }).click();
 	await expect(page).toHaveURL(/\/app$/);

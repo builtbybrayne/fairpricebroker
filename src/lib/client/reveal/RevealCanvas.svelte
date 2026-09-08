@@ -24,7 +24,9 @@
 		zoneLabel = 'Fair price zone',
 		variant = 'both',
 		animate = true,
-		compact = false
+		compact = false,
+		yourAccent = 'blue',
+		unit = 'GBP'
 	}: {
 		axis?: { min: number; max: number; step: number };
 		currency?: string;
@@ -39,6 +41,9 @@
 		variant?: 'both' | 'blind';
 		animate?: boolean;
 		compact?: boolean;
+		/** Colour of the viewer's own bar: blue (employer/A side) or terracotta (candidate/B side). */
+		yourAccent?: 'blue' | 'terracotta';
+		unit?: string;
 	} = $props();
 
 	const pct = (v: number) => ((v - axis.min) / (axis.max - axis.min)) * 100;
@@ -50,6 +55,9 @@
 		return out;
 	});
 
+	let width = $state(0);
+	const tickEvery = $derived(width > 0 && width < 420 ? 2 : 1);
+	const visibleTicks = $derived(ticks.filter((_, i) => i % tickEvery === 0));
 	const showTheirs = $derived(variant === 'both' && theirs !== null);
 	const fairText = $derived(
 		fairLabel ??
@@ -64,9 +72,10 @@
 	class:reveal--animate={animate}
 	class:reveal--compact={compact}
 	role="img"
+	bind:clientWidth={width}
 	aria-label={showTheirs
-		? `${yourLabel} ${currency}${yours.lo} to ${currency}${yours.hi}; ${theirLabel} ${currency}${theirs?.lo} to ${currency}${theirs?.hi}; fair price ${fairText}`
-		: `${yourLabel} ${currency}${yours.lo} to ${currency}${yours.hi}; fair price ${fairText}`}
+		? `${yourLabel} and ${theirLabel} converging on a fair price of ${fairText}`
+		: `${yourLabel} and a fair price of ${fairText}`}
 >
 	<div class="reveal__field">
 		{#if fair !== null}
@@ -79,7 +88,7 @@
 		<div class="lane lane--yours">
 			<span class="lane__label caps">{yourLabel}</span>
 			<div
-				class="bar bar--yours"
+				class="bar bar--yours bar--{yourAccent}"
 				style:left={`${clampPct(yours.lo)}%`}
 				style:width={`${clampPct(yours.hi) - clampPct(yours.lo)}%`}
 			>
@@ -114,12 +123,20 @@
 		{/if}
 	</div>
 
+	<ul class="legend" aria-hidden="true">
+		<li><i class="legend__swatch legend__swatch--{yourAccent}"></i>{yourLabel}</li>
+		{#if showTheirs}<li><i class="legend__swatch legend__swatch--theirs"></i>{theirLabel}</li>{/if}
+		{#if zone}<li><i class="legend__swatch legend__swatch--zone"></i>{zoneLabel}</li>{/if}
+	</ul>
+
 	<div class="axis" aria-hidden="true">
 		<div class="axis__rule"></div>
-		{#each ticks as t (t)}
-			<span class="axis__tick" style:left={`${pct(t)}%`}><i></i><b>{t}</b></span>
+		{#each visibleTicks as t (t)}
+			<span class="axis__tick" style:left={`${pct(t)}%`}
+				><i></i><b>{t.toLocaleString('en-GB')}</b></span
+			>
 		{/each}
-		<span class="axis__unit">{currency} (GBP)</span>
+		<span class="axis__unit">{currency} ({unit})</span>
 	</div>
 </div>
 
@@ -128,19 +145,20 @@
 		position: relative;
 		width: 100%;
 		height: 100%;
+		container-type: inline-size;
 		color: var(--on-navy);
 		font-family: var(--font-body);
 	}
 
 	.reveal__field {
 		position: absolute;
-		inset: 0 94px 60px 12px;
+		inset: 0 calc(94 * var(--rs, 1px)) calc(60 * var(--rs, 1px)) calc(12 * var(--rs, 1px));
 	}
 
 	/* fair-price chip ---------------------------------------------------- */
 	.chip {
 		position: absolute;
-		top: 12px;
+		top: calc(12 * var(--rs, 1px));
 		transform: translateX(-50%);
 		display: flex;
 		flex-direction: column;
@@ -154,19 +172,19 @@
 		color: var(--navy);
 		font-family: var(--font-display);
 		font-weight: 700;
-		font-size: 25px;
+		font-size: calc(25 * var(--rs, 1px));
 		letter-spacing: -0.02em;
 		line-height: 1;
-		padding: 13px 16px;
-		border-radius: 12px;
-		border: 2px solid #f3d27a;
-		box-shadow: 0 10px 28px rgba(232, 179, 75, 0.45);
+		padding: calc(13 * var(--rs, 1px)) calc(16 * var(--rs, 1px));
+		border-radius: calc(12 * var(--rs, 1px));
+		border: calc(2 * var(--rs, 1px)) solid #f3d27a;
+		box-shadow: 0 calc(10 * var(--rs, 1px)) calc(28 * var(--rs, 1px)) rgba(232, 179, 75, 0.45);
 		white-space: nowrap;
 	}
 
 	.chip__pointer {
-		width: 2px;
-		height: 78px;
+		width: calc(2 * var(--rs, 1px));
+		height: calc(78 * var(--rs, 1px));
 		background: linear-gradient(var(--gold), rgba(232, 179, 75, 0.2));
 	}
 
@@ -175,11 +193,11 @@
 		position: absolute;
 		bottom: -7px;
 		left: 50%;
-		width: 14px;
-		height: 14px;
+		width: calc(14 * var(--rs, 1px));
+		height: calc(14 * var(--rs, 1px));
 		border-radius: 50%;
 		background: #fbe9b3;
-		box-shadow: 0 0 10px rgba(232, 179, 75, 0.9);
+		box-shadow: 0 0 calc(10 * var(--rs, 1px)) rgba(232, 179, 75, 0.9);
 		transform: translateX(-50%);
 	}
 
@@ -191,27 +209,31 @@
 	}
 
 	.lane--yours {
-		top: 62px;
-		height: 72px;
+		top: calc(62 * var(--rs, 1px));
+		height: calc(72 * var(--rs, 1px));
 	}
 
 	.lane--theirs {
-		top: 146px;
-		height: 68px;
+		top: calc(146 * var(--rs, 1px));
+		height: calc(68 * var(--rs, 1px));
 	}
 
 	.lane__label {
 		position: absolute;
 		top: -8px;
 		left: 0.4%;
-		font-size: 14px;
+		font-size: calc(14 * var(--rs, 1px));
 		letter-spacing: 0.2em;
 		color: var(--blue-2);
 	}
 
+	.lane__label--terracotta {
+		color: var(--terracotta-2);
+	}
+
 	.lane__label--right {
 		left: auto;
-		right: 1%;
+		right: calc(-56 * var(--rs, 1px));
 		top: auto;
 		bottom: 0;
 		color: var(--terracotta-2);
@@ -219,43 +241,45 @@
 
 	.bar {
 		position: absolute;
-		top: 26px;
-		height: 26px;
-		border-radius: 13px;
+		top: calc(26 * var(--rs, 1px));
+		height: calc(26 * var(--rs, 1px));
+		border-radius: calc(13 * var(--rs, 1px));
 		z-index: 2;
 		will-change: transform;
 	}
 
 	.lane--theirs .bar {
 		top: 0;
-		height: 26px;
-		border-radius: 13px;
+		height: calc(26 * var(--rs, 1px));
+		border-radius: calc(13 * var(--rs, 1px));
 	}
 
-	.bar--yours {
+	.bar--yours,
+	.bar--blue {
 		background: #5c8ec8;
 		box-shadow:
-			0 0 24px rgba(92, 142, 200, 0.55),
-			20px 0 60px -10px rgba(92, 142, 200, 0.5);
+			0 0 calc(24 * var(--rs, 1px)) rgba(92, 142, 200, 0.55),
+			calc(20 * var(--rs, 1px)) 0 calc(60 * var(--rs, 1px)) -10px rgba(92, 142, 200, 0.5);
 	}
 
-	.bar--theirs {
+	.bar--theirs,
+	.bar--yours.bar--terracotta {
 		background: #c67968;
 		box-shadow:
-			0 0 24px rgba(198, 121, 104, 0.55),
-			-20px 0 60px -10px rgba(198, 121, 104, 0.5);
+			0 0 calc(24 * var(--rs, 1px)) rgba(198, 121, 104, 0.55),
+			-20px 0 calc(60 * var(--rs, 1px)) -10px rgba(198, 121, 104, 0.5);
 	}
 
 	/* the wake: a soft trail behind each bar, fading as it settles */
 	.bar::before {
 		content: '';
 		position: absolute;
-		top: 2px;
-		bottom: 2px;
+		top: calc(2 * var(--rs, 1px));
+		bottom: calc(2 * var(--rs, 1px));
 		width: 34%;
 		border-radius: inherit;
 		opacity: 0.55;
-		filter: blur(8px);
+		filter: blur(calc(8 * var(--rs, 1px)));
 	}
 
 	.bar--yours::before {
@@ -271,12 +295,12 @@
 	.bar__end {
 		position: absolute;
 		top: 50%;
-		width: 22px;
-		height: 22px;
+		width: calc(22 * var(--rs, 1px));
+		height: calc(22 * var(--rs, 1px));
 		border-radius: 50%;
 		background: #fff;
 		transform: translate(-50%, -50%);
-		box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.18);
+		box-shadow: 0 0 0 calc(4 * var(--rs, 1px)) rgba(255, 255, 255, 0.18);
 	}
 
 	.bar__end--lo {
@@ -290,24 +314,24 @@
 	/* the zone ----------------------------------------------------------- */
 	.zone {
 		position: absolute;
-		top: 112px;
-		height: 66px;
-		border-radius: 10px;
+		top: calc(112 * var(--rs, 1px));
+		height: calc(66 * var(--rs, 1px));
+		border-radius: calc(10 * var(--rs, 1px));
 		background: linear-gradient(rgba(214, 200, 150, 0.55), rgba(240, 190, 120, 0.7));
-		border: 2px solid #f5dc8c;
+		border: calc(2 * var(--rs, 1px)) solid #f5dc8c;
 		box-shadow:
-			0 0 0 1px rgba(255, 255, 255, 0.25),
-			0 0 34px rgba(232, 179, 75, 0.45),
-			inset 0 0 18px rgba(255, 235, 170, 0.35);
+			0 0 0 calc(1 * var(--rs, 1px)) rgba(255, 255, 255, 0.25),
+			0 0 calc(34 * var(--rs, 1px)) rgba(232, 179, 75, 0.45),
+			inset 0 0 calc(18 * var(--rs, 1px)) rgba(255, 235, 170, 0.35);
 		z-index: 3;
 		pointer-events: none;
 	}
 
 	.zone__label {
 		position: absolute;
-		top: 192px;
+		top: calc(192 * var(--rs, 1px));
 		transform: translateX(-50%);
-		font-size: 14px;
+		font-size: calc(14 * var(--rs, 1px));
 		letter-spacing: 0.2em;
 		color: var(--gold-2);
 		white-space: nowrap;
@@ -316,37 +340,37 @@
 	/* axis --------------------------------------------------------------- */
 	.axis {
 		position: absolute;
-		left: 12px;
-		right: 94px;
+		left: calc(12 * var(--rs, 1px));
+		right: calc(94 * var(--rs, 1px));
 		bottom: 0;
-		height: 50px;
+		height: calc(50 * var(--rs, 1px));
 		color: var(--on-navy-mute);
-		font-size: 17px;
+		font-size: round(calc(17 * var(--rs, 1px)), 1px);
 	}
 
 	.axis__rule {
 		position: absolute;
 		left: 0;
 		right: 0;
-		top: 14px;
-		height: 1px;
+		top: calc(14 * var(--rs, 1px));
+		height: calc(1 * var(--rs, 1px));
 		background: rgba(143, 163, 194, 0.7);
 	}
 
 	.axis__tick {
 		position: absolute;
-		top: 4px;
+		top: calc(4 * var(--rs, 1px));
 		transform: translateX(-50%);
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 10px;
+		gap: calc(10 * var(--rs, 1px));
 	}
 
 	.axis__tick i {
 		display: block;
-		width: 1px;
-		height: 20px;
+		width: calc(1 * var(--rs, 1px));
+		height: calc(20 * var(--rs, 1px));
 		background: rgba(143, 163, 194, 0.9);
 	}
 
@@ -356,9 +380,9 @@
 
 	.axis__unit {
 		position: absolute;
-		right: -50px;
-		top: 12px;
-		font-size: 15px;
+		right: calc(-94 * var(--rs, 1px));
+		top: calc(12 * var(--rs, 1px));
+		font-size: calc(15 * var(--rs, 1px));
 	}
 
 	/* motion: the ranges drift in from the outside; wakes fade as they settle */
@@ -413,7 +437,7 @@
 	@keyframes land {
 		from {
 			opacity: 0;
-			transform: translate(-50%, 10px) scale(0.85);
+			transform: translate(-50%, calc(10 * var(--rs, 1px))) scale(0.85);
 		}
 		to {
 			opacity: 1;
@@ -432,28 +456,132 @@
 
 	/* compact: used inside result cards */
 	.reveal--compact .chip__value {
-		font-size: 22px;
-		padding: 10px 16px;
+		font-size: calc(22 * var(--rs, 1px));
+		padding: calc(10 * var(--rs, 1px)) calc(16 * var(--rs, 1px));
 	}
 
 	.reveal--compact .chip__pointer {
-		height: 40px;
+		height: calc(40 * var(--rs, 1px));
 	}
 
 	.reveal--compact .lane--yours {
-		top: 40px;
+		top: calc(40 * var(--rs, 1px));
 	}
 
 	.reveal--compact .lane--theirs {
-		top: 108px;
+		top: calc(108 * var(--rs, 1px));
 	}
 
 	.reveal--compact .zone {
-		top: 84px;
-		height: 56px;
+		top: calc(84 * var(--rs, 1px));
+		height: calc(56 * var(--rs, 1px));
 	}
 
 	.reveal--compact .zone__label {
-		top: 150px;
+		top: calc(150 * var(--rs, 1px));
+	}
+
+	/* the legend replaces the in-canvas labels only where they cannot
+	   keep clear of each other (narrow containers) */
+	.legend {
+		display: none;
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		gap: 4px 14px;
+		flex-wrap: wrap;
+		line-height: 1.6;
+		font-size: 11px;
+		font-family: var(--font-display);
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--on-navy-mute);
+	}
+
+	.legend li {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.legend__swatch {
+		width: 14px;
+		height: 8px;
+		border-radius: 4px;
+	}
+
+	.legend__swatch--blue {
+		background: #5c8ec8;
+	}
+
+	.legend__swatch--terracotta,
+	.legend__swatch--theirs {
+		background: #c67968;
+	}
+
+	.legend__swatch--zone {
+		background: rgba(237, 197, 94, 0.55);
+		border: 1px solid #f5dc8c;
+	}
+
+	/* narrow containers (a phone, a result card): keep type legible and
+	   labels apart; tick density is thinned by the component (tickEvery) */
+	@container (max-width: 520px) {
+		.reveal {
+			--rs: 0.72px;
+		}
+		.lane__label,
+		.zone__label {
+			display: none;
+		}
+		.legend {
+			display: flex;
+		}
+		.axis {
+			bottom: 50px;
+		}
+		.reveal__field {
+			bottom: calc(60 * var(--rs, 1px) + 50px);
+		}
+		.reveal__field,
+		.axis {
+			right: 44px;
+			left: 6px;
+		}
+		.axis__unit {
+			right: -44px;
+		}
+		.lane__label,
+		.zone__label {
+			font-size: 11px;
+			letter-spacing: 0.14em;
+		}
+		.lane__label--terracotta {
+			color: var(--terracotta-2);
+		}
+
+		.lane__label--right {
+			bottom: auto;
+			top: calc(26 * var(--rs, 1px) + 30px);
+		}
+		.zone__label {
+			top: calc(192 * var(--rs, 1px) + 34px);
+		}
+		.axis {
+			font-size: 12px;
+		}
+		.axis__unit {
+			font-size: 11px;
+			right: -42px;
+		}
+		.chip__value {
+			font-size: 20px;
+			padding: 10px 14px;
+		}
 	}
 </style>

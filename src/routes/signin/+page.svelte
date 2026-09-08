@@ -22,7 +22,7 @@
 				name="email"
 				autocomplete="email"
 				required
-				value={form?.email ?? ''}
+				value={form?.email}
 				aria-invalid={form?.error ? 'true' : undefined}
 			/>
 		</label>

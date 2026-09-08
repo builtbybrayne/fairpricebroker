@@ -1,0 +1,645 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-08T16:38:02.968Z",
+  "title": "Design System: Fair Price Broker",
+  "extensions": {
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Ground",
+        "canonical": "oklch(95.7% 0.007 260.7)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#242528",
+          "#404245",
+          "#5f6165",
+          "#808287",
+          "#a3a5a9",
+          "#c7c9cd",
+          "#eceef2"
+        ]
+      },
+      "ground-2": {
+        "role": "neutral",
+        "displayName": "Ground, cool",
+        "canonical": "oklch(95.6% 0.014 219.6)",
+        "tonalRamp": [
+          "#080c0e",
+          "#202628",
+          "#3c4346",
+          "#5a6366",
+          "#7a8488",
+          "#9da7aa",
+          "#c2cbce",
+          "#e8f0f3"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(30.4% 0.032 252.4)",
+        "tonalRamp": [
+          "#060c13",
+          "#1d2630",
+          "#384350",
+          "#566372",
+          "#758496",
+          "#98a7b7",
+          "#becbda",
+          "#e4f0fe"
+        ]
+      },
+      "slate": {
+        "role": "neutral",
+        "displayName": "Slate",
+        "canonical": "oklch(52.2% 0.039 253.9)",
+        "tonalRamp": [
+          "#050c15",
+          "#1c2632",
+          "#374353",
+          "#546375",
+          "#73849a",
+          "#96a7bb",
+          "#bccbdd",
+          "#e3f0ff"
+        ]
+      },
+      "mist": {
+        "role": "neutral",
+        "displayName": "Mist",
+        "canonical": "oklch(66.4% 0.034 252.8)",
+        "tonalRamp": [
+          "#060c13",
+          "#1d2630",
+          "#384350",
+          "#556373",
+          "#748496",
+          "#98a7b8",
+          "#bdcbdb",
+          "#e4f0fe"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "oklch(91.4% 0.014 258.3)",
+        "tonalRamp": [
+          "#090b0f",
+          "#22252a",
+          "#3e4248",
+          "#5d6268",
+          "#7d838b",
+          "#a0a5ad",
+          "#c5c9d0",
+          "#ebeff5"
+        ]
+      },
+      "navy": {
+        "role": "primary",
+        "displayName": "Broker Navy",
+        "canonical": "oklch(32.8% 0.068 257.3)",
+        "tonalRamp": [
+          "#020b1c",
+          "#16253c",
+          "#2f435f",
+          "#4b6284",
+          "#6984ab",
+          "#8da7cb",
+          "#b4cbec",
+          "#dbf0ff"
+        ]
+      },
+      "navy-2": {
+        "role": "primary",
+        "displayName": "Navy Hover",
+        "canonical": "oklch(30.6% 0.065 254.1)",
+        "tonalRamp": [
+          "#020b1b",
+          "#15263b",
+          "#2e435d",
+          "#4a6382",
+          "#6885a9",
+          "#8ca8c9",
+          "#b3cceb",
+          "#dbf1ff"
+        ]
+      },
+      "blue": {
+        "role": "secondary",
+        "displayName": "Your Blue",
+        "canonical": "oklch(46.2% 0.071 255.5)",
+        "tonalRamp": [
+          "#010b1c",
+          "#14263d",
+          "#2d4360",
+          "#486386",
+          "#6684ad",
+          "#8ba7cd",
+          "#b1cbee",
+          "#d9f1ff"
+        ]
+      },
+      "blue-2": {
+        "role": "secondary",
+        "displayName": "Your Blue, lit",
+        "canonical": "oklch(63.6% 0.103 253.0)",
+        "tonalRamp": [
+          "#000a24",
+          "#062547",
+          "#1e436c",
+          "#386395",
+          "#5485be",
+          "#7ba9de",
+          "#a4cdfd",
+          "#cef2ff"
+        ]
+      },
+      "terracotta": {
+        "role": "secondary",
+        "displayName": "Their Terracotta",
+        "canonical": "oklch(60.3% 0.106 37.2)",
+        "tonalRamp": [
+          "#1f0000",
+          "#421507",
+          "#672f1f",
+          "#8f4c38",
+          "#b86a53",
+          "#d9907a",
+          "#fab7a3",
+          "#ffdecc"
+        ]
+      },
+      "terracotta-2": {
+        "role": "secondary",
+        "displayName": "Their Terracotta, lit",
+        "canonical": "oklch(65.4% 0.100 33.2)",
+        "tonalRamp": [
+          "#1e0100",
+          "#41150c",
+          "#663025",
+          "#8d4c3e",
+          "#b66b5b",
+          "#d79081",
+          "#f8b7a8",
+          "#ffdfd1"
+        ]
+      },
+      "gold": {
+        "role": "primary",
+        "displayName": "Fair Gold",
+        "canonical": "oklch(79.6% 0.134 81.4)",
+        "tonalRamp": [
+          "#1b0400",
+          "#3b1d00",
+          "#5e3900",
+          "#835800",
+          "#aa7800",
+          "#cb9d43",
+          "#ecc277",
+          "#ffe9a7"
+        ]
+      },
+      "gold-2": {
+        "role": "primary",
+        "displayName": "Lit Gold",
+        "canonical": "oklch(83.9% 0.129 88.1)",
+        "tonalRamp": [
+          "#180600",
+          "#372000",
+          "#593d00",
+          "#7d5c00",
+          "#a27c00",
+          "#c3a147",
+          "#e5c679",
+          "#ffecaa"
+        ]
+      },
+      "gold-ink": {
+        "role": "primary",
+        "displayName": "Gold Ink",
+        "canonical": "oklch(30.4% 0.032 252.4)",
+        "tonalRamp": [
+          "#060c13",
+          "#1d2630",
+          "#384350",
+          "#566372",
+          "#758496",
+          "#98a7b7",
+          "#becbda",
+          "#e4f0fe"
+        ]
+      },
+      "on-navy": {
+        "role": "neutral",
+        "displayName": "On Navy",
+        "canonical": "oklch(97.5% 0.002 197.1)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#242525",
+          "#414242",
+          "#606161",
+          "#818383",
+          "#a4a5a5",
+          "#c8c9c9",
+          "#edefef"
+        ]
+      },
+      "on-navy-soft": {
+        "role": "neutral",
+        "displayName": "On Navy, soft",
+        "canonical": "oklch(79.0% 0.068 248.7)",
+        "tonalRamp": [
+          "#000c1b",
+          "#11273b",
+          "#2a445e",
+          "#456483",
+          "#6286a9",
+          "#88a9ca",
+          "#afcdeb",
+          "#d7f2ff"
+        ]
+      },
+      "on-navy-mute": {
+        "role": "neutral",
+        "displayName": "On Navy, mute",
+        "canonical": "oklch(71.1% 0.051 259.1)",
+        "tonalRamp": [
+          "#040b18",
+          "#1b2536",
+          "#354358",
+          "#52627c",
+          "#7083a1",
+          "#94a6c2",
+          "#bacae4",
+          "#e1f0ff"
+        ]
+      },
+      "shade": {
+        "role": "neutral",
+        "displayName": "Shade",
+        "canonical": "oklch(88.6% 0.016 257.2)",
+        "tonalRamp": [
+          "#090b0f",
+          "#22252a",
+          "#3e4249",
+          "#5c6269",
+          "#7d838c",
+          "#a0a6ae",
+          "#c4cad1",
+          "#eaeff6"
+        ]
+      },
+      "shade-deep": {
+        "role": "neutral",
+        "displayName": "Shade, deep",
+        "canonical": "oklch(85.5% 0.019 258.4)",
+        "tonalRamp": [
+          "#080b10",
+          "#21252c",
+          "#3d424a",
+          "#5b626b",
+          "#7c838e",
+          "#9fa6b0",
+          "#c3cad3",
+          "#e9eff7"
+        ]
+      },
+      "light": {
+        "role": "neutral",
+        "displayName": "Light",
+        "canonical": "oklch(100.0% 0.000 89.9)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The hero headline on navy; scales with --u."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section titles and the outcome title."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card headings, stage titles, meter titles."
+      },
+      "lede": {
+        "displayName": "Lede",
+        "purpose": "The two-line hero lede in On Navy, soft."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "All running copy; prose capped at 60-62ch."
+      },
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "Prices in meter rows and number fields; tabular numerals."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Instrument labels only: meter titles, range and zone labels, sealed tag."
+      }
+    },
+    "shadows": [
+      {
+        "name": "raise-sm",
+        "value": "4px 4px 10px var(--shade), -4px -4px 10px var(--light)",
+        "purpose": "Small raised controls on the ground (the quiet toggle)."
+      },
+      {
+        "name": "raise-md",
+        "value": "9px 9px 22px var(--shade), -9px -9px 22px var(--light)",
+        "purpose": "Default .raised panel: meters, result card, interstitial, featured card."
+      },
+      {
+        "name": "raise-lg",
+        "value": "14px 14px 34px var(--shade), -14px -14px 34px var(--light)",
+        "purpose": "Hero-scale raised object; defined, not yet used on the homepage."
+      },
+      {
+        "name": "inset-sm",
+        "value": "inset 2px 2px 5px var(--shade), inset -2px -2px 5px var(--light)",
+        "purpose": "Default .inset well: grooves, URL boxes, ref chips, sealed tag, later cards."
+      },
+      {
+        "name": "inset-md",
+        "value": "inset 3px 3px 8px var(--shade-deep), inset -3px -3px 8px var(--light)",
+        "purpose": "Deeper groove for wells that must read as recessed below a small inset."
+      },
+      {
+        "name": "thumb",
+        "value": "3px 3px 8px var(--shade-deep), -3px -3px 8px var(--light), inset 0 0 0 6px var(--thumb)",
+        "purpose": "Meter thumb: raised ground disc with a 6px ring of the party colour."
+      },
+      {
+        "name": "lift-navy",
+        "value": "0 18px 40px rgba(29, 53, 87, 0.3)",
+        "purpose": "Navy canvases (hero, outcome panel) sitting above the desk."
+      },
+      {
+        "name": "lift-gold",
+        "value": "0 8px 22px rgba(232, 179, 75, 0.45)",
+        "purpose": "The gold pill glow; the chip and zone use larger radii of the same colour."
+      },
+      {
+        "name": "glow-blue",
+        "value": "0 0 24px rgba(92, 142, 200, 0.55), 20px 0 60px -10px rgba(92, 142, 200, 0.5)",
+        "purpose": "The viewer's bar in the reveal, wake trailing right."
+      },
+      {
+        "name": "glow-terracotta",
+        "value": "0 0 24px rgba(198, 121, 104, 0.55), -20px 0 60px -10px rgba(198, 121, 104, 0.5)",
+        "purpose": "The counterparty bar in the reveal, wake trailing left."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "The only easing: state transitions and every reveal keyframe."
+      },
+      {
+        "name": "dur-fast",
+        "value": "180ms",
+        "purpose": "Pill hover/active transform and shadow."
+      },
+      {
+        "name": "dur-slow",
+        "value": "900ms",
+        "purpose": "Bars drifting in from their own side (14% translate)."
+      },
+      {
+        "name": "zone-in",
+        "value": "700ms, delay 600ms, opacity 0 to 1",
+        "purpose": "The fair-price zone and its label fade in."
+      },
+      {
+        "name": "land",
+        "value": "600ms, delay 900ms, opacity 0 to 1, translateY 10 * --rs to 0, scale 0.85 to 1",
+        "purpose": "The fair-price chip lands."
+      },
+      {
+        "name": "wake-fade",
+        "value": "1600ms ease-out, delay 400ms, opacity 0.9 to 0.35",
+        "purpose": "Each bar's blurred wake settles."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation-duration 0.01ms; transition-duration 0.01ms; iteration-count 1",
+        "purpose": "Global collapse under prefers-reduced-motion; no per-component overrides."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "comp",
+        "value": "1672px",
+        "purpose": "--u clamps to 1px at and above this; the comp width."
+      },
+      {
+        "name": "lg",
+        "value": "1024px",
+        "purpose": "--u and --rs reset to 1px; hero and grids go single column."
+      },
+      {
+        "name": "md",
+        "value": "900px",
+        "purpose": "Top bar compacts, text nav links hide, outcome meters stack."
+      },
+      {
+        "name": "card",
+        "value": "760px",
+        "purpose": "Result card stacks."
+      },
+      {
+        "name": "sm",
+        "value": "640px",
+        "purpose": "Phone type sizes; meter rows go two-line with the track beneath."
+      },
+      {
+        "name": "reveal-container",
+        "value": "520px (container query)",
+        "purpose": "RevealCanvas drops --rs to 0.72px, hides in-canvas labels, shows the legend, thins ticks."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Gold Button",
+      "kind": "button",
+      "refersTo": "button-gold",
+      "description": "The one primary action on a screen; Lit Gold pill with a gold glow.",
+      "html": "<a class=\"ds-pill ds-pill--gold\" href=\"#\">Set your meter <svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14M13 6l6 6-6 6\"/></svg></a>",
+      "css": ".ds-pill{display:inline-flex;align-items:center;justify-content:center;gap:.5em;height:58px;padding:0 34px;border-radius:var(--radius-pill,999px);font-family:var(--font-display,Sora,sans-serif);font-weight:700;font-size:23px;white-space:nowrap;text-decoration:none;border:0;cursor:pointer;transition:transform 180ms cubic-bezier(.16,1,.3,1),box-shadow 180ms cubic-bezier(.16,1,.3,1)}.ds-pill:active{transform:translateY(1px) scale(.99)}.ds-pill:focus-visible{outline:3px solid var(--gold,#e8b34b);outline-offset:3px}.ds-pill--gold{background:var(--gold-2,#edc55e);color:var(--gold-ink,#23303f);box-shadow:0 8px 22px rgba(232,179,75,.45)}.ds-pill--gold:hover{background:var(--gold,#e8b34b)}"
+    },
+    {
+      "name": "Navy Button",
+      "kind": "button",
+      "refersTo": "button-navy",
+      "description": "Secondary action; Broker Navy pill with a light navy shadow.",
+      "html": "<a class=\"ds-pill ds-pill--navy\" href=\"#\">Start free</a>",
+      "css": ".ds-pill{display:inline-flex;align-items:center;justify-content:center;gap:.5em;height:46px;padding:0 30px;border-radius:var(--radius-pill,999px);font-family:var(--font-display,Sora,sans-serif);font-weight:700;font-size:19px;white-space:nowrap;text-decoration:none;border:0;cursor:pointer;transition:transform 180ms cubic-bezier(.16,1,.3,1),box-shadow 180ms cubic-bezier(.16,1,.3,1)}.ds-pill:active{transform:translateY(1px) scale(.99)}.ds-pill:focus-visible{outline:3px solid var(--gold,#e8b34b);outline-offset:3px}.ds-pill--navy{background:var(--navy,#1d3557);color:var(--on-navy,#f5f7f7);box-shadow:0 4px 12px rgba(29,53,87,.25)}.ds-pill--navy:hover{background:var(--navy-2,#16304f)}"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "A raised ground-coloured control, not a coloured action; the \"show the numbers\" toggle.",
+      "html": "<button class=\"ds-pill ds-pill--quiet\" type=\"button\">Show the numbers</button>",
+      "css": ".ds-pill{display:inline-flex;align-items:center;justify-content:center;gap:.5em;height:48px;padding:0 24px;border-radius:var(--radius-pill,999px);font-family:var(--font-display,Sora,sans-serif);font-weight:700;font-size:17px;white-space:nowrap;border:0;cursor:pointer;transition:transform 180ms cubic-bezier(.16,1,.3,1),box-shadow 180ms cubic-bezier(.16,1,.3,1)}.ds-pill:active{transform:translateY(1px) scale(.99)}.ds-pill:focus-visible{outline:3px solid var(--gold,#e8b34b);outline-offset:3px}.ds-pill--quiet{background:var(--ground,#eef1f6);color:var(--navy,#1d3557);box-shadow:4px 4px 10px var(--shade,#d3dae4),-4px -4px 10px var(--light,#fff)}.ds-pill--quiet:hover{box-shadow:9px 9px 22px var(--shade,#d3dae4),-9px -9px 22px var(--light,#fff)}"
+    },
+    {
+      "name": "Raised Panel",
+      "kind": "card",
+      "refersTo": "panel-raised",
+      "description": "The neumorphic container: same grey as the page, pressed out by the one-light shadow pair.",
+      "html": "<section class=\"ds-raised\"><h3 class=\"ds-raised__title\">Your meter</h3><p class=\"ds-raised__body\">Four price points, set in private.</p></section>",
+      "css": ".ds-raised{background:var(--ground,#eef1f6);border-radius:24px;box-shadow:9px 9px 22px var(--shade,#d3dae4),-9px -9px 22px var(--light,#fff);padding:27px 33px 28px;color:var(--ink,#23303f)}.ds-raised__title{margin:0 0 10px;font-family:var(--font-display,Sora,sans-serif);font-weight:700;font-size:22px;line-height:1;letter-spacing:.22em;text-transform:uppercase;color:var(--navy,#1d3557)}.ds-raised__body{margin:0;font-family:var(--font-body,'Albert Sans',sans-serif);font-size:17px;line-height:1.55;color:var(--slate,#5a6b80)}"
+    },
+    {
+      "name": "Navy Canvas",
+      "kind": "card",
+      "refersTo": "panel-navy",
+      "description": "The living surface: navy, 20px corners, lifted by a tinted drop shadow; hero and outcome panel.",
+      "html": "<section class=\"ds-navy\"><h2 class=\"ds-navy__title\">Watch two prices become one fair one.</h2><p class=\"ds-navy__lede\">Each of you sets four numbers in private.</p></section>",
+      "css": ".ds-navy{background:var(--navy,#1d3557);color:var(--on-navy,#f5f7f7);border-radius:20px;box-shadow:0 18px 40px rgba(29,53,87,.3);padding:36px 40px 30px;overflow:hidden}.ds-navy__title{margin:0;font-family:var(--font-display,Sora,sans-serif);font-weight:700;font-size:38px;line-height:1.05;letter-spacing:-.02em;text-wrap:balance}.ds-navy__lede{margin:12px 0 0;font-family:var(--font-body,'Albert Sans',sans-serif);font-size:19px;line-height:1.3;color:var(--on-navy-soft,#99bfe5)}"
+    },
+    {
+      "name": "Inset Well",
+      "kind": "input",
+      "refersTo": "field-inset",
+      "description": "A recessed groove in the ground: URL boxes, ref chips, slider tracks.",
+      "html": "<input class=\"ds-inset\" type=\"text\" readonly value=\"https://fairprice.broker/r/AB12CD\" aria-label=\"Share link\">",
+      "css": ".ds-inset{display:block;width:100%;max-width:360px;background:var(--ground,#eef1f6);box-shadow:inset 2px 2px 5px var(--shade,#d3dae4),inset -2px -2px 5px var(--light,#fff);border:0;border-radius:12px;padding:12px 14px;font:500 14px var(--font-body,'Albert Sans',sans-serif);color:var(--ink,#23303f);font-variant-numeric:tabular-nums}.ds-inset:focus-visible{outline:3px solid var(--gold,#e8b34b);outline-offset:3px}"
+    },
+    {
+      "name": "Meter Number Field",
+      "kind": "input",
+      "refersTo": "field-inset",
+      "description": "Borderless right-aligned figure with a hairline underline that turns gold on focus.",
+      "html": "<label class=\"ds-figure\"><span class=\"ds-figure__cur\">£</span><input class=\"ds-figure__num\" type=\"number\" inputmode=\"decimal\" value=\"512.50\" aria-label=\"Too expensive\"></label>",
+      "css": ".ds-figure{display:inline-flex;align-items:baseline;gap:2px;font-family:var(--font-body,'Albert Sans',sans-serif)}.ds-figure__cur{color:var(--slate,#5a6b80);font-weight:500;font-size:18px}.ds-figure__num{width:78px;border:0;border-bottom:2px solid var(--hairline,#dde3ec);background:transparent;text-align:right;font:600 18px var(--font-body,'Albert Sans',sans-serif);color:var(--ink,#23303f);padding:2px 0;font-variant-numeric:tabular-nums;-moz-appearance:textfield}.ds-figure__num::-webkit-outer-spin-button,.ds-figure__num::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}.ds-figure__num:focus{outline:none;border-bottom-color:var(--gold,#e8b34b)}"
+    },
+    {
+      "name": "Meter Row",
+      "kind": "custom",
+      "refersTo": "panel-raised",
+      "description": "One Van Westendorp row: label, inset groove with the party-coloured ring thumb, and the figure.",
+      "html": "<div class=\"ds-row\"><span class=\"ds-row__label\">Too expensive<small class=\"ds-row__help\">you would not consider it</small></span><div class=\"ds-row__track\"><i class=\"ds-row__thumb\" style=\"left:62%\"></i></div><span class=\"ds-row__figure\">£620.00</span></div>",
+      "css": ".ds-row{--thumb:var(--blue,#3d5a80);display:grid;grid-template-columns:190px 1fr 92px;align-items:center;gap:22px;font-family:var(--font-body,'Albert Sans',sans-serif);color:var(--ink,#23303f)}.ds-row__label{font-size:18px;line-height:1.2}.ds-row__help{display:block;font-size:.8em;color:var(--slate,#5a6b80);margin-top:2px}.ds-row__track{position:relative;height:12px;border-radius:6px;background:var(--ground,#eef1f6);box-shadow:inset 2px 2px 5px var(--shade,#d3dae4),inset -2px -2px 5px var(--light,#fff)}.ds-row__thumb{position:absolute;top:50%;width:24px;height:24px;border-radius:50%;background:var(--ground,#eef1f6);transform:translate(-50%,-50%);box-shadow:3px 3px 8px var(--shade-deep,#c8d0dc),-3px -3px 8px var(--light,#fff),inset 0 0 0 6px var(--thumb)}.ds-row__figure{font-size:18px;font-weight:600;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}"
+    },
+    {
+      "name": "Fair Price Chip",
+      "kind": "chip",
+      "refersTo": "chip-fair-price",
+      "description": "The lit gold chip where the fair price lands, on its hairline pointer.",
+      "html": "<div class=\"ds-chip\"><span class=\"ds-chip__value\">£512.50</span><span class=\"ds-chip__pointer\"></span></div>",
+      "css": ".ds-chip{display:inline-flex;flex-direction:column;align-items:center;padding:12px 20px 0;background:var(--navy,#1d3557);border-radius:16px}.ds-chip__value{display:inline-block;background:var(--gold-2,#edc55e);color:var(--navy,#1d3557);font-family:var(--font-display,Sora,sans-serif);font-weight:700;font-size:25px;letter-spacing:-.02em;line-height:1;padding:13px 16px;border-radius:12px;border:2px solid #f3d27a;box-shadow:0 10px 28px rgba(232,179,75,.45);white-space:nowrap;font-variant-numeric:tabular-nums}.ds-chip__pointer{position:relative;width:2px;height:48px;background:linear-gradient(var(--gold,#e8b34b),rgba(232,179,75,.2))}.ds-chip__pointer::after{content:\"\";position:absolute;bottom:-7px;left:50%;width:14px;height:14px;border-radius:50%;background:#fbe9b3;box-shadow:0 0 10px rgba(232,179,75,.9);transform:translateX(-50%)}"
+    },
+    {
+      "name": "Sealed Tag",
+      "kind": "chip",
+      "refersTo": "tag-sealed",
+      "description": "The inset, tracked SEALED marker in a meter head.",
+      "html": "<span class=\"ds-tag\"><svg width=\"12\" height=\"14\" viewBox=\"0 0 12 14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" aria-hidden=\"true\"><rect x=\"1\" y=\"6\" width=\"10\" height=\"7\" rx=\"1.5\"/><path d=\"M3 6V4a3 3 0 0 1 6 0v2\"/></svg>Sealed</span>",
+      "css": ".ds-tag{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:var(--ground,#eef1f6);box-shadow:inset 2px 2px 5px var(--shade,#d3dae4),inset -2px -2px 5px var(--light,#fff);font-family:var(--font-display,Sora,sans-serif);font-weight:700;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--slate,#5a6b80)}"
+    },
+    {
+      "name": "Top Bar",
+      "kind": "nav",
+      "refersTo": "button-navy",
+      "description": "Wordmark with the gold-centred target, slate links, navy Start free pill; no fill, no shadow.",
+      "html": "<header class=\"ds-topbar\"><a class=\"ds-wordmark\" href=\"#\"><svg viewBox=\"0 0 36 36\" width=\"36\" height=\"36\" aria-hidden=\"true\"><circle cx=\"18\" cy=\"18\" r=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"4.5\"/><circle cx=\"18\" cy=\"18\" r=\"5\" fill=\"#e8b34b\"/></svg><span>fair price broker</span></a><nav class=\"ds-topnav\"><a href=\"#\">Method</a><a href=\"#\">For recruiters</a><a class=\"ds-topnav__cta\" href=\"#\">Start free</a></nav></header>",
+      "css": ".ds-topbar{display:flex;align-items:center;justify-content:space-between;height:68px;padding:0 24px;background:var(--ground,#eef1f6)}.ds-wordmark{display:inline-flex;align-items:center;gap:12px;text-decoration:none;color:var(--navy,#1d3557);font-family:var(--font-display,Sora,sans-serif);font-weight:700;font-size:30px;letter-spacing:-.025em;line-height:1}.ds-topnav{display:flex;align-items:center;gap:46px}.ds-topnav a{color:var(--slate,#5a6b80);text-decoration:none;font:500 18px var(--font-body,'Albert Sans',sans-serif)}.ds-topnav a:hover{color:var(--navy,#1d3557)}.ds-topnav a:focus-visible{outline:3px solid var(--gold,#e8b34b);outline-offset:3px;border-radius:10px}.ds-topnav__cta,.ds-topnav a.ds-topnav__cta{display:inline-flex;align-items:center;height:46px;padding:0 30px;border-radius:999px;background:var(--navy,#1d3557);color:var(--on-navy,#f5f7f7);font:700 19px var(--font-display,Sora,sans-serif);box-shadow:0 4px 12px rgba(29,53,87,.25)}.ds-topnav a.ds-topnav__cta:hover{background:var(--navy-2,#16304f);color:var(--on-navy,#f5f7f7)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Instrument",
+    "overview": "Fair Price Broker looks like a well-made measuring instrument sitting on a calm desk. The shell is a Stripe-class neutral: a soft cool-grey ground, navy ink, plain warm copy, nothing shouting. Set into that shell are two kinds of object. The first is the meter, a raised neumorphic panel pressed out of the same grey as the page, holding four inset slider grooves with a ring-thumb in the party's colour; it reads as something you can touch and set. The second is the reveal, a deep-navy canvas where the product's own maths is the animation: two coloured ranges drift in from either side, a gold zone lights where they overlap, and the fair price lands on a lit gold chip. Trust lives in everything around the instrument; the fun lives inside it.\n\nThe world is carried by a strict colour grammar rather than by decoration. Blue is always \"you\", terracotta is always \"them\", gold is reserved for the fair price and for the single primary action on a screen. Depth is a single soft-light source from the top-left, so every raised surface and every inset groove agrees about where the light is; navy panels are the only things that cast a real drop shadow, because they are the only things that sit on top of the desk rather than being pressed out of it. Sora Bold carries every heading, label and figure chip; Albert Sans carries prose and figures, with tabular numerals switched on globally so prices line up.\n\nDensity is generous at the first viewport and relaxed below it. The comp was drawn at 1672px and the build scales the first viewport proportionally with one design unit (`--u`) down to 1024px, then switches to fixed pixel rules; nothing ever scales above the comp. Motion is short, eased out, and only ever describes the maths (drift, glow, land, wake); the whole system collapses to near-zero durations under `prefers-reduced-motion`.",
+    "keyCharacteristics": [
+      "Calm neutral shell, tactile neumorphic meter, one living navy canvas.",
+      "Party colours are semantic: blue = you, terracotta = them, gold = the fair price and the primary action.",
+      "One shadow scale, one light source (top-left), raised and inset variants only.",
+      "Sora Bold display and labels; Albert Sans body; tabular numerals everywhere.",
+      "Proportional first viewport (`--u`) that never scales above the comp; fixed rules below 1024px.",
+      "Motion is the maths: drift, zone glow, chip landing, fading wake; reduced-motion collapses it."
+    ],
+    "rules": [
+      {
+        "name": "The One Meaning Rule",
+        "body": "Blue means the viewer's own side, terracotta means the other side, gold means the fair price or the one primary action. No hue is ever borrowed for decoration, status, or a second CTA on the same screen.",
+        "section": "colors"
+      },
+      {
+        "name": "The Same-Grey Rule",
+        "body": "Raised panels, inset grooves and the page share `{colors.ground}`. A panel with a different fill is not neumorphic and does not belong to the meter family; it is a navy canvas or nothing.",
+        "section": "colors"
+      },
+      {
+        "name": "The Hard-Contrast Rule",
+        "body": "Soft surfaces, hard text: body copy on Ground is Ink or Slate, never Mist; gold carries Ink or Navy on it, never white. WCAG 2.1 AA is ruled for the project and the palette is built to meet it.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Numerals Rule",
+        "body": "`font-variant-numeric: tabular-nums` is set on `html`. Every figure, axis tick and ref code lines up; nothing opts out.",
+        "section": "typography"
+      },
+      {
+        "name": "The Instrument-Label Rule",
+        "body": "Uppercase tracked Sora is a dial marking, used only where it labels a part of the instrument or a fact about it. It is not used as a kicker above a headline.",
+        "section": "typography"
+      },
+      {
+        "name": "The Balanced-Heading Rule",
+        "body": "`h1`–`h3` are Sora 700, Navy, `text-wrap: balance`, zero margin; spacing between heading and copy is owned by the layout, not the heading.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Light Rule",
+        "body": "Light comes from the top-left everywhere. Raised is dark bottom-right and white top-left; inset is the inverse. Nothing in the grey world uses a centred, offset-only or hard shadow.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Navy Sits Above Rule",
+        "body": "Only navy canvases cast a tinted drop shadow (`--lift-navy`). Grey surfaces are pressed out of the page and never \"float\".",
+        "section": "elevation"
+      },
+      {
+        "name": "The Gold Glows Rule",
+        "body": "Gold elements (pill, chip, zone, chip pointer dot) use a gold-tinted diffuse glow, never a grey shadow; the glow is how the fair price reads as lit.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do build every first-viewport measurement as `calc(N * var(--u))` from the comp's pixel value, and reset `--u` to 1px at the 1024px breakpoint.",
+      "Do give any host of RevealCanvas a height and a `--rs`; bind it to `--u` when the canvas lives in the first viewport.",
+      "Do keep raised panels, inset wells and the page on the same Ground colour and pick shadows only from the five-step scale (`--raise-sm/md/lg`, `--inset-sm/md`).",
+      "Do colour the viewer's side blue and the counterparty terracotta in every meter, bar, thumb, label and legend, and switch the pair with the `accent` / `yourAccent` prop rather than new CSS.",
+      "Do reserve gold for the fair price, the deal zone, completed progress, focus and the one primary action; hover it darker (`--gold-2` to `--gold`), never lighter.",
+      "Do set figures in Albert Sans 600 with tabular numerals and the chip in Sora 700; let the global `tabular-nums` do the alignment.",
+      "Do write motion as short eased-out transforms and opacity (`--ease-out`, 180ms for state, 600–900ms for the reveal) and rely on the global reduced-motion collapse rather than per-component overrides.",
+      "Do use `variant=\"blind\"` for any viewer who must not see the other side; the counterparty range is not passed in at all.",
+      "Do keep prose to 44–62ch and use `text-wrap: balance` on headings."
+    ],
+    "donts": [
+      "Don't put a second gold action, a gold status badge or gold decoration on a screen that already has its primary action.",
+      "Don't fill a neumorphic panel with white, a tint or a border; a different-coloured container is a navy canvas or it is not a container.",
+      "Don't cast a grey drop shadow under gold, or a hard offset shadow anywhere; the only drop shadows are the navy lifts.",
+      "Don't render both parties' ranges (`variant=\"both\"`) on a blind payload, and don't reintroduce the other side's numbers through a legend, tooltip or axis annotation.",
+      "Don't use the uppercase tracked label style as a kicker or eyebrow above a headline; it marks parts of the instrument only.",
+      "Don't add points, streaks, scores or \"winner\" states to the steps row or the reveal; progress marks completion (gold fill) and nothing else.",
+      "Don't show testimonials, logos, counters or \"coming soon\" proof placeholders; the working meter and reveal are the proof.",
+      "Don't scale the first viewport above the comp (`--u` is clamped at 1px) or let `--u` leak into the sections below the instrument, which use fixed spacing."
+    ]
+  }
+}

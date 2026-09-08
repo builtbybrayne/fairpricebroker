@@ -58,6 +58,10 @@
 	--font-body: 'Albert Sans', 'Helvetica Neue', system-ui, sans-serif;
 	--track-caps: 0.22em;
 
+	/* one design unit: the comp was drawn at 1672px; below that the first
+	   viewport scales proportionally, never above it */
+	--u: min(1px, calc(100vw / 1672));
+
 	/* motion */
 	--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 	--dur-fast: 180ms;
@@ -196,6 +200,7 @@ p {
 	*::before,
 	*::after {
 		animation-duration: 0.01ms !important;
+		animation-delay: 0s !important;
 		animation-iteration-count: 1 !important;
 		transition-duration: 0.01ms !important;
 	}
