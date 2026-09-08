@@ -1,0 +1,120 @@
+{
+  "title": "Choose the visual world for fairprice.broker",
+  "question": "Your August ruling pinned The Instrument. Here it is beside the two challengers that held their own, with the discipline they donate written in. Keep it, take a challenger, or roll again.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "The Instrument",
+      "kicker": "THE ROLL",
+      "lineage": "pinned by your 19 Aug ruling: Stripe-calm shell, tactile meter, living reveal",
+      "thesis": "A quiet instrument you set in private, and a reveal where two ranges drift into one fair number.",
+      "palette": ["#eef1f6", "#1d3557", "#3d5a80", "#e8b34b", "#b76952"],
+      "materials": ["soft-shadow neumorphic surfaces", "canvas convergence animation", "Sora + Albert Sans"],
+      "viewport": "Headline and one gold action on the left, the sealed four-point meter as a raised panel on the right, the live reveal band running full width beneath with the fair price landing.",
+      "risk": "Neumorphism goes mushy without hard text contrast and a strict shadow scale; the reveal must never delay the sixty-second promise.",
+      "raised": [
+        { "from": "challenger-nixie", "raise": "The fair price lands as one lit figure; every numeral on the site is tabular and sized from the same digit scale." },
+        { "from": "challenger-plankton", "raise": "The convergence leaves a fading wake rather than snapping: motion has memory, and rest returns to calm." },
+        { "from": "challenger-gauze", "raise": "All four price points stay visible as ghosts on the meter; only the one being set is struck forward." }
+      ],
+      "comp": ".impeccable/mocks/decision/assigned.webp"
+    },
+    {
+      "id": "challenger-nixie",
+      "label": "Nixie Laboratory Counter",
+      "verdict": "competitive",
+      "lineage": "nixie-tube laboratory counters",
+      "thesis": "The numbers are the interface: every price a glowing digit in glass, agreement a count that settles.",
+      "palette": ["#0e0c0b", "#ff7a1a", "#3a3632", "#d9d2c5"],
+      "materials": ["blackened steel chassis", "orange plasma digits in glass envelopes", "engraved panel labels"],
+      "viewport": "Two tube banks face each other across a dark bench; the fair price bank in the middle lights up as the visitor plays.",
+      "case": "Wins on product clarity: the fair price is unmistakably the point. Loses audience identification: recruiters and candidates need calm trust, not a lab at night.",
+      "risk": "Reads as retro gadgetry; dark ground fights the neutral-broker trust position.",
+      "comp": ".impeccable/mocks/decision/challenger-nixie.webp",
+      "hero": "https://impeccable.style/worlds/cards/signals-instruments-nixie-laboratory-counter-hero.webp"
+    },
+    {
+      "id": "challenger-plankton",
+      "label": "Bioluminescent Wake",
+      "verdict": "competitive",
+      "lineage": "night seas lit by plankton",
+      "thesis": "Two hands draw light through black water and the wakes meet where the price is fair.",
+      "palette": ["#030812", "#2fd3ff", "#0aa3c9", "#e6f6ff"],
+      "materials": ["black night sea", "GPU particle wakes", "thin luminous type"],
+      "viewport": "A full-bleed dark field; dragging the meter draws a glowing wake, the two wakes converge and a bright point holds where they meet.",
+      "case": "Wins audience identification on 'viscerally engaging' (your own brief). Loses product clarity: a dark, ambient surface makes who-sees-what and the four questions harder to read.",
+      "risk": "Spectacle before understanding; heavy for phones passed hand to hand.",
+      "comp": ".impeccable/mocks/decision/challenger-plankton.webp",
+      "hero": "https://impeccable.style/worlds/cards/reefs-bioluminescent-nocturnal-plankton-wake-stars-hero.webp"
+    },
+    {
+      "id": "challenger-gauze",
+      "label": "Struck Cathode Gauze",
+      "verdict": "declined",
+      "lineage": "cathode numeral stacks behind anode gauze",
+      "thesis": "Every possible value present as a ghost; the chosen one struck forward in glow.",
+      "palette": ["#0b0f1a", "#ff8c1a", "#8a6a3a"],
+      "materials": ["bronze wire gauze", "ghost numerals", "no boxes or rules"],
+      "viewport": "An unframed dark plane of ghost values with one lit.",
+      "case": "Loses both axes for this audience: an access-control aesthetic on a trust product.",
+      "kept": "All options present as ghosts, one struck forward.",
+      "risk": "Unreadable for first-time visitors.",
+      "hero": "https://impeccable.style/worlds/cards/operate-b-struck-cathode-gauze-hero.webp"
+    },
+    {
+      "id": "challenger-toyshelf",
+      "label": "Window-Box Toy Shelf",
+      "verdict": "declined",
+      "lineage": "toy-aisle window boxes",
+      "thesis": "Every check is a box with a window; lift the lid to see inside.",
+      "palette": ["#f6efe0", "#4f8a3d", "#c23b5a", "#4d8fd6", "#f2c94c"],
+      "materials": ["cream board", "gingham trim", "cellophane windows"],
+      "viewport": "Shelves of boxed checks, one lid hinging open.",
+      "case": "Loses both axes: playful to the point of undermining a salary conversation.",
+      "kept": "Progressive disclosure as a physical hinge: summary on the lid, detail inside.",
+      "risk": "Trivialises the money.",
+      "hero": "https://impeccable.style/worlds/cards/pop-culture-shelf-window-box-toy-shelf-hero.webp"
+    },
+    {
+      "id": "challenger-icepress",
+      "label": "Expedition Ice Press",
+      "verdict": "declined",
+      "lineage": "hand-set polar newspapers",
+      "thesis": "One black ink, hand-set, errors left standing.",
+      "palette": ["#111111", "#ece6d6"],
+      "materials": ["rag paper", "uneven hand-pulled plates"],
+      "viewport": "A narrow hand-set measure with a tipped-in plate.",
+      "case": "Loses both axes: a reading world, not an instrument to set.",
+      "kept": "Honesty as material: what was entered stays visible, uncorrected.",
+      "risk": "Static where the product needs motion.",
+      "hero": "https://impeccable.style/worlds/cards/graphic-worlds-publishing-expedition-ice-press-hero.webp"
+    },
+    {
+      "id": "challenger-film",
+      "label": "Hand-Processed Film",
+      "verdict": "declined",
+      "lineage": "hand-processed 16mm film",
+      "thesis": "The emulsion joins the event: light leaks and scratches mark the frame.",
+      "palette": ["#1a1a1a", "#8f8f8f", "#f28c28"],
+      "materials": ["silver emulsion", "sprocket margins", "light-leak flare"],
+      "viewport": "Frames banded in strict rows, the active frame flared.",
+      "case": "Loses both axes: cinematic wear reads as damage on a fairness tool.",
+      "kept": "The reveal leaves a mark on the medium: the moment of agreement is recorded, not just shown.",
+      "risk": "Grain and scratches read as broken UI.",
+      "hero": "https://impeccable.style/worlds/cards/cinema-cinematography-editing-hand-processed-film-bloom-hero.webp"
+    }
+  ],
+  "reroll": { "registers": ["safer", "bolder"] },
+  "buildPath": { "value": "comp", "toggle": true },
+  "canon": true,
+  "canonCard": {
+    "label": "The category standard",
+    "thesis": "A Stripe-class SaaS landing page, executed impeccably.",
+    "palette": ["#ffffff", "#0a2540", "#635bff", "#f6f9fc"],
+    "materials": ["clean 12-column grid", "product screenshot hero", "one brand blue"],
+    "viewport": "Centered headline, subhead, two buttons, a product screenshot floating below.",
+    "risk": "Indistinguishable from every other tool by design; the reveal becomes a feature bullet.",
+    "comp": ".impeccable/mocks/decision/canon.webp"
+  },
+  "steer": true
+}

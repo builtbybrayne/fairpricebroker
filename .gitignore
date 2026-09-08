@@ -28,3 +28,18 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 test-results
 Thumbs.db
+
+# Impeccable design tooling — per-machine and derived state
+.impeccable/config.local.json
+.impeccable/live/
+.impeccable/review/
+.impeccable/build/
+.impeccable/mocks/decision/*.png
+.impeccable/mocks/decision/shoot.mjs
+
+# Data-core local exports (T3-m1-data-core §2.9)
+exports/
+
+# Local tool state
+.impeccable/questions/
+supabase/.temp/
