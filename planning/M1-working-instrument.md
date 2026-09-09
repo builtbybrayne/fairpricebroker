@@ -46,11 +46,11 @@ MoR approval, no business prerequisite gates any M1 item.
    *(T2-data-layer)*
 4. **Casual mode on the landing page** — The Instrument design language,
    stateless server computation, zero signup, shareable result card with
-   ref codes — with the **blind-handover choreography** (operator ruling,
-   20 Aug 2026): Person A enters their figures while B looks away; an
-   interstitial confirms-and-hides A's entries before the device is
-   handed over; B enters theirs; a "both look now" interstitial precedes
-   the reveal. **The outcome shows the reconciliation (fair price, zones,
+   ref codes — with the **seal-and-hide choreography** (operator ruling,
+   20 Aug 2026, revised 8 Sep 2026): both meters are live side by side;
+   each person seals their own, which hides it behind an opaque plate
+   for the handover; once both are sealed a "both look now" gate
+   precedes the reveal. **The outcome shows the reconciliation (fair price, zones,
    animation) WITHOUT either side's raw figures by default; a "show the
    numbers" button reveals them on demand.** Entered figures are never
    displayed anywhere else. *(T2-product-surfaces §6 R5–R6)*
@@ -107,9 +107,9 @@ page, launch week (M3) · Umami analytics MAY slip to M2 without failing M1
    completes everything a human can in M1 — creates an invited session,
    redeems a party grant, submits, reads its role-safe result, and runs a
    casual reconciliation — and the catalogue parity suite is green.
-9. The casual blind-handover flow works on one phone: A's figures are
-   hidden before handover, B cannot reveal them, and the outcome appears
-   only at the "both look" step.
+9. The casual seal-and-hide flow works on one phone: a sealed side's
+   figures are hidden behind its plate, the other side cannot reveal
+   them, and the outcome appears only at the "both look" step.
 
 ## 5. Sequencing sketch beyond M1 (context, not commitment)
 

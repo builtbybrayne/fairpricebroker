@@ -179,6 +179,7 @@
 					variant="blind"
 					yourAccent="terracotta"
 					animate
+					compact
 				/>
 			</div>
 			{#if !showNumbers}

@@ -131,11 +131,11 @@ separate `/casual` route). No new page route is created.
 POST endpoint, **not** a SvelteKit form action. Justification against the
 stateless-server-computation constraint (T2-data-layer §2.6 R1's
 "ephemeral ≠ client-side" ruling, T2-product-surfaces §6 R2):
-1. The choreography is a client-driven state machine across five screens
-   with no page navigation between them (§3); a form action's natural
-   unit is one page's `<form>` submit, which fits poorly against
-   interstitials that must hold state (`both-look-now`) independent of
-   any single form.
+1. The choreography is a client-driven state machine over two live meters
+   and a both-look gate with no page navigation between them (§3); a form
+   action's natural unit is one page's `<form>` submit, which fits poorly
+   against a gate that must hold state (`both-look-now`) independent of
+   either meter's form.
 2. M1 DoD item 8 requires an AI agent to "run a casual reconciliation"
    through the agent doorway (T2-agent-distribution). A plain JSON
    endpoint with a stable request/response contract (§4) is the shape
@@ -205,6 +205,45 @@ in-memory Svelte state (`$state` runes) — never `localStorage`,
 reload loses everything, which is correct (nothing must survive past the
 tab).
 
+> **Revised 8 Sep 2026 (operator ruling, in chat, after reviewing the
+> shipped homepage).** The one-at-a-time choreography below the rule was
+> replaced: both meters are live side by side from the start; each side
+> seals its own meter ("Seal and hide"), which replaces it with an opaque
+> plate for the handover; when both are sealed the reconciliation runs
+> and the pair reveal it together. The original table is kept beneath
+> for the audit trail. Implemented in `ffd3782`.
+
+**States:** `entry` · `a-sealed` · `b-sealed` · `both-look-now` ·
+`transport-error` · `reveal`. Two booleans, `sealedA` and `sealedB`,
+carry which meters are behind their plates.
+
+**Transitions** (event, guard, from → to, side effect):
+
+| Event | Guard | From → To | Side effect |
+|---|---|---|---|
+| `scenario` | in `entry` with neither side sealed | `entry` → `entry` | re-seed both meters from the chosen scenario's example figures (§7) |
+| `seal-a` / `seal-b` | that side's tuple is 4 strictly-ascending values per the client mirror of the engine grammar | `entry` → `a-sealed` / `b-sealed`; or the other `*-sealed` → `both-look-now` | the sealed meter renders as a plate (no figure in the DOM); start the elapsed-time clock on the first seal; on the second seal mint `idempotencyKey` **once** and fire `POST /api/casual/reconcile` immediately |
+| `outcome-received` | fetch resolved with a parseable JSON body | `both-look-now` → `both-look-now` (internal) | store the response; the screen does not branch on it |
+| `ref-rejected` | `HTTP 400` and body deep-equals `{ error: "invalid-ref" }` | internal auto-retry | discard `attributionRef`, re-fire with the **same** key and `ref: null` |
+| `transport-failed` | fetch rejected, unparseable, or an unexpected status | `both-look-now` → `transport-error` | keep the key and both tuples; the seam's state is UNKNOWN |
+| `retry` | in `transport-error` | → `both-look-now` | re-fire with the **same** key |
+| `give-up` | in `transport-error` | → `entry` | clear both tuples (re-seeded), the response, the key; unseal both |
+| `continue` | response `ok: true` | `both-look-now` → `reveal` | stop the clock |
+| `continue` (error path) | response `ok: false` (well-formed engine rejection) | `both-look-now` → `entry` | an engine rejection cannot name whose figures without unsealing one side in front of the other, so both meters reset together with the `error.detail` shown once |
+| `toggle-numbers` | in `reveal` | `reveal` → `reveal` | flips `numbersShown` (default `false`, R6) |
+| `restart` | in `reveal` | `reveal` → `entry` | clear and re-seed |
+
+Two hard invariants the e2e suite asserts (§8):
+1. **A sealed side's figures are never rendered anywhere until `reveal`
+   with `numbersShown`** — the sealed meter is `MeterPanel` in `sealed`
+   mode, which renders the plate and none of the values; there is no
+   unseal control. This is the mechanical form of DoD item 9.
+2. **The reveal screen is never mounted before `reveal`**; the
+   `both-look-now` card shows a neutral "working" affordance while the
+   fetch is in flight and does not branch its render on the response.
+
+<details><summary>Superseded 8 Sep 2026: the one-at-a-time choreography as first accepted</summary>
+
 **States:** `idle` · `party-a-entry` · `a-confirm-hide` · `handover` ·
 `party-b-entry` · `both-look-now` · `transport-error` · `reveal`.
 
@@ -239,6 +278,9 @@ Two hard invariants the component tests assert (§5):
    `both-look-now` screen may show a neutral "computing…" affordance
    while the fetch is in flight but must not branch its render on the
    response content.
+
+
+</details>
 
 ## 4. Server contract (`src/lib/server/casual/casualReconcile.ts`)
 
@@ -756,27 +798,30 @@ overwrite.
   order — too-cheap, bargain, expensive, too-expensive — mapped to
   `Role`: Party A = `"low-preferring"`, Party B = `"high-preferring"`.
   `CASUAL_TEMPLATE_ID` is exported from here and reused in §4 step 4.
-- `src/lib/client/casual/CasualFlow.svelte` — the state machine (§3);
-  owns both tuples and the response in local state; renders exactly one
-  of the child components below per current state.
-- `src/lib/client/casual/PartyEntry.svelte` — the four-point meter entry,
-  reused for both A and B via a `role` prop; client-side validation
-  mirrors the engine's grammar/ascending rule for UX responsiveness only
-  (§4's server call remains the sole authority — a client-side pass does
-  not replace the `EngineError` handling path in §3's error transition).
-- `src/lib/client/casual/ConfirmHideInterstitial.svelte` — renders after
-  `a-submit`; confirms "you entered 4 prices," never echoes the values.
-- `src/lib/client/casual/HandoverInterstitial.svelte` — "pass the phone
-  to [Party B label]" prompt with a single continue control.
-- `src/lib/client/casual/BothLookInterstitial.svelte` — "both of you look
-  now" gate; shows a computing affordance while the fetch is pending;
-  its continue control is disabled until `outcome-received` with
-  `ok: true` (§3's guard table).
-- `src/lib/client/casual/TransportErrorInterstitial.svelte` — renders on
-  `transport-error` (§3's `transport-failed` transition); a plain "that
-  didn't go through" message with a `retry` control (re-fires the POST
-  with the same `idempotencyKey`) and a `give-up` control (return to
-  `idle`); renders neither party's tuple.
+- `src/lib/casual/casualTemplate.ts` also carries `CASUAL_SCENARIOS`
+  (revised 8 Sep 2026): three example contexts (a second-hand bike,
+  dinner for two, a day's freelance work), each with side-specific
+  titles, four short point labels and prompts per side, example figures,
+  the axis range and step, and the engine's recorded outcome for the
+  example figures so the hero can show it before anyone plays.
+- `src/lib/client/casual/CasualFlow.svelte` — the state machine (§3,
+  revised); owns both tuples, the sealed flags and the response in local
+  state; renders both `PartyEntry` panels side by side (stacked on a
+  phone) with the both-look / transport-error card beneath, or the
+  `OutcomeReveal` in `reveal`.
+- `src/lib/client/casual/PartyEntry.svelte` — one side's live meter
+  (the shared `MeterPanel` in `entry` mode, seeded from the scenario)
+  with a "Seal and hide" action; once sealed it renders the meter in
+  `sealed` mode (an opaque plate, no figure in the DOM). Client-side
+  validation mirrors the engine's grammar/ascending rule for UX
+  responsiveness only (§4's server call remains the sole authority).
+- `src/lib/client/casual/Interstitial.svelte` — the shared card used for
+  the "both of you look now" gate (computing affordance while the fetch
+  is pending; continue disabled until `outcome-received` with `ok: true`)
+  and the transport-error screen (`retry` with the same key, `give-up`
+  back to `entry`); renders neither party's tuple. The separate
+  confirm-hide and handover interstitials of the first design are gone:
+  the sealed plate is the handover prompt.
 - `src/lib/client/casual/OutcomeReveal.svelte` — the reveal screen (§5);
   renders zone/fair-price/animation unconditionally, raw tuples behind
   `numbersShown`.
@@ -873,17 +918,16 @@ V0a–V0b per §4.1's negative-test spec.
   (including V10d), V11, and `refCodes.test.ts` all named and green.
 
 **E2E (Playwright) — `tests/e2e/casual-flow.e2e.ts`:**
-- **V4 (DoD item 9, figures hidden)** — drive the flow through
-  `party-a-entry` with a fixed tuple, submit, and at each of
-  `a-confirm-hide`, `handover`, `party-b-entry`, `both-look-now` assert
-  (via `page.content()` or the accessibility tree) that none of A's four
-  entered strings appear anywhere in the rendered DOM. PASS: zero matches
-  at all four checkpoints.
-- **V5 (DoD item 9, B cannot reveal)** — during `party-b-entry`, assert
-  no interactive element (button, link, disclosure) exists whose
-  accessible name references "Party A" values or a reveal/show action;
-  only `PartyEntry` controls for B are present. PASS: no such element
-  found.
+- **V4 (DoD item 9, figures hidden)** — (revised 8 Sep 2026) type a
+  fixed tuple into A's live meter, seal it, and at `a-sealed` and
+  `both-look-now` assert that none of A's four entered strings appear
+  anywhere in the rendered DOM and that A's form carries its sealed
+  plate. PASS: zero matches at both checkpoints. A second spec seals B
+  first and asserts the same for B, and that the step row follows.
+- **V5 (DoD item 9, B cannot reveal)** — while A is sealed and B's meter
+  is open, assert no interactive element exists whose accessible name is
+  a show, reveal or unseal action; only B's meter controls and its seal
+  action are present. PASS: no such element found.
 - **V6 (DoD item 9, outcome only at both-look)** — assert the reveal
   screen's DOM markers (fair-price text, zone label, `ResultCard`) are
   absent while state is `both-look-now`, and present only after the
@@ -939,8 +983,8 @@ V0a–V0b per §4.1's negative-test spec.
   a corrupted/tampered inbound ref never traps the pair (the finding's
   named risk).
 - **V13 (mobile viewport)** — repeat V4–V7's core assertions (figures
-  hidden through handover, numbers-hidden-by-default, show-the-numbers
-  reveal) at a 375×812 mobile viewport (T2-product-surfaces §2.7
+  hidden behind the sealed plate, numbers-hidden-by-default,
+  show-the-numbers reveal) at a 375×812 mobile viewport (T2-product-surfaces §2.7
   "mobile-responsive from the first screen"). PASS: same disclosure
   guarantees hold at mobile width; no horizontally-clipped or
   off-screen interactive control blocks a transition.

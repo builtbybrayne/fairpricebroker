@@ -20,23 +20,30 @@ function decimalsOf(v: string, min: number, max: number): number {
 
 /**
  * Formats a decimal string as money, keeping every entered decimal up to
- * four places (a 4-d.p. entry displays at 4 d.p.), never fewer than two.
+ * four places (a 4-d.p. entry displays at 4 d.p.). A whole figure of a
+ * thousand or more (a salary) shows no pennies; smaller ones show two.
  */
 export function formatMoney(v: string | number | null | undefined, currency = 'GBP'): string {
 	if (v === null || v === undefined || v === '' || Number.isNaN(Number(v))) return '—';
 	const s = String(v);
-	const dp = decimalsOf(s, 2, 4);
+	const whole = !s.includes('.') && Math.abs(Number(s)) >= 1000;
+	const dp = whole ? 0 : decimalsOf(s, 2, 4);
 	return `${symbolFor(currency)}${Number(s).toLocaleString('en-GB', {
 		minimumFractionDigits: dp,
 		maximumFractionDigits: dp
 	})}`;
 }
 
-/** The fair figure at the default 2 d.p. presentation precision. */
+/**
+ * The fair figure as an outcome: whole pounds for salaries (a thousand or
+ * more), two places below that. The unrounded value stays in the payload.
+ */
 export function formatFair(v: string | number, currency = 'GBP'): string {
-	return `${symbolFor(currency)}${Number(v).toLocaleString('en-GB', {
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2
+	const n = Number(v);
+	const dp = Math.abs(n) >= 1000 ? 0 : 2;
+	return `${symbolFor(currency)}${n.toLocaleString('en-GB', {
+		minimumFractionDigits: dp,
+		maximumFractionDigits: dp
 	})}`;
 }
 

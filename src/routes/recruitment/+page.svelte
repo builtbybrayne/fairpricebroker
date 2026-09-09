@@ -242,7 +242,7 @@
 						fairLabel={formatSalary(scene.fair)}
 						yourLabel="Employer budget"
 						theirLabel="Candidate"
-						zoneLabel={shown === 'comfort' ? 'Comfortable overlap' : 'Overlap'}
+						zoneLabel="Overlap"
 						variant="both"
 						compact
 						animate={!reducedMotion}

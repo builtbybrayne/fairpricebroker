@@ -71,6 +71,7 @@
 	class="reveal"
 	class:reveal--animate={animate}
 	class:reveal--compact={compact}
+	class:reveal--blind={!showTheirs}
 	role="img"
 	bind:clientWidth={width}
 	aria-label={showTheirs
@@ -86,7 +87,9 @@
 		{/if}
 
 		<div class="lane lane--yours">
-			<span class="lane__label caps">{yourLabel}</span>
+			<span class="lane__label caps" class:lane__label--terracotta={yourAccent === 'terracotta'}
+				>{yourLabel}</span
+			>
 			<div
 				class="bar bar--yours bar--{yourAccent}"
 				style:left={`${clampPct(yours.lo)}%`}
@@ -463,6 +466,20 @@
 
 	.reveal--compact .chip__pointer {
 		height: calc(40 * var(--rs, 1px));
+	}
+
+	/* one range only: the pointer lands on the bar itself, and the label
+	   moves under the bar so the chip can never sit on it */
+	.reveal--blind .chip__pointer {
+		height: calc(36 * var(--rs, 1px));
+	}
+
+	.reveal--blind.reveal--compact .chip__pointer {
+		height: calc(52 * var(--rs, 1px));
+	}
+
+	.reveal--blind .lane--yours .lane__label {
+		top: calc(60 * var(--rs, 1px));
 	}
 
 	/* compact: the chip clears the lane label; the zone spans both bars */

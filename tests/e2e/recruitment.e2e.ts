@@ -153,8 +153,8 @@ test('V1 + V2 + V5: full happy path with payload safety and 4-d.p. round trip', 
 	await expect(r.page.getByTestId('numbers')).toBeVisible();
 	const emp = await r.page.getByTestId('employer-figure').allTextContents();
 	const cand = await r.page.getByTestId('candidate-figure').allTextContents();
-	expect(emp).toEqual(['£41,250.00', '£46,500.00', '£51,750.00', '£57,800.00']);
-	expect(cand).toEqual(['£42,000.1234', '£48,000.50', '£55,000.00', '£65,000.00']);
+	expect(emp).toEqual(['£41,250', '£46,500', '£51,750', '£57,800']);
+	expect(cand).toEqual(['£42,000.1234', '£48,000.50', '£55,000', '£65,000']);
 	const fairR = await r.page.getByTestId('fair-salary').textContent();
 	const fairC = await c.page.getByTestId('fair-salary').textContent();
 	expect(fairR).toBe(fairC);

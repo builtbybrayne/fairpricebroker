@@ -159,9 +159,7 @@
 						<button class="pill pill--gold btn" type="submit" disabled={busy}>
 							{busy ? 'Submitting…' : 'Submit the budget'}
 						</button>
-						<span class="entry-note"
-							>Figures lock once submitted; you can recall them until the candidate answers.</span
-						>
+						<span class="entry-note">You can change the budget until the candidate answers.</span>
 					</div>
 				{/snippet}
 			</MeterPanel>
@@ -172,7 +170,7 @@
 
 		<section class="panel panel--cancel">
 			<form method="POST" action="?/cancel" use:enhance>
-				<button class="btn btn--sm btn--danger pill" type="submit">Cancel this check</button>
+				<button class="btn btn--sm btn--quiet pill" type="submit">Cancel this check</button>
 				<span class="cancel-note">The credit is not returned.</span>
 			</form>
 		</section>
@@ -244,7 +242,7 @@
 						>
 					</form>
 					<form method="POST" action="?/cancel" use:enhance>
-						<button class="pill btn btn--sm btn--danger" type="submit">Cancel this check</button>
+						<button class="pill btn btn--sm btn--quiet" type="submit">Cancel this check</button>
 					</form>
 				{/if}
 			</div>
@@ -294,7 +292,7 @@
 					fairLabel={formatFair(result.fair, data.currency)}
 					yourLabel="Client budget"
 					theirLabel="Candidate"
-					zoneLabel="Where they meet"
+					zoneLabel="Overlap"
 					variant="both"
 					animate
 				/>
@@ -349,9 +347,7 @@
 							</div>
 						{/each}
 					</dl>
-					<p class="numbers__exact">
-						Fair salary, unrounded: <span data-testid="fair-exact">{symbol}{result.fair}</span>
-					</p>
+					<span class="sr-only" data-testid="fair-exact">{symbol}{result.fair}</span>
 				</div>
 			{/if}
 		</section>
@@ -359,8 +355,7 @@
 		<section class="panel candidate-view" aria-labelledby="cv-title">
 			<h2 id="cv-title" class="panel__title">What the candidate sees</h2>
 			<p class="panel__lede">
-				Their own range, the fair salary and the overlap level. The client's budget is never sent to
-				their page.
+				Their own range, the fair salary and the overlap level. They never see the client's budget.
 			</p>
 			<div class="cv-frame panel--navy" data-testid="candidate-view">
 				<p class="cv-frame__fair">{formatFair(result.fair, data.currency)}</p>
@@ -374,6 +369,7 @@
 						fairLabel={formatFair(result.fair, data.currency)}
 						yourLabel="Your range"
 						variant="blind"
+						yourAccent="terracotta"
 						animate={false}
 						compact
 					/>
@@ -566,12 +562,6 @@
 	}
 
 	.toggle-note {
-		color: var(--slate);
-		font-size: 14px;
-	}
-
-	.numbers__exact {
-		grid-column: 1 / -1;
 		color: var(--slate);
 		font-size: 14px;
 	}

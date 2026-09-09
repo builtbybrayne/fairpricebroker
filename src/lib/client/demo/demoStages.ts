@@ -122,7 +122,7 @@ export const DEMO_STAGE_CONTENT: readonly DemoStageContent[] = [
 		name: 'Overlap',
 		heading: 'What the recruiter sees',
 		framing: [
-			'This is what the recruiter sees. Two things: how aligned the salary overlap is, and whether non-remuneration factors — flexibility, equity, culture, purpose — need to be meaningfully in play to make this work.',
+			'Two things: how much the salary ranges overlap, and whether non-salary factors — flexibility, equity, culture, purpose — need to be meaningfully in play to make this work.',
 			'This is the signal that replaces the standoff.'
 		],
 		questions: [
@@ -149,9 +149,7 @@ export const DEMO_STAGE_CONTENT: readonly DemoStageContent[] = [
 		hat: 'recruiter',
 		name: 'Wrap-up',
 		heading: 'That’s the full workflow',
-		framing: [
-			'That’s the full workflow. Before you go, we have a few quick questions about what you just experienced.'
-		],
+		framing: ['Before you go, a few quick questions about what you just experienced.'],
 		questions: [
 			{
 				key: 'would-use',

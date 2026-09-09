@@ -68,12 +68,13 @@ export function niceAxis(values: readonly number[]): { min: number; max: number;
 	return { min: Math.max(0, min), max, step };
 }
 
+/** A salary as an outcome: whole pounds at a thousand or more, else 2 d.p. */
 export function formatSalary(n: number, currency = '£'): string {
 	if (!Number.isFinite(n)) return `${currency}—`;
-	const whole = Number.isInteger(n);
+	const dp = Math.abs(n) >= 1000 || Number.isInteger(n) ? 0 : 2;
 	return `${currency}${n.toLocaleString('en-GB', {
-		minimumFractionDigits: whole ? 0 : 2,
-		maximumFractionDigits: whole ? 0 : 2
+		minimumFractionDigits: dp,
+		maximumFractionDigits: dp
 	})}`;
 }
 

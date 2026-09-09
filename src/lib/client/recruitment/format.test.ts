@@ -5,11 +5,13 @@ describe('formatMoney', () => {
 	it('shows the entered precision between 2 and 4 d.p.', () => {
 		expect(formatMoney('42000.1234')).toBe('£42,000.1234');
 		expect(formatMoney('48000.5')).toBe('£48,000.50');
-		expect(formatMoney('55000')).toBe('£55,000.00');
+		expect(formatMoney('55000')).toBe('£55,000');
+		expect(formatMoney('999')).toBe('£999.00');
 		expect(formatMoney('1.5', 'USD')).toBe('$1.50');
 	});
-	it('rounds the fair figure to 2 d.p. for display only', () => {
-		expect(formatFair('49852.88833959753')).toBe('£49,852.89');
+	it('shows the fair figure as an outcome: whole pounds for salaries, 2 d.p. below a thousand', () => {
+		expect(formatFair('49852.88833959753')).toBe('£49,853');
+		expect(formatFair('327.2988')).toBe('£327.30');
 	});
 });
 

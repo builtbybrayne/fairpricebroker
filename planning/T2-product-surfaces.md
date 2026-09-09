@@ -294,6 +294,12 @@ ruling.)*
   casual mode the DEVICE transiently holds both tuples (one client) — the
   handover is UX-enforced etiquette, not cryptographic blindness; server
   and stored-data guarantees are unchanged (nothing is stored at all).
+  *Revised 8 Sep 2026 (operator, in chat):* the protocol is now two live
+  meters side by side; each side "seals and hides" its own, which puts
+  an opaque plate over it for the handover; both sealed, then the reveal.
+  The confirm-and-hide and handover interstitials are gone; the guarantee
+  (a sealed side's figures are never re-displayed before the outcome)
+  is unchanged. See T3-m1-casual-mode §3.
 
 - **R6 (20 Aug 2026, operator, post-acceptance append) — casual outcome
   hides raw figures by default.** Refines R5: the casual outcome view

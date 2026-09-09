@@ -326,8 +326,9 @@
 							fairLabel={formatSalary(reveal.fairPrice.float)}
 							yourLabel="Employer budget"
 							theirLabel="Candidate"
-							zoneLabel={reveal.zone === 'comfort' ? 'Comfortable overlap' : 'Overlap'}
+							zoneLabel="Overlap"
 							variant="both"
+							compact
 							animate={!reducedMotion}
 						/>
 					</div>
@@ -474,7 +475,7 @@
 
 	.entry__note {
 		font-size: 14px;
-		color: var(--mist);
+		color: var(--slate);
 		padding-left: 6px;
 	}
 
@@ -488,7 +489,7 @@
 
 	.link__from {
 		font-size: 13px;
-		color: var(--mist);
+		color: var(--slate);
 	}
 
 	.link__body {
@@ -561,8 +562,8 @@
 
 	.result__canvas {
 		position: relative;
-		height: 330px;
-		padding: 40px 24px 0 28px;
+		height: 380px;
+		padding: 36px 24px 36px 28px;
 		background: var(--navy);
 		border-radius: 20px;
 		box-shadow: var(--lift-navy);
