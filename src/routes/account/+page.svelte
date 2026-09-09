@@ -23,7 +23,7 @@
 		<p class="panel__lede">
 			You have <strong data-testid="balance">{data.balance}</strong>
 			{data.balance === 1 ? 'credit' : 'credits'}. Each candidate link you generate uses one; new
-			accounts start with 20.
+			accounts start with 8.
 		</p>
 		<a class="pill pill--gold btn" href={resolve('/account/billing')}>Buy credits</a>
 	</section>

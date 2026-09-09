@@ -49,7 +49,7 @@ async function recruiterToLink(
 	const ctx = await browser.newContext();
 	const page = await ctx.newPage();
 	await signIn(page, email);
-	await expect(page.getByTestId('balance')).toHaveText('20');
+	await expect(page.getByTestId('balance')).toHaveText('8');
 
 	const roleId = await createRole(page, employer);
 	const { sessionId, inviteUrl } = await addCandidate(page);
@@ -122,9 +122,9 @@ test('V1 + V2 + V5: full happy path with payload safety and 4-d.p. round trip', 
 	await r.page.getByRole('button', { name: 'Copy' }).click();
 	await expect(r.page.getByRole('button', { name: 'Copied' })).toBeVisible();
 
-	// Balance was debited: 20 -> 19. One role row in the roles list.
+	// Balance was debited: 8 -> 7. One role row in the roles list.
 	await r.page.goto('/app/roles');
-	await expect(r.page.getByTestId('balance')).toHaveText('19');
+	await expect(r.page.getByTestId('balance')).toHaveText('7');
 	await expect(r.page.getByTestId('session-row')).toHaveCount(1);
 	await r.page.goto(`/app/s/${r.sessionId}`);
 	await expect(r.page.getByTestId('candidate-opened')).toHaveText('Not yet');

@@ -1,6 +1,6 @@
 // V1 (T3-m1-platform-naive-auth §5): two sign-ins with one email → one
 // auth.users row, one identities row, one launch-grant ledger row, balance
-// 20 both times. Runs against local Supabase over an in-memory cookie jar.
+// 8 both times. Runs against local Supabase over an in-memory cookie jar.
 import type { Cookies } from '@sveltejs/kit';
 import { afterAll, describe, expect, it } from 'vitest';
 import { admin, closeAdmin } from '../../../../tests/helpers/db';
@@ -41,7 +41,7 @@ describe('normaliseEmail', () => {
 });
 
 describe('naiveSignIn (V1)', () => {
-	it('signing in twice with one email yields one user, one identity, one grant, balance 20', async () => {
+	it('signing in twice with one email yields one user, one identity, one grant, balance 8', async () => {
 		const email = `v1-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.test`;
 
 		const first = fakeEvent();
@@ -70,7 +70,7 @@ describe('naiveSignIn (V1)', () => {
 		for (const ev of [first, second]) {
 			const bal = await ev.locals.supabase.rpc('current_credit_balance');
 			expect(bal.error).toBeNull();
-			expect(bal.data).toBe(20);
+			expect(bal.data).toBe(8);
 		}
 	});
 

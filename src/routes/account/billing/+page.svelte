@@ -25,8 +25,8 @@
 	<section class="panel" aria-labelledby="buy-title">
 		<h2 id="buy-title" class="panel__title">Buy credits</h2>
 		<p class="panel__lede">
-			Paid credits are not switched on yet. While we finish billing, every new account starts with
-			20 free credits, and you can ask us for more at any time.
+			Paid credits are not switched on yet. While we finish billing, every new account starts with 8
+			free credits, and you can ask us for more at any time.
 		</p>
 		<div class="buy">
 			<button class="pill pill--gold btn" type="button" disabled data-testid="buy-credits"

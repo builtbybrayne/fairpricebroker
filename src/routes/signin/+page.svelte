@@ -36,7 +36,8 @@
 				aria-invalid={form?.error ? 'true' : undefined}
 			/>
 			<span class="field__help"
-				>This is a preview sign-in while we build; your address is only used to find your checks.</span
+				>New accounts start with 8 free credits; each candidate link uses one. This is a preview
+				sign-in while we build: your address is only used to find your roles.</span
 			>
 		</div>
 		{#if form?.error}

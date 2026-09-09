@@ -90,7 +90,7 @@ test('V3: a fresh email-bound invite signs the browser in, redeems, and redirect
 	const pageA = await a.newPage();
 	await pageA.goto('/app');
 	await expect(pageA.getByTestId('email')).toHaveText(f.inviteeEmail);
-	await expect(pageA.getByTestId('balance')).toHaveText('20');
+	await expect(pageA.getByTestId('balance')).toHaveText('8');
 
 	// A different browser context opening the same link sees the dead-link page.
 	const b = await browser.newContext();
@@ -135,7 +135,7 @@ test('V4: an unknown token shows the dead-link page', async ({ page }) => {
 	await expect(page.locator('h1')).toHaveText("This link isn't live");
 });
 
-test('sign-in page: an email and Continue reach /app with 20 credits; sign-out returns home', async ({
+test('sign-in page: an email and Continue reach /app with 8 credits; sign-out returns home', async ({
 	page
 }) => {
 	const email = `e2e-signin-${randomUUID().slice(0, 8)}@example.test`;
@@ -146,7 +146,7 @@ test('sign-in page: an email and Continue reach /app with 20 credits; sign-out r
 	await page.getByRole('button', { name: 'Continue' }).click();
 	await expect(page).toHaveURL(/\/app$/);
 	await expect(page.getByTestId('email')).toHaveText(email);
-	await expect(page.getByTestId('balance')).toHaveText('20');
+	await expect(page.getByTestId('balance')).toHaveText('8');
 	await page.getByTestId('account-menu').click();
 	await page.getByRole('button', { name: 'Sign out' }).click();
 	await expect(page).toHaveURL(/\/$/);
