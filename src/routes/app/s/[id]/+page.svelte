@@ -293,14 +293,14 @@
 					yourLabel="Client budget"
 					theirLabel="Candidate"
 					zoneLabel="Overlap"
-					variant="both"
+					variant={showNumbers ? 'both' : 'outcome'}
 					animate
 				/>
 			</div>
 			{#if !showNumbers}
 				<p class="sr-only">
-					The client's budget and the candidate's expectations are drawn as two ranges on the salary
-					scale with the fair salary marked. Use "Show the numbers" to read the figures.
+					The client's budget is drawn on the salary scale with the overlap and the fair salary
+					marked. The candidate's range is drawn only after "Show the numbers".
 				</p>
 			{/if}
 		</section>

@@ -38,7 +38,13 @@
 		yourLabel?: string;
 		theirLabel?: string;
 		zoneLabel?: string;
-		variant?: 'both' | 'blind';
+		/**
+		 * both: both ranges (full-detail payloads only). blind: the viewer's
+		 * own range and the fair price. outcome: the viewer's own range, the
+		 * overlap zone and the fair price, with the other side's range never
+		 * drawn (the sealed check before "show the numbers").
+		 */
+		variant?: 'both' | 'blind' | 'outcome';
 		animate?: boolean;
 		compact?: boolean;
 		/** Colour of the viewer's own bar: blue (employer/A side) or terracotta (candidate/B side). */
@@ -71,7 +77,8 @@
 	class="reveal"
 	class:reveal--animate={animate}
 	class:reveal--compact={compact}
-	class:reveal--blind={!showTheirs}
+	class:reveal--blind={!showTheirs && variant !== 'outcome'}
+	class:reveal--outcome={variant === 'outcome'}
 	role="img"
 	bind:clientWidth={width}
 	aria-label={showTheirs
@@ -480,6 +487,20 @@
 
 	.reveal--blind .lane--yours .lane__label {
 		top: calc(60 * var(--rs, 1px));
+	}
+
+	/* outcome: one range, the zone hugging it, the label as a legend below */
+	.reveal--outcome .chip__pointer {
+		height: calc(36 * var(--rs, 1px));
+	}
+
+	.reveal--outcome .zone {
+		top: calc(80 * var(--rs, 1px));
+		height: calc(42 * var(--rs, 1px));
+	}
+
+	.reveal--outcome .zone__label {
+		top: calc(132 * var(--rs, 1px));
 	}
 
 	/* compact: the chip clears the lane label; the zone spans both bars */

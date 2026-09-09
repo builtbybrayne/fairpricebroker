@@ -64,13 +64,14 @@
 	$effect(() => {
 		onphase(phase);
 	});
-	// A new scenario re-seeds both meters, but only while nothing is sealed.
+	// A new scenario (by id: a retitled custom one is the same scenario)
+	// re-seeds both meters, but only while nothing is sealed.
 	$effect(() => {
-		const s = scenario;
+		void scenario.id;
 		untrack(() => {
 			if (phase === 'entry' && !sealedA && !sealedB) {
-				aValues = seed(s).a;
-				bValues = seed(s).b;
+				aValues = seed(scenario).a;
+				bValues = seed(scenario).b;
 			}
 		});
 	});

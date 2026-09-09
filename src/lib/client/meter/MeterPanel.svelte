@@ -388,7 +388,7 @@
 	/* the stage ----------------------------------------------------------- */
 	.stage {
 		position: relative;
-		height: 150px;
+		height: 166px;
 		margin: 6px 0 0;
 	}
 
@@ -465,7 +465,7 @@
 		letter-spacing: 0.14em;
 		color: var(--slate);
 		text-align: center;
-		width: 88px;
+		width: 104px;
 		line-height: 1.25;
 	}
 

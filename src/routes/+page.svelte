@@ -5,7 +5,9 @@
 	import { formatMoney, niceAxis, type CasualState } from '$lib/client/casual/casualClient';
 	import {
 		CASUAL_SCENARIOS,
+		CUSTOM_SCENARIO,
 		DEFAULT_SCENARIO,
+		withCustomTitle,
 		type CasualScenario
 	} from '$lib/casual/casualTemplate';
 	import type { CasualResultPayload } from '$lib/server/casual/casualPayload';
@@ -14,6 +16,11 @@
 	let { data }: { data: PageData } = $props();
 
 	let scenario = $state<CasualScenario>(DEFAULT_SCENARIO);
+	let customTitle = $state('');
+	const isCustom = $derived(scenario.id === CUSTOM_SCENARIO.id);
+	// The custom scenario carries the pair's own title; the picker and the
+	// meters read the same object.
+	const activeScenario = $derived(isCustom ? withCustomTitle(customTitle) : scenario);
 	let phase = $state<CasualState>('entry');
 	// Which of the three steps the pair is on (the row lights up as they go).
 	const step = $derived(
@@ -135,21 +142,39 @@
 	<section class="meters" id="set-your-meter" aria-label="The instrument">
 		<div class="meters__scenario" role="group" aria-label="Try it on">
 			<span class="meters__scenario-label">Try it on</span>
-			{#each CASUAL_SCENARIOS as s (s.id)}
+			{#each [...CASUAL_SCENARIOS, CUSTOM_SCENARIO] as s (s.id)}
 				<button
 					type="button"
 					class="pill meters__scenario-opt"
 					class:meters__scenario-opt--on={scenario.id === s.id}
 					aria-pressed={scenario.id === s.id}
 					disabled={phase !== 'entry'}
-					onclick={() => pickScenario(s)}>{s.name}</button
+					onclick={() => pickScenario(s)}
+					>{s.id === CUSTOM_SCENARIO.id ? 'Customise your own' : s.name}</button
 				>
 			{/each}
 		</div>
+		{#if isCustom}
+			<label class="meters__custom">
+				<span class="meters__custom-label">What are you pricing?</span>
+				<input
+					class="meters__custom-input inset"
+					type="text"
+					maxlength="60"
+					placeholder="e.g. a week in the cottage"
+					bind:value={customTitle}
+					disabled={phase !== 'entry'}
+					data-testid="custom-title"
+				/>
+			</label>
+		{/if}
+		<p class="meters__context">
+			A fair price for <strong data-testid="scenario-name">{activeScenario.name}</strong>
+		</p>
 		<CasualFlow
 			bind:this={flow}
 			ref={data.ref}
-			{scenario}
+			scenario={activeScenario}
 			onphase={(p) => (phase = p)}
 			{onreveal}
 		/>
@@ -378,6 +403,47 @@
 	.meters__scenario-opt:disabled {
 		opacity: 0.55;
 		cursor: default;
+	}
+
+	.meters__custom {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 12px;
+		flex-wrap: wrap;
+		margin: -6px 0 18px;
+	}
+
+	.meters__custom-label {
+		font-size: 15px;
+		color: var(--slate);
+	}
+
+	.meters__custom-input {
+		width: min(360px, 100%);
+		border: 0;
+		border-radius: 12px;
+		padding: 11px 14px;
+		font: inherit;
+		font-size: 16px;
+		color: var(--ink);
+	}
+
+	.meters__custom-input:focus {
+		outline: 2px solid var(--gold);
+		outline-offset: 2px;
+	}
+
+	.meters__context {
+		margin: -4px 0 18px;
+		text-align: center;
+		font-size: 17px;
+		color: var(--slate);
+	}
+
+	.meters__context strong {
+		color: var(--navy);
+		font-weight: 700;
 	}
 
 	.meters__note {

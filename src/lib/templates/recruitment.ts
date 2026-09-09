@@ -125,10 +125,10 @@ export const recruitmentTemplate: RecruitmentTemplate = {
 		// The recruiter, entering the hiring company's budget for the role.
 		'low-preferring': [
 			{
-				key: 'too-low',
-				label: 'Too low',
-				prompt: 'What salary would be so low that you would worry about who it could attract?',
-				help: 'Below this, the client is not really hiring for this role.'
+				key: 'not-credible',
+				label: 'Not credible',
+				prompt: 'What salary would be too low to be credible for this role?',
+				help: 'Below this, nobody would believe the client was serious about the hire.'
 			},
 			{
 				key: 'good-value',
@@ -137,43 +137,43 @@ export const recruitmentTemplate: RecruitmentTemplate = {
 				help: 'A strong hire at a sensible cost.'
 			},
 			{
-				key: 'stretch',
-				label: 'A stretch',
-				prompt: 'What salary would start to feel like a stretch for the client?',
-				help: 'Still possible, but it would need justifying.'
+				key: 'great-candidate',
+				label: 'For a great candidate',
+				prompt: 'What would the client pay for a great candidate?',
+				help: 'Above the norm, and justified by the person.'
 			},
 			{
-				key: 'too-high',
-				label: 'Too high',
-				prompt: 'What salary is beyond what the client would pay for this role?',
+				key: 'out-of-budget',
+				label: 'Simply out of budget',
+				prompt: 'What salary is simply out of budget for this role?',
 				help: 'The point where the client walks away.'
 			}
 		],
 		// The candidate, answering about their own expectations.
 		'high-preferring': [
 			{
-				key: 'would-accept',
-				label: 'Would accept',
-				prompt: 'What is the lowest salary you would accept for a role you love?',
-				help: 'Not what you expect to be offered: the figure for a role that is right in every other way.'
+				key: 'too-low',
+				label: 'Simply too low',
+				prompt: 'What salary would be simply too low, whatever the role?',
+				help: 'Below this you would not take the job.'
 			},
 			{
-				key: 'fair',
-				label: 'Fair',
-				prompt: 'What salary would feel fair for this kind of role?',
-				help: 'The number you would take without a second thought.'
+				key: 'awesome-opportunity',
+				label: 'Would accept for an awesome opportunity',
+				prompt: 'What salary would you accept for an awesome opportunity?',
+				help: 'A role that is right in every other way; not what you expect to be offered.'
 			},
 			{
-				key: 'good-result',
-				label: 'A good result',
-				prompt: 'What salary would feel like a genuinely good result?',
-				help: 'You would be pleased, not just satisfied.'
+				key: 'ideal',
+				label: 'Ideal outcome',
+				prompt: 'What salary would be the ideal outcome?',
+				help: 'You would be delighted.'
 			},
 			{
-				key: 'too-high',
-				label: 'Too high',
-				prompt: 'What salary would be so high that you would wonder what the catch is?',
-				help: 'The point where the offer itself starts to look odd.'
+				key: 'unrealistic',
+				label: 'Too unrealistic',
+				prompt: 'What salary would be too unrealistic to ask for?',
+				help: 'Beyond what anyone would pay for this role.'
 			}
 		]
 	},
@@ -188,12 +188,13 @@ export const recruitmentTemplate: RecruitmentTemplate = {
 	incentive: {
 		heading: 'Why a lower first figure helps you',
 		body:
-			'It is natural to worry that naming a low number sets a ceiling. Here it does not. Your ' +
-			'lowest figure is the salary you would accept for a role you would genuinely love, not ' +
-			'what you expect to be offered. Naming it honestly tells the recruiter you are open to ' +
-			'the right opportunity, which widens the range of roles you can be matched with. The ' +
-			'recruiter also sees your fair and good-result figures, so your floor is never mistaken ' +
-			'for your ask. A wider range means more matches; a narrow one means fewer.'
+			'It is natural to worry that a low number sets a ceiling. Here it does not. Your first ' +
+			'figure is simply the salary below which you would not take the job; your second is what ' +
+			'you would accept for an awesome opportunity, not what you expect to be offered. Naming ' +
+			'both honestly tells the recruiter you are open to the right role, which widens the range ' +
+			'of roles you can be matched with. The recruiter also sees your ideal outcome, so your ' +
+			'floor is never mistaken for your ask. A wider range means more matches; a narrow one ' +
+			'means fewer.'
 	},
 	guidance: (zone) => ({ zone, ...GUIDANCE[zone] })
 };

@@ -246,3 +246,54 @@ export const CASUAL_SCENARIOS: readonly CasualScenario[] = [
 ];
 
 export const DEFAULT_SCENARIO = CASUAL_SCENARIOS[0];
+
+/**
+ * The "customise your own" scenario: generic sides and points, a wide
+ * range, and a name the pair type themselves (`withCustomTitle`).
+ */
+export const CUSTOM_SCENARIO: CasualScenario = {
+	id: 'custom',
+	name: 'Something of your own',
+	currency: '£',
+	min: 0,
+	max: 1000,
+	step: 5,
+	a: {
+		title: 'Paying',
+		points: [
+			{ key: 'too-cheap', label: 'Too cheap', prompt: 'So cheap you would doubt it.' },
+			{
+				key: 'bargain',
+				label: 'A bargain',
+				prompt: 'You would pay this and feel you had done well.'
+			},
+			{
+				key: 'expensive',
+				label: 'Getting expensive',
+				prompt: 'You would pay it, but you would think twice.'
+			},
+			{ key: 'too-expensive', label: 'Too much', prompt: 'More than you would pay.' }
+		],
+		example: [100, 200, 400, 600]
+	},
+	b: {
+		title: 'Being paid',
+		points: [
+			{ key: 'too-low', label: 'Too little', prompt: 'So little you would rather not.' },
+			{ key: 'acceptable', label: 'Acceptable', prompt: 'You would take this without regret.' },
+			{ key: 'good', label: 'A good result', prompt: 'You would be pleased with this.' },
+			{
+				key: 'too-high',
+				label: 'Too much to ask',
+				prompt: 'So much that nobody sensible would pay it.'
+			}
+		],
+		example: [150, 300, 450, 700]
+	},
+	exampleOutcome: { zone: { lo: 300, hi: 400 }, fair: 348.26 }
+};
+
+export function withCustomTitle(title: string): CasualScenario {
+	const t = title.trim();
+	return { ...CUSTOM_SCENARIO, name: t === '' ? CUSTOM_SCENARIO.name : t };
+}

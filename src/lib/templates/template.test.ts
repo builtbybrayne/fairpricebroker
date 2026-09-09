@@ -27,8 +27,12 @@ describe('recruitment template', () => {
 			expect(new Set(qs.map((q) => q.key)).size).toBe(4);
 			for (const q of qs) expect(q.prompt.trim().length).toBeGreaterThan(0);
 		}
-		// The candidate's lowest is "what I'd accept for a role I love".
-		expect(recruitmentTemplate.questions['high-preferring'][0].prompt).toMatch(/role you love/i);
+		// Operator wording (9 Sep 2026): the candidate's lowest is the floor, the
+		// second is what they would accept for an awesome opportunity.
+		expect(recruitmentTemplate.questions['high-preferring'][0].label).toMatch(/simply too low/i);
+		expect(recruitmentTemplate.questions['high-preferring'][1].prompt).toMatch(
+			/awesome opportunity/i
+		);
 	});
 
 	it('carries non-empty R11 disclosure and the load-bearing incentive copy', () => {
