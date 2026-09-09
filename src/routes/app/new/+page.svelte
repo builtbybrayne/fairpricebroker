@@ -31,7 +31,7 @@
 				each costs one credit. You have <strong data-testid="balance">{data.balance}</strong>.
 			</p>
 		</div>
-		<a class="link-quiet" href={resolve('/app')}>Back to your roles</a>
+		<a class="link-quiet" href={resolve('/app/roles')}>Back to your roles</a>
 	</header>
 
 	<form

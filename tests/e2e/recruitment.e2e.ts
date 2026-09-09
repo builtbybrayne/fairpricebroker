@@ -117,8 +117,8 @@ test('V1 + V2 + V5: full happy path with payload safety and 4-d.p. round trip', 
 	await r.page.getByRole('button', { name: 'Copy link' }).click();
 	await expect(r.page.getByRole('button', { name: 'Copied' })).toBeVisible();
 
-	// Balance was debited: 20 -> 19. One role row on the dashboard.
-	await r.page.goto('/app');
+	// Balance was debited: 20 -> 19. One role row in the roles list.
+	await r.page.goto('/app/roles');
 	await expect(r.page.getByTestId('balance')).toHaveText('19');
 	await expect(r.page.getByTestId('session-row')).toHaveCount(1);
 	await r.page.goto(`/app/s/${r.sessionId}`);
@@ -177,8 +177,8 @@ test('V1 + V2 + V5: full happy path with payload safety and 4-d.p. round trip', 
 	expect(fairR).toBe(fairC);
 	await expect(r.page.getByTestId('candidate-view')).toBeVisible();
 
-	// Dashboard shows the closed state.
-	await r.page.goto('/app');
+	// The roles list shows the closed state.
+	await r.page.goto('/app/roles');
 	await expect(r.page.getByTestId('session-row')).toContainText('Result ready');
 
 	await r.ctx.close();
@@ -241,7 +241,7 @@ test('V3b: recruiter cancels before both submitted; both pages show cancelled an
 	await c.page.reload();
 	await expect(c.page.getByRole('heading', { name: 'This check was cancelled' })).toBeVisible();
 
-	await r.page.goto('/app');
+	await r.page.goto('/app/roles');
 	await expect(r.page.getByTestId('session-row')).toContainText('Cancelled');
 
 	await r.ctx.close();

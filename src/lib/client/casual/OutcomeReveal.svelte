@@ -28,6 +28,9 @@
 	} = $props();
 
 	let numbersShown = $state(false);
+	// The default reveal keeps both ranges to itself: full-width bars, the
+	// overlap and the fair figure. "Show the ranges" draws the real ends.
+	let rangesShown = $state(false);
 	const rowsFor = (side: CasualScenario['a']) =>
 		side.points.map((p) => ({ key: p.key, label: p.label, help: p.prompt }));
 
@@ -84,7 +87,7 @@
 				yourLabel={labels.a}
 				theirLabel={labels.b}
 				{zoneLabel}
-				variant="both"
+				variant={rangesShown ? 'both' : 'zone'}
 				animate
 				compact
 			/>
@@ -113,15 +116,26 @@
 	</div>
 
 	<div class="outcome__numbers">
-		<button
-			class="pill outcome__toggle"
-			type="button"
-			aria-expanded={numbersShown}
-			aria-controls="the-numbers"
-			onclick={() => (numbersShown = !numbersShown)}
-		>
-			{numbersShown ? 'Hide the numbers' : 'Show the numbers'}
-		</button>
+		<div class="outcome__toggles">
+			<button
+				class="pill outcome__toggle"
+				type="button"
+				aria-pressed={rangesShown}
+				onclick={() => (rangesShown = !rangesShown)}
+				data-testid="show-ranges"
+			>
+				{rangesShown ? 'Hide the ranges' : 'Show the ranges'}
+			</button>
+			<button
+				class="pill outcome__toggle"
+				type="button"
+				aria-expanded={numbersShown}
+				aria-controls="the-numbers"
+				onclick={() => (numbersShown = !numbersShown)}
+			>
+				{numbersShown ? 'Hide the numbers' : 'Show the numbers'}
+			</button>
+		</div>
 		{#if numbersShown}
 			<div id="the-numbers" class="outcome__meters" data-numbers-shown>
 				<MeterPanel
@@ -225,6 +239,12 @@
 		display: grid;
 		gap: 18px;
 		justify-items: start;
+	}
+
+	.outcome__toggles {
+		display: flex;
+		gap: 12px;
+		flex-wrap: wrap;
 	}
 
 	.outcome__toggle {

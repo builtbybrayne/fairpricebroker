@@ -84,6 +84,25 @@
 	let touched = $state(0);
 	const prompt = $derived(rows[touched]?.help ?? null);
 
+	// Collision avoidance: when two points sit close, the later figure lifts
+	// and the later label drops to a second row, so nothing overprints.
+	let stageWidth = $state(0);
+	const pad = $derived(stageWidth < 420 ? 34 : 44);
+	const xs = $derived(rows.map((_, i) => pad + posOf(i) * Math.max(0, stageWidth - 2 * pad)));
+	const rowsFor = (widths: number[]) => {
+		const row = [0, 0, 0, 0];
+		for (let i = 1; i < rows.length; i += 1) {
+			for (let j = 0; j < i; j += 1) {
+				if (row[j] === 0 && Math.abs(xs[i] - xs[j]) < (widths[i] + widths[j]) / 2 + 8) {
+					row[i] = 1;
+				}
+			}
+		}
+		return row;
+	};
+	const labelRows = $derived(rowsFor(rows.map((r) => Math.min(104, r.label.length * 7.4))));
+	const figureRows = $derived(rowsFor(values.map((v) => ((v ?? '').length + 2) * 10 + 8)));
+
 	function commit(next: number[]) {
 		values = next.map(toRaw);
 	}
@@ -207,7 +226,7 @@
 			<span class="plate__note">{sealedNote}</span>
 		</div>
 	{:else}
-		<div class="stage" style:--inset={INSET}>
+		<div class="stage" style:--inset={INSET} bind:clientWidth={stageWidth}>
 			<div class="track inset" bind:this={track}>
 				{#if complete}
 					<i
@@ -223,7 +242,8 @@
 				<div
 					class="pt"
 					class:pt--anchor={anchor}
-					class:pt--second={i === 2}
+					class:pt--lift={figureRows[i] === 1}
+					class:pt--drop={labelRows[i] === 1}
 					class:pt--touched={entry && touched === i}
 					style:--p={posOf(i)}
 				>
@@ -389,7 +409,15 @@
 	.stage {
 		position: relative;
 		height: 166px;
-		margin: 6px 0 0;
+		margin: 20px 0 0;
+	}
+
+	.pt--lift .pt__figure {
+		top: -18px;
+	}
+
+	.pt--drop .pt__label {
+		top: 118px;
 	}
 
 	.track {
@@ -591,17 +619,8 @@
 			width: 72px;
 			font-size: 10px;
 		}
-		/* the two knobs can sit close: the second point's figure lifts and
-		   its label drops, so neither runs into the first's */
-		.pt--second .pt__label {
-			top: 114px;
-		}
-		.pt--second .pt__figure {
-			top: -16px;
-		}
 		.stage {
-			height: 164px;
-			margin-top: 22px;
+			height: 170px;
 		}
 		.dial {
 			width: 36px;

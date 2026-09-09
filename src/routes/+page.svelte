@@ -115,7 +115,7 @@
 				zone={hero.zone}
 				fair={hero.fair}
 				fairLabel={hero.fairLabel}
-				variant="both"
+				variant={hero.live ? 'zone' : 'both'}
 				animate
 			/>
 		</div>

@@ -56,7 +56,7 @@
 <main class="shell">
 	<header class="shell__head">
 		<div>
-			<a class="link-quiet" href={resolve('/app')}>All roles</a>
+			<a class="link-quiet" href={resolve('/app/roles')}>All roles</a>
 			<h1 class="shell__title" data-testid="role-title">{data.role.title}</h1>
 			<p class="shell__sub">
 				<span class="sub-meta"
@@ -241,14 +241,23 @@
 				<p class="form-error" role="alert">{form.addError}</p>
 			{/if}
 			<div class="add__actions">
-				<button class="pill pill--gold btn" type="submit" disabled={busy || !data.role.budget}>
-					{busy ? 'Adding…' : 'Add candidate'}
-				</button>
-				<span class="entry-note">
-					{data.role.budget
-						? 'One credit. You get their private link to send yourself.'
-						: 'Save the budget first.'}
-				</span>
+				{#if data.balance < 1}
+					<a
+						class="pill pill--gold btn"
+						href={resolve('/account/billing')}
+						data-testid="buy-credits">Buy credits</a
+					>
+					<span class="entry-note">You have no credits left; each candidate link uses one.</span>
+				{:else}
+					<button class="pill pill--gold btn" type="submit" disabled={busy || !data.role.budget}>
+						{busy ? 'Adding…' : 'Add candidate'}
+					</button>
+					<span class="entry-note">
+						{data.role.budget
+							? `One credit (${data.balance} left). You get their private link to send yourself.`
+							: 'Save the budget first.'}
+					</span>
+				{/if}
 			</div>
 		</form>
 	</section>

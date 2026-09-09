@@ -3,6 +3,12 @@
 </svelte:head>
 
 <main class="method">
+	<p class="why">
+		Most prices are set by whoever names a number first. Everyone knows that is not fair, so people
+		stall, bluff, and walk away from deals that should have happened. There is a better way to find
+		a number: ask each side, in private, where the price stops making sense for them, and let the
+		overlap speak.
+	</p>
 	<h1>The method</h1>
 	<p class="lede">
 		Each side answers four quick questions in private. Those four points describe a range, and a
@@ -56,6 +62,15 @@
 		font-size: 18px;
 		line-height: 1.55;
 		color: var(--slate);
+	}
+	.method .why {
+		margin: 0 0 28px;
+		font-family: var(--font-display);
+		font-weight: 700;
+		font-size: 24px;
+		line-height: 1.3;
+		color: var(--navy);
+		letter-spacing: -0.01em;
 	}
 	.method .lede {
 		font-size: 20px;

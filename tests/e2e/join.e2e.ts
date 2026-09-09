@@ -147,6 +147,7 @@ test('sign-in page: an email and Continue reach /app with 20 credits; sign-out r
 	await expect(page).toHaveURL(/\/app$/);
 	await expect(page.getByTestId('email')).toHaveText(email);
 	await expect(page.getByTestId('balance')).toHaveText('20');
+	await page.getByTestId('account-menu').click();
 	await page.getByRole('button', { name: 'Sign out' }).click();
 	await expect(page).toHaveURL(/\/$/);
 	await page.goto('/app');

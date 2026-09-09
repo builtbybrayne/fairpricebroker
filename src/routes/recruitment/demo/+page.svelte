@@ -1,4 +1,5 @@
 <script lang="ts">
+	import '@fontsource/caveat/600.css';
 	/**
 	 * The recruiter walkthrough (T3-m1-recruitment-demo §1): a client-driven
 	 * state machine over the seed spec's five stages. One visitor plays both
@@ -258,26 +259,66 @@
 
 				<!-- stage 2: the link, then the hand-off -------------------------------- -->
 			{:else if stage === 2}
-				<div class="link raised" aria-label="What the candidate receives">
-					<p class="link__from">A message from you to the candidate</p>
-					<p class="link__body">
-						Before we talk numbers, could you answer four quick questions about salary? It takes a
-						minute, and it means neither of us has to guess.
-					</p>
-					<span class="link__url inset">
-						<svg viewBox="0 0 12 14" aria-hidden="true"
-							><rect x="1" y="6" width="10" height="7" rx="1.6" fill="currentColor" /><path
-								d="M3 6V4a3 3 0 0 1 6 0v2"
+				<div class="example">
+					<p class="example__note" aria-hidden="true">
+						<svg class="example__arrow" viewBox="0 0 80 60" aria-hidden="true"
+							><path
+								d="M6 8c22 2 40 14 46 30 3 8 1 14-4 16"
 								fill="none"
 								stroke="currentColor"
-								stroke-width="1.6"
+								stroke-width="2.4"
+								stroke-linecap="round"
+							/><path
+								d="M40 52l8 3 2-9"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2.4"
+								stroke-linecap="round"
+								stroke-linejoin="round"
 							/></svg
 						>
-						fairprice.broker/s/…
-					</span>
-					<p class="link__note">
-						Private to the candidate. Opens their side of the instrument; your figures never travel
-						with it.
+						Just an example of what they receive. Nothing to do here.
+					</p>
+					<div class="link raised" aria-label="What the candidate receives (example)">
+						<p class="link__from">A message from you to the candidate</p>
+						<p class="link__body">
+							Before we talk numbers, could you answer four quick questions about salary? It takes a
+							minute, and it means neither of us has to guess.
+						</p>
+						<span class="link__url inset">
+							<svg viewBox="0 0 12 14" aria-hidden="true"
+								><rect x="1" y="6" width="10" height="7" rx="1.6" fill="currentColor" /><path
+									d="M3 6V4a3 3 0 0 1 6 0v2"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1.6"
+								/></svg
+							>
+							fairprice.broker/s/…
+						</span>
+						<p class="link__note">
+							Private to the candidate. Opens their side of the instrument; your figures never
+							travel with it.
+						</p>
+					</div>
+					<p class="example__next" aria-hidden="true">
+						Your next step is the button below
+						<svg class="example__down" viewBox="0 0 24 40" aria-hidden="true"
+							><path
+								d="M12 2c-4 8 4 14 0 22s4 10 0 14"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2.4"
+								stroke-linecap="round"
+							/><path
+								d="M6 32l6 7 6-7"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2.4"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/></svg
+						>
 					</p>
 				</div>
 
@@ -480,6 +521,48 @@
 	}
 
 	/* stage 2: the link ---------------------------------------------------- */
+	.example {
+		position: relative;
+		display: grid;
+		gap: 6px;
+		max-width: 560px;
+	}
+
+	.example__note,
+	.example__next {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin: 0;
+		font-family: 'Caveat', cursive;
+		font-weight: 600;
+		font-size: 22px;
+		line-height: 1.1;
+		color: var(--terracotta);
+		transform: rotate(-1.5deg);
+	}
+
+	.example__note {
+		margin-left: 12px;
+	}
+
+	.example__next {
+		margin: 10px 0 0 24px;
+		transform: rotate(1deg);
+	}
+
+	.example__arrow {
+		width: 56px;
+		height: 42px;
+		flex: none;
+	}
+
+	.example__down {
+		width: 18px;
+		height: 30px;
+		flex: none;
+	}
+
 	.link {
 		padding: 26px 30px 24px;
 		display: grid;

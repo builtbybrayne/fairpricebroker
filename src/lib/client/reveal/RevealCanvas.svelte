@@ -44,7 +44,7 @@
 		 * overlap zone and the fair price, with the other side's range never
 		 * drawn (the sealed check before "show the numbers").
 		 */
-		variant?: 'both' | 'blind' | 'outcome';
+		variant?: 'both' | 'blind' | 'outcome' | 'zone';
 		animate?: boolean;
 		compact?: boolean;
 		/** Colour of the viewer's own bar: blue (employer/A side) or terracotta (candidate/B side). */
@@ -64,7 +64,12 @@
 	let width = $state(0);
 	const tickEvery = $derived(width > 0 && width < 420 ? 2 : 1);
 	const visibleTicks = $derived(ticks.filter((_, i) => i % tickEvery === 0));
-	const showTheirs = $derived(variant === 'both' && theirs !== null);
+	// zone: both sides present but drawn full-width, so only the overlap and
+	// the fair figure carry information (the casual default; ranges on demand).
+	const showTheirs = $derived((variant === 'both' || variant === 'zone') && theirs !== null);
+	const full = $derived(variant === 'zone');
+	const left = (v: number) => (full ? 0 : clampPct(v));
+	const span = (lo: number, hi: number) => (full ? 100 : clampPct(hi) - clampPct(lo));
 	const fairText = $derived(
 		fairLabel ??
 			(fair === null
@@ -79,6 +84,7 @@
 	class:reveal--compact={compact}
 	class:reveal--blind={!showTheirs && variant !== 'outcome'}
 	class:reveal--outcome={variant === 'outcome'}
+	class:reveal--zone={full}
 	role="img"
 	bind:clientWidth={width}
 	aria-label={showTheirs
@@ -99,8 +105,8 @@
 			>
 			<div
 				class="bar bar--yours bar--{yourAccent}"
-				style:left={`${clampPct(yours.lo)}%`}
-				style:width={`${clampPct(yours.hi) - clampPct(yours.lo)}%`}
+				style:left={`${left(yours.lo)}%`}
+				style:width={`${span(yours.lo, yours.hi)}%`}
 			>
 				<i class="bar__end bar__end--lo"></i>
 				<i class="bar__end bar__end--hi"></i>
@@ -122,8 +128,8 @@
 			<div class="lane lane--theirs">
 				<div
 					class="bar bar--theirs"
-					style:left={`${clampPct(theirs.lo)}%`}
-					style:width={`${clampPct(theirs.hi) - clampPct(theirs.lo)}%`}
+					style:left={`${left(theirs.lo)}%`}
+					style:width={`${span(theirs.lo, theirs.hi)}%`}
 				>
 					<i class="bar__end bar__end--lo"></i>
 					<i class="bar__end bar__end--hi"></i>
@@ -487,6 +493,22 @@
 
 	.reveal--blind .lane--yours .lane__label {
 		top: calc(60 * var(--rs, 1px));
+	}
+
+	/* zone: full-width bars with no ends and no wake; the overlap does the talking */
+	.reveal--zone .bar__end,
+	.reveal--zone .bar::before {
+		display: none;
+	}
+
+	.reveal--zone .bar {
+		border-radius: calc(4 * var(--rs, 1px));
+		opacity: 0.55;
+		box-shadow: none;
+	}
+
+	.reveal--zone .lane__label--right {
+		right: calc(-56 * var(--rs, 1px));
 	}
 
 	/* outcome: one range, the zone hugging it, the label as a legend below */

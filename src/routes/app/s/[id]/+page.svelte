@@ -103,7 +103,7 @@
 					>{data.role.title}</a
 				>
 			{:else}
-				<a class="link-quiet" href={resolve('/app')}>All roles</a>
+				<a class="link-quiet" href={resolve('/app/roles')}>All roles</a>
 			{/if}
 			<h1 class="shell__title check-title">
 				{data.candidateEmail ?? 'Salary check'}
