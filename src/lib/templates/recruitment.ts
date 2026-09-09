@@ -24,13 +24,15 @@ export type OverlapLevel = 'in-range' | 'stretch' | 'no-overlap';
 
 export interface TemplateQuestion {
 	readonly key: string;
+	/** Two or three words under the meter point. */
+	readonly label: string;
 	/** The question as the person answering sees it. */
 	readonly prompt: string;
 	/** Optional one-line help shown beneath the prompt. */
 	readonly help?: string;
 }
 
-/** The canonical Van Westendorp set, in the ascending order the engine expects. */
+/** The four price points, in the ascending order the engine expects. */
 export type QuestionSet = readonly [
 	TemplateQuestion,
 	TemplateQuestion,
@@ -124,21 +126,25 @@ export const recruitmentTemplate: RecruitmentTemplate = {
 		'low-preferring': [
 			{
 				key: 'too-low',
+				label: 'Too low',
 				prompt: 'What salary would be so low that you would worry about who it could attract?',
 				help: 'Below this, the client is not really hiring for this role.'
 			},
 			{
 				key: 'good-value',
+				label: 'Good value',
 				prompt: 'What salary would feel like good value for the client?',
 				help: 'A strong hire at a sensible cost.'
 			},
 			{
 				key: 'stretch',
+				label: 'A stretch',
 				prompt: 'What salary would start to feel like a stretch for the client?',
 				help: 'Still possible, but it would need justifying.'
 			},
 			{
 				key: 'too-high',
+				label: 'Too high',
 				prompt: 'What salary is beyond what the client would pay for this role?',
 				help: 'The point where the client walks away.'
 			}
@@ -147,21 +153,25 @@ export const recruitmentTemplate: RecruitmentTemplate = {
 		'high-preferring': [
 			{
 				key: 'would-accept',
+				label: 'Would accept',
 				prompt: 'What is the lowest salary you would accept for a role you love?',
 				help: 'Not what you expect to be offered: the figure for a role that is right in every other way.'
 			},
 			{
 				key: 'fair',
+				label: 'Fair',
 				prompt: 'What salary would feel fair for this kind of role?',
 				help: 'The number you would take without a second thought.'
 			},
 			{
 				key: 'good-result',
+				label: 'A good result',
 				prompt: 'What salary would feel like a genuinely good result?',
 				help: 'You would be pleased, not just satisfied.'
 			},
 			{
 				key: 'too-high',
+				label: 'Too high',
 				prompt: 'What salary would be so high that you would wonder what the catch is?',
 				help: 'The point where the offer itself starts to look odd.'
 			}

@@ -15,11 +15,13 @@
 
 	const budgetRows = recruitmentTemplate.questions[RECRUITMENT_DIRECTION.budget].map((q) => ({
 		key: q.key,
-		label: q.prompt
+		label: q.label,
+		help: q.prompt
 	}));
 	const candidateRows = recruitmentTemplate.questions[RECRUITMENT_DIRECTION.candidate].map((q) => ({
 		key: q.key,
-		label: q.prompt
+		label: q.label,
+		help: q.prompt
 	}));
 
 	// Illustrative figures only: they show the shape of each outcome, never a
@@ -136,8 +138,8 @@
 			</p>
 			<p>
 				Either way, misalignment surfaces late: a declined offer, a reneged acceptance, weeks of
-				work and a fee that never lands. Industry research puts compensation mismatch behind roughly
-				29–38% of declined offers. Agency recruiters carry that cost directly.
+				work and a fee that never lands. Compensation mismatch is one of the commonest reasons an
+				offer is declined, and agency recruiters carry that cost directly.
 			</p>
 		</div>
 	</section>
@@ -158,8 +160,10 @@
 					title="Employer budget"
 					rows={budgetRows}
 					values={scenes.comfort.budget.map(String)}
-					mode="sealed"
+					mode="display"
 					accent="blue"
+					min={0}
+					max={150000}
 				/>
 			</div>
 			<div class="signal__side">
@@ -168,8 +172,10 @@
 					title="Candidate"
 					rows={candidateRows}
 					values={scenes.comfort.candidate.map(String)}
-					mode="sealed"
+					mode="display"
 					accent="terracotta"
+					min={0}
+					max={150000}
 				/>
 			</div>
 		</div>
@@ -194,10 +200,7 @@
 				</div>
 				<div class="sees__row">
 					<dt>The client</dt>
-					<dd>
-						Sees nothing unless you choose to tell them. The maths runs on our server, not in the
-						page.
-					</dd>
+					<dd>Sees nothing unless you choose to tell them.</dd>
 				</div>
 			</dl>
 		</div>
@@ -208,8 +211,8 @@
 			One read: how much overlap, and whether salary alone can close it.
 		</h2>
 		<p class="section__lede">
-			The engine finds the overlap and the fair figure. The recruitment layer tells you whether
-			non-salary factors need to be in play: flexibility, equity, culture, purpose. Illustrative
+			You get the overlap, the fair figure, and a straight read on whether salary alone can close it
+			or non-salary factors need to be in play: flexibility, equity, culture, purpose. Illustrative
 			figures; try each outcome.
 		</p>
 
@@ -241,6 +244,7 @@
 						theirLabel="Candidate"
 						zoneLabel={shown === 'comfort' ? 'Comfortable overlap' : 'Overlap'}
 						variant="both"
+						compact
 						animate={!reducedMotion}
 					/>
 				{/key}
@@ -515,8 +519,8 @@
 
 	.outcome__canvas {
 		position: relative;
-		height: 330px;
-		padding: 40px 24px 0 28px;
+		height: 380px;
+		padding: 36px 24px 36px 28px;
 		background: var(--navy);
 		border-radius: 20px;
 		box-shadow: var(--lift-navy);

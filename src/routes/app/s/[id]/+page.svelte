@@ -35,7 +35,7 @@
 	);
 
 	const questions = recruitmentTemplate.questions['low-preferring'];
-	const rows = questions.map((q) => ({ key: q.key, label: q.prompt, help: q.help }));
+	const rows = questions.map((q) => ({ key: q.key, label: q.label, help: q.prompt }));
 	const symbol = $derived(symbolFor(data.currency));
 
 	// Entry state: seeded from a recalled draft so a recall is editable.
@@ -146,12 +146,13 @@
 				min={0}
 				max={250000}
 				step={500}
+				example={[40000, 48000, 58000, 65000]}
 				error={null}
 			>
 				{#snippet footer()}
 					<ol class="helps" aria-label="About each figure">
 						{#each questions as q (q.key)}
-							<li>{q.help}</li>
+							<li><strong>{q.label}.</strong> {q.prompt} <span>{q.help}</span></li>
 						{/each}
 					</ol>
 					<div class="entry-actions">

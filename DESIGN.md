@@ -2,136 +2,136 @@
 name: Fair Price Broker
 description: The Instrument — a calm cool-grey shell around a tactile neumorphic meter and one living navy canvas where two ranges become one fair price.
 colors:
-  ground: "#eef1f6"
-  ground-2: "#e7f3f7"
-  ink: "#23303f"
-  slate: "#5a6b80"
-  mist: "#8595a8"
-  hairline: "#dde3ec"
-  navy: "#1d3557"
-  navy-2: "#16304f"
-  blue: "#3d5a80"
-  blue-2: "#5c8ec8"
-  terracotta: "#b76952"
-  terracotta-2: "#c67968"
-  gold: "#e8b34b"
-  gold-2: "#edc55e"
-  gold-ink: "#23303f"
-  on-navy: "#f5f7f7"
-  on-navy-soft: "#99bfe5"
-  on-navy-mute: "#8fa3c2"
-  shade: "#d3dae4"
-  shade-deep: "#c8d0dc"
-  light: "#ffffff"
+  ground: '#eef1f6'
+  ground-2: '#e7f3f7'
+  ink: '#23303f'
+  slate: '#5a6b80'
+  mist: '#8595a8'
+  hairline: '#dde3ec'
+  navy: '#1d3557'
+  navy-2: '#16304f'
+  blue: '#3d5a80'
+  blue-2: '#5c8ec8'
+  terracotta: '#b76952'
+  terracotta-2: '#c67968'
+  gold: '#e8b34b'
+  gold-2: '#edc55e'
+  gold-ink: '#23303f'
+  on-navy: '#f5f7f7'
+  on-navy-soft: '#99bfe5'
+  on-navy-mute: '#8fa3c2'
+  shade: '#d3dae4'
+  shade-deep: '#c8d0dc'
+  light: '#ffffff'
 typography:
   display:
-    fontFamily: "Sora, Manrope, system-ui, sans-serif"
-    fontSize: "calc(60 * var(--u))"
+    fontFamily: 'Sora, Manrope, system-ui, sans-serif'
+    fontSize: 'calc(60 * var(--u))'
     fontWeight: 700
     lineHeight: 0.98
-    letterSpacing: "-0.035em"
+    letterSpacing: '-0.035em'
   headline:
-    fontFamily: "Sora, Manrope, system-ui, sans-serif"
-    fontSize: "40px"
+    fontFamily: 'Sora, Manrope, system-ui, sans-serif'
+    fontSize: '40px'
     fontWeight: 700
     lineHeight: 1.08
-    letterSpacing: "-0.02em"
+    letterSpacing: '-0.02em'
   title:
-    fontFamily: "Sora, Manrope, system-ui, sans-serif"
-    fontSize: "24px"
+    fontFamily: 'Sora, Manrope, system-ui, sans-serif'
+    fontSize: '24px'
     fontWeight: 700
     lineHeight: 1.1
-    letterSpacing: "normal"
+    letterSpacing: 'normal'
   lede:
-    fontFamily: "Albert Sans, Helvetica Neue, system-ui, sans-serif"
-    fontSize: "calc(26 * var(--u))"
+    fontFamily: 'Albert Sans, Helvetica Neue, system-ui, sans-serif'
+    fontSize: 'calc(26 * var(--u))'
     fontWeight: 400
     lineHeight: 1.3
-    letterSpacing: "normal"
+    letterSpacing: 'normal'
   body:
-    fontFamily: "Albert Sans, Helvetica Neue, system-ui, sans-serif"
-    fontSize: "16px"
+    fontFamily: 'Albert Sans, Helvetica Neue, system-ui, sans-serif'
+    fontSize: '16px'
     fontWeight: 400
     lineHeight: 1.5
-    letterSpacing: "normal"
+    letterSpacing: 'normal'
   figure:
-    fontFamily: "Albert Sans, Helvetica Neue, system-ui, sans-serif"
-    fontSize: "18px"
+    fontFamily: 'Albert Sans, Helvetica Neue, system-ui, sans-serif'
+    fontSize: '18px'
     fontWeight: 600
     lineHeight: 1.2
-    letterSpacing: "normal"
+    letterSpacing: 'normal'
   label:
-    fontFamily: "Sora, Manrope, system-ui, sans-serif"
-    fontSize: "13px"
+    fontFamily: 'Sora, Manrope, system-ui, sans-serif'
+    fontSize: '13px'
     fontWeight: 700
     lineHeight: 1.6
-    letterSpacing: "0.22em"
+    letterSpacing: '0.22em'
 rounded:
-  pill: "999px"
-  lg: "24px"
-  panel: "20px"
-  md: "16px"
-  chip: "12px"
-  sm: "10px"
+  pill: '999px'
+  lg: '24px'
+  panel: '20px'
+  md: '16px'
+  chip: '12px'
+  sm: '10px'
 spacing:
-  section: "110px"
-  block: "36px"
-  card: "30px"
-  grid: "24px"
-  row: "22px"
-  gutter: "14px"
+  section: '110px'
+  block: '36px'
+  card: '30px'
+  grid: '24px'
+  row: '22px'
+  gutter: '14px'
 components:
   button-gold:
-    backgroundColor: "{colors.gold-2}"
-    textColor: "{colors.gold-ink}"
-    typography: "{typography.title}"
-    rounded: "{rounded.pill}"
-    padding: "0 34px"
-    height: "58px"
+    backgroundColor: '{colors.gold-2}'
+    textColor: '{colors.gold-ink}'
+    typography: '{typography.title}'
+    rounded: '{rounded.pill}'
+    padding: '0 34px'
+    height: '58px'
   button-gold-hover:
-    backgroundColor: "{colors.gold}"
+    backgroundColor: '{colors.gold}'
   button-navy:
-    backgroundColor: "{colors.navy}"
-    textColor: "{colors.on-navy}"
-    typography: "{typography.title}"
-    rounded: "{rounded.pill}"
-    padding: "0 30px"
-    height: "46px"
+    backgroundColor: '{colors.navy}'
+    textColor: '{colors.on-navy}'
+    typography: '{typography.title}'
+    rounded: '{rounded.pill}'
+    padding: '0 30px'
+    height: '46px'
   button-navy-hover:
-    backgroundColor: "{colors.navy-2}"
+    backgroundColor: '{colors.navy-2}'
   button-quiet:
-    backgroundColor: "{colors.ground}"
-    textColor: "{colors.navy}"
-    rounded: "{rounded.pill}"
-    padding: "0 24px"
-    height: "48px"
+    backgroundColor: '{colors.ground}'
+    textColor: '{colors.navy}'
+    rounded: '{rounded.pill}'
+    padding: '0 24px'
+    height: '48px'
   panel-raised:
-    backgroundColor: "{colors.ground}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.lg}"
-    padding: "27px 33px 28px"
+    backgroundColor: '{colors.ground}'
+    textColor: '{colors.ink}'
+    rounded: '{rounded.lg}'
+    padding: '27px 33px 28px'
   panel-navy:
-    backgroundColor: "{colors.navy}"
-    textColor: "{colors.on-navy}"
-    rounded: "{rounded.panel}"
-    padding: "36px 40px 30px"
+    backgroundColor: '{colors.navy}'
+    textColor: '{colors.on-navy}'
+    rounded: '{rounded.panel}'
+    padding: '36px 40px 30px'
   field-inset:
-    backgroundColor: "{colors.ground}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.chip}"
-    padding: "12px 14px"
+    backgroundColor: '{colors.ground}'
+    textColor: '{colors.ink}'
+    rounded: '{rounded.chip}'
+    padding: '12px 14px'
   chip-fair-price:
-    backgroundColor: "{colors.gold-2}"
-    textColor: "{colors.navy}"
-    typography: "{typography.title}"
-    rounded: "{rounded.chip}"
-    padding: "13px 16px"
+    backgroundColor: '{colors.gold-2}'
+    textColor: '{colors.navy}'
+    typography: '{typography.title}'
+    rounded: '{rounded.chip}'
+    padding: '13px 16px'
   tag-sealed:
-    backgroundColor: "{colors.ground}"
-    textColor: "{colors.slate}"
-    typography: "{typography.label}"
-    rounded: "{rounded.pill}"
-    padding: "7px 12px"
+    backgroundColor: '{colors.ground}'
+    textColor: '{colors.slate}'
+    typography: '{typography.label}'
+    rounded: '{rounded.pill}'
+    padding: '7px 12px'
 ---
 
 # Design System: Fair Price Broker
@@ -147,6 +147,7 @@ The world is carried by a strict colour grammar rather than by decoration. Blue 
 Density is generous at the first viewport and relaxed below it. The comp was drawn at 1672px and the build scales the first viewport proportionally with one design unit (`--u`) down to 1024px, then switches to fixed pixel rules; nothing ever scales above the comp. Motion is short, eased out, and only ever describes the maths (drift, glow, land, wake); the whole system collapses to near-zero durations under `prefers-reduced-motion`.
 
 **Key Characteristics:**
+
 - Calm neutral shell, tactile neumorphic meter, one living navy canvas.
 - Party colours are semantic: blue = you, terracotta = them, gold = the fair price and the primary action.
 - One shadow scale, one light source (top-left), raised and inset variants only.
@@ -159,14 +160,17 @@ Density is generous at the first viewport and relaxed below it. The comp was dra
 A cool-grey ground and navy ink, with three semantic hues (blue, terracotta, gold) each carrying one meaning and one meaning only.
 
 ### Primary
+
 - **Broker Navy** (`{colors.navy}`): the ink for every heading, the wordmark, the navy pill button, and the fill of the reveal canvas and outcome panel. Deepens to **Navy Hover** (`{colors.navy-2}`) on the navy button's hover only.
 - **Fair Gold** (`{colors.gold}`) and **Lit Gold** (`{colors.gold-2}`): the fair-price chip, the fair-price zone, the completed step marker, the focus ring, text selection, and the gold primary action pill. The pill rests on Lit Gold and hovers to Fair Gold; the chip is Lit Gold with a paler `#f3d27a` hairline border and a gold glow. Gold text sits on **Gold Ink** (`{colors.gold-ink}`), never on white.
 
 ### Secondary
+
 - **Your Blue** (`{colors.blue}`) and **Your Blue, lit** (`{colors.blue-2}`): the viewer's side. The meter thumb ring and groove tint use the deep blue; the reveal bar, its glow and the YOUR RANGE label use the lit blue on navy. Also the link colour on the grey ground.
 - **Their Terracotta** (`{colors.terracotta}`) and **Their Terracotta, lit** (`{colors.terracotta-2}`): the counterparty's side, used in exactly the same places as blue on the other meter and the other bar. Terracotta at 12% tints the correction notice in the casual flow.
 
 ### Neutral
+
 - **Ground** (`{colors.ground}`): the page, every raised panel and every inset groove. Neumorphism only works because surface and page are the same colour. **Ground, cool** (`{colors.ground-2}`) is the top-bar tint from the comp; the build keeps it as a token but the header currently sits on plain Ground.
 - **Ink** (`{colors.ink}`): body text, figures, and text on gold.
 - **Slate** (`{colors.slate}`): secondary prose, nav links at rest, captions, the sealed tag, help text.
@@ -176,6 +180,7 @@ A cool-grey ground and navy ink, with three semantic hues (blue, terracotta, gol
 - **Shade** (`{colors.shade}`), **Shade, deep** (`{colors.shade-deep}`), **Light** (`{colors.light}`): the two ends of every neumorphic shadow. Never used as fills.
 
 ### Named Rules
+
 **The One Meaning Rule.** Blue means the viewer's own side, terracotta means the other side, gold means the fair price or the one primary action. No hue is ever borrowed for decoration, status, or a second CTA on the same screen.
 
 **The Same-Grey Rule.** Raised panels, inset grooves and the page share `{colors.ground}`. A panel with a different fill is not neumorphic and does not belong to the meter family; it is a navy canvas or nothing.
@@ -191,6 +196,7 @@ A cool-grey ground and navy ink, with three semantic hues (blue, terracotta, gol
 **Character:** Sora's geometric bold gives headings and instrument labels the stamped, engraved feel of dial markings; Albert Sans keeps prose and figures plain and readable. The pairing is deliberately unfussy so the numbers, not the type, are the spectacle.
 
 ### Hierarchy
+
 - **Display** (Sora 700, `calc(60 * var(--u))`, line-height 0.98, tracking -0.035em): the hero headline on navy. Scales with the design unit; drops to 48px at 1024px and 38px at 640px, where it is allowed to wrap.
 - **Headline** (Sora 700, 40px / 34px / 38px, line-height 1.05–1.1, tracking -0.02em): section titles ("Nobody sees the other side's numbers"), the verticals title, and the outcome title on navy. 28px on phones. Titles are `text-wrap: balance`.
 - **Title** (Sora 700, 24px, line-height 1.1): card headings inside vertical cards; also the family of the interstitial stage title (30px) and the meter title (`calc(22 * var(--u))`, uppercase tracked).
@@ -201,6 +207,7 @@ A cool-grey ground and navy ink, with three semantic hues (blue, terracotta, gol
 - **Nav and captions** (Albert Sans 500, 15–18px): top-nav links, the "free · 60 seconds · nothing stored" caption, hints and footer.
 
 ### Named Rules
+
 **The Tabular Numerals Rule.** `font-variant-numeric: tabular-nums` is set on `html`. Every figure, axis tick and ref code lines up; nothing opts out.
 
 **The Instrument-Label Rule.** Uppercase tracked Sora is a dial marking, used only where it labels a part of the instrument or a fact about it. It is not used as a kicker above a headline.
@@ -224,6 +231,7 @@ The page is a single column of full-width bands on the Ground with a 14px gutter
 Hybrid. The grey world is neumorphic: depth is conveyed by paired soft shadows on a surface that shares the page colour, with the light coming from the top-left in every case. Raised surfaces get a dark shadow bottom-right and a white shadow top-left; inset surfaces get the same pair inverted and inset. There is one scale, three raise sizes and two inset sizes, and every panel, groove, thumb and tag picks from it. Navy canvases are the exception: they sit above the desk and cast a real, tinted drop shadow. Gold elements glow rather than cast.
 
 ### Shadow Vocabulary
+
 - **Raise, small** (`box-shadow: 4px 4px 10px var(--shade), -4px -4px 10px var(--light)`): small controls that rest on the ground: the quiet "show the numbers" toggle.
 - **Raise, medium** (`box-shadow: 9px 9px 22px var(--shade), -9px -9px 22px var(--light)`): the default `.raised` panel: meters, result card, interstitial stage, the featured vertical card.
 - **Raise, large** (`box-shadow: 14px 14px 34px var(--shade), -14px -14px 34px var(--light)`): defined for a hero-scale raised object; not yet used on the homepage.
@@ -235,6 +243,7 @@ Hybrid. The grey world is neumorphic: depth is conveyed by paired soft shadows o
 - **Party glow** (`0 0 24px rgba(92,142,200,0.55)` / `rgba(198,121,104,0.55)` plus an offset 60px trailing glow): the reveal bars, each glowing in its own colour with the wake extending in its direction of travel.
 
 ### Named Rules
+
 **The One Light Rule.** Light comes from the top-left everywhere. Raised is dark bottom-right and white top-left; inset is the inverse. Nothing in the grey world uses a centred, offset-only or hard shadow.
 
 **The Navy Sits Above Rule.** Only navy canvases cast a tinted drop shadow (`--lift-navy`). Grey surfaces are pressed out of the page and never "float".
@@ -248,7 +257,9 @@ Everything is rounded; nothing is square. Buttons and tags are full pills (`999p
 ## Components
 
 ### Buttons
+
 Pills, Sora Bold, no border, one primary per screen.
+
 - **Shape:** full pill (`999px`), inline-flex with a 0.5em gap for an inline SVG arrow (24u in the hero, 22px in forms).
 - **Gold (primary):** Lit Gold fill, Ink text, gold glow; 58px tall, `0 34px` padding, 22–23px type at hero scale; 52–54px / 19–20px in forms and on phones. Hover shifts the fill to Fair Gold; active presses `translateY(1px) scale(0.99)`. Used for "Set your meter", "Seal my meter" style submits and the demo's Start free.
 - **Navy (secondary):** Broker Navy fill, On Navy text, light navy shadow; 46px / `0 30px` / 19px in the top bar, 48px / `0 22–24px` / 17px in cards. Hover to Navy Hover. Used for "Start free", "Start again", "Copy link", "Try it as a recruiter".
@@ -256,34 +267,41 @@ Pills, Sora Bold, no border, one primary per screen.
 - **Focus:** the global ring, 3px Fair Gold at 3px offset, 10px radius. Disabled: 60% opacity with a `progress` cursor and an 18px white ring spinner inside the pill.
 
 ### Cards / Containers
+
 - **Raised panel (`.raised`):** Ground fill, 24px corners, Raise-medium. The meter, the result card, the interstitial stage and the featured vertical card. Padding 27u/33u for the meter, 26–30px elsewhere.
 - **Navy canvas:** Broker Navy fill, 20px corners, Lift-navy, On Navy text, `overflow: hidden`. The hero (450u tall, 690u | 1fr) and the outcome panel (36px 40px 30px). The live hero adds a 3px gold ring at 55%.
 - **Inset well (`.inset`):** Ground fill, Inset-small. Grooves, URL boxes, ref chips, the sealed tag, and "later" vertical cards, which are inset to read as not-yet-raised.
 - **Border:** none on any container; hairlines only inside (meter footer, footer top).
 
 ### Inputs / Fields
+
 - **Meter number field:** borderless, transparent, right-aligned Albert Sans 600 18px tabular figures, 78px wide, with a 2px Hairline underline that turns Fair Gold on focus and the currency symbol in Slate beside it.
 - **Range slider:** the native input is stretched invisibly over the inset groove (36px tall hit area); the visible thumb is the neumorphic ring-disc, and keyboard focus draws the gold ring around the thumb.
 - **URL / read-only box:** inset well, 12px corners, 12px 14px padding, 14px Ink text.
 - **Error:** a 15px line in a deep red (`#8d2b3a`) beneath the meter; the flow's correction notice is a 12% terracotta tint with dark terracotta text in a 12px-radius box.
 
 ### Navigation
+
 - **Top bar:** 68u tall on the ground (no fill, no shadow), wordmark left (target-circle SVG with a gold centre, Sora 700 30u, -0.025em), links right in Albert Sans 500 18u Slate that darken to Navy on hover, then the navy "Start free" pill. Below 900px the bar is 60px, the wordmark 22px, and the text links hide, leaving wordmark and pill.
 - **Steps row:** three circular 38u step numbers (2px navy ring; current = navy fill, white number; done = gold fill, navy number) joined by 60u hairlines that turn gold when done, with Albert Sans 500 20u labels.
 - **Footer:** hairline top, Sora Bold wordmark, Slate links, note pushed right; wraps and stacks on phones.
 
 ### The Meter (signature)
+
 A raised panel whose head carries an uppercase Sora title in Navy and an inset SEALED tag (Slate, 0.16em, lock glyph). Beneath, four rows on a `label | groove | figure` grid (label column 190u, figure column 92u, 22u gaps): the Van Westendorp question in 18u Ink with optional Slate help text, the inset groove with the party-coloured ring thumb, and the figure. In sealed mode the figures are Mist, tracked 0.08em and blurred 1.2px, with an sr-only "hidden until the reveal". In entry mode each row is a live range input plus the number field. The panel's accent (`--thumb`, `--thumb-ring`, `--groove-fill`) is blue for "you" and terracotta for "them". On phones the row becomes two lines with the track underneath.
 
 ### The Reveal (signature)
+
 A navy canvas (`role="img"`, with a full aria-label) holding, top to bottom: the gold fair-price chip on a 2u hairline pointer with a glowing dot; the blue "yours" lane with its tracked label; the gold zone rectangle (translucent gold gradient, pale-gold hairline, gold glow, inner glow); the terracotta "theirs" lane; the FAIR PRICE ZONE label centred under the zone; and an axis of 1px ticks and On-Navy-mute tabular figures with the unit at the right. Bars are 26u pills with 22u white end handles and a blurred 34% wake trailing behind. `variant="blind"` omits the counterparty lane entirely; `compact` tightens the lanes for result cards. Motion, when `animate` is on: bars drift in 14% from their own side over 900ms (`--dur-slow`, `--ease-out`), the zone and its label fade in over 700ms from 600ms, the chip lands (fade, rise 10u, scale 0.85 to 1) over 600ms from 900ms, and the wakes fade from 0.9 to 0.35 over 1600ms from 400ms.
 
 ### Interstitial stage
+
 A centred raised panel (max 620px, 44px 32px 40px) with a 72px inset circular mark holding a 40px icon in the stage's accent (blue, terracotta or gold), a 30px Sora title, 18px Slate body capped at 44ch, and a navy pill action.
 
 ## Do's and Don'ts
 
 ### Do:
+
 - **Do** build every first-viewport measurement as `calc(N * var(--u))` from the comp's pixel value, and reset `--u` to 1px at the 1024px breakpoint.
 - **Do** give any host of RevealCanvas a height and a `--rs`; bind it to `--u` when the canvas lives in the first viewport.
 - **Do** keep raised panels, inset wells and the page on the same Ground colour and pick shadows only from the five-step scale (`--raise-sm/md/lg`, `--inset-sm/md`).
@@ -295,6 +313,7 @@ A centred raised panel (max 620px, 44px 32px 40px) with a 72px inset circular ma
 - **Do** keep prose to 44–62ch and use `text-wrap: balance` on headings.
 
 ### Don't:
+
 - **Don't** put a second gold action, a gold status badge or gold decoration on a screen that already has its primary action.
 - **Don't** fill a neumorphic panel with white, a tint or a border; a different-coloured container is a navy canvas or it is not a container.
 - **Don't** cast a grey drop shadow under gold, or a hard offset shadow anywhere; the only drop shadows are the navy lifts.

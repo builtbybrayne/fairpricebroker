@@ -313,9 +313,10 @@
 
 	/* the zone ----------------------------------------------------------- */
 	.zone {
+		/* spans both lanes: from above the first bar to below the second */
 		position: absolute;
-		top: calc(112 * var(--rs, 1px));
-		height: calc(66 * var(--rs, 1px));
+		top: calc(80 * var(--rs, 1px));
+		height: calc(100 * var(--rs, 1px));
 		border-radius: calc(10 * var(--rs, 1px));
 		background: linear-gradient(rgba(214, 200, 150, 0.55), rgba(240, 190, 120, 0.7));
 		border: calc(2 * var(--rs, 1px)) solid #f5dc8c;
@@ -464,21 +465,22 @@
 		height: calc(40 * var(--rs, 1px));
 	}
 
+	/* compact: the chip clears the lane label; the zone spans both bars */
 	.reveal--compact .lane--yours {
-		top: calc(40 * var(--rs, 1px));
+		top: calc(72 * var(--rs, 1px));
 	}
 
 	.reveal--compact .lane--theirs {
-		top: calc(108 * var(--rs, 1px));
+		top: calc(140 * var(--rs, 1px));
 	}
 
 	.reveal--compact .zone {
-		top: calc(84 * var(--rs, 1px));
-		height: calc(56 * var(--rs, 1px));
+		top: calc(90 * var(--rs, 1px));
+		height: calc(84 * var(--rs, 1px));
 	}
 
 	.reveal--compact .zone__label {
-		top: calc(150 * var(--rs, 1px));
+		top: calc(182 * var(--rs, 1px));
 	}
 
 	/* the legend replaces the in-canvas labels only where they cannot

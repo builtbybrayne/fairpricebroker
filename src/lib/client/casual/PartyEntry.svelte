@@ -1,26 +1,40 @@
 <script lang="ts">
+	/**
+	 * One side of the casual instrument: a live meter with a "Seal and hide"
+	 * action. Once sealed, the meter is replaced by its frosted plate and
+	 * none of the figures reach the page until the reveal.
+	 */
 	import MeterPanel from '$lib/client/meter/MeterPanel.svelte';
+	import type { CasualSide } from '$lib/casual/casualTemplate';
 	import { validateTuple } from './casualClient';
 
 	let {
-		title,
+		side,
 		partyLabel,
 		accent,
-		rows,
 		values = $bindable<(string | null)[]>([null, null, null, null]),
-		submitLabel = 'Seal my meter',
-		intro = null,
-		onsubmit
+		sealed = false,
+		sealedNote = 'Sealed. Hand the phone over.',
+		currency = '£',
+		min = 0,
+		max = 1000,
+		step = 1,
+		onseal
 	}: {
-		title: string;
-		partyLabel: string;
+		side: CasualSide;
+		partyLabel: 'A' | 'B';
 		accent: 'blue' | 'terracotta';
-		rows: readonly { key: string; label: string }[];
 		values?: (string | null)[];
-		submitLabel?: string;
-		intro?: string | null;
-		onsubmit: () => void;
+		sealed?: boolean;
+		sealedNote?: string;
+		currency?: string;
+		min?: number;
+		max?: number;
+		step?: number;
+		onseal: () => void;
 	} = $props();
+
+	const rows = $derived(side.points.map((p) => ({ key: p.key, label: p.label, help: p.prompt })));
 
 	let attempted = $state(false);
 	const validation = $derived(validateTuple(values));
@@ -29,70 +43,78 @@
 	function submit(e: Event) {
 		e.preventDefault();
 		attempted = true;
-		if (validation.ok) onsubmit();
+		if (validation.ok) onseal();
 	}
-
-	const max = $derived.by(() => {
-		const nums = values.map((v) => Number(v)).filter((n) => Number.isFinite(n) && n > 0);
-		const top = nums.length ? Math.max(...nums) : 0;
-		return Math.max(1000, Math.ceil((top * 1.25) / 100) * 100);
-	});
 </script>
 
-<form class="entry" onsubmit={submit} data-state-screen="party-entry" data-party={partyLabel}>
-	{#if intro}
-		<p class="entry__intro">{intro}</p>
+<form
+	class="entry"
+	onsubmit={submit}
+	data-state-screen="party-entry"
+	data-party={partyLabel}
+	data-sealed={sealed ? '' : undefined}
+>
+	{#if sealed}
+		<MeterPanel title={side.title} {rows} mode="sealed" {accent} {sealedNote} />
+	{:else}
+		<MeterPanel
+			title={side.title}
+			{rows}
+			bind:values
+			mode="entry"
+			{accent}
+			{currency}
+			{min}
+			{max}
+			{step}
+			example={side.example}
+			{error}
+		>
+			{#snippet footer()}
+				<div class="entry__foot">
+					<button class="pill pill--gold entry__submit" type="submit">
+						Seal and hide
+						<svg viewBox="0 0 24 24" aria-hidden="true"
+							><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor" /><path
+								d="M8 11V8a4 4 0 0 1 8 0v3"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2.4"
+							/></svg
+						>
+					</button>
+					<span class="entry__hint">Only you can see these until the reveal.</span>
+				</div>
+			{/snippet}
+		</MeterPanel>
 	{/if}
-	<MeterPanel {title} {rows} bind:values mode="entry" {accent} min={0} {max} step={1} {error}>
-		{#snippet footer()}
-			<div class="entry__foot">
-				<button class="pill pill--gold entry__submit" type="submit">
-					{submitLabel}
-					<svg viewBox="0 0 24 24" aria-hidden="true"
-						><path
-							d="M5 12h13M13 6l6 6-6 6"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2.6"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						/></svg
-					>
-				</button>
-				<span class="entry__hint">Only you can see these until the reveal.</span>
-			</div>
-		{/snippet}
-	</MeterPanel>
 </form>
 
 <style>
-	.entry__intro {
-		margin: 0 0 18px;
-		font-size: 19px;
-		color: var(--slate);
-		max-width: 60ch;
+	.entry {
+		min-width: 0;
 	}
 
 	.entry__foot {
 		display: flex;
 		align-items: center;
-		gap: 18px;
+		gap: 16px;
 		flex-wrap: wrap;
 	}
 
 	.entry__submit {
-		height: 54px;
-		padding: 0 28px;
-		font-size: 20px;
+		height: 50px;
+		padding: 0 24px;
+		font-size: 18px;
 	}
 
 	.entry__submit svg {
-		width: 22px;
-		height: 22px;
+		width: 20px;
+		height: 20px;
 	}
 
 	.entry__hint {
-		font-size: 15px;
+		font-size: 14px;
 		color: var(--slate);
 	}
 </style>

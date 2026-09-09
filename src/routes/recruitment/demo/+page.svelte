@@ -31,11 +31,13 @@
 
 	const budgetRows = recruitmentTemplate.questions[RECRUITMENT_DIRECTION.budget].map((q) => ({
 		key: q.key,
-		label: q.prompt
+		label: q.label,
+		help: q.prompt
 	}));
 	const candidateRows = recruitmentTemplate.questions[RECRUITMENT_DIRECTION.candidate].map((q) => ({
 		key: q.key,
-		label: q.prompt
+		label: q.label,
+		help: q.prompt
 	}));
 
 	// identity ----------------------------------------------------------------
@@ -246,10 +248,11 @@
 						min={0}
 						max={meterMax(budgetValues)}
 						step={500}
+						example={[40000, 48000, 58000, 65000]}
 						error={budgetError}
 					/>
 					<p class="entry__note">
-						Four figures, lowest first. These are the client’s, not the candidate’s.
+						These are the client’s figures, not the candidate’s. Drag, turn, or tap to type.
 					</p>
 				</div>
 
@@ -302,9 +305,12 @@
 						min={0}
 						max={meterMax(candidateValues)}
 						step={500}
+						example={[45000, 52000, 60000, 75000]}
 						error={candidateError}
 					/>
-					<p class="entry__note">Four figures, lowest first. Your own, for the role you imagine.</p>
+					<p class="entry__note">
+						Your own figures, for the role you imagine. Drag, turn, or tap to type.
+					</p>
 				</div>
 
 				<!-- stage 4: the recruiter's result, and the candidate's beside it ------ -->
@@ -464,21 +470,6 @@
 		margin-top: 8px;
 		display: grid;
 		gap: 12px;
-	}
-
-	/* The shared meter's label column is sized for short casual labels; the
-	   recruitment prompts are sentences. Widened locally (request logged). */
-	.entry :global(.row) {
-		grid-template-columns: minmax(0, 1.35fr) 1fr 118px;
-	}
-
-	.entry :global(.row__label) {
-		font-size: 16px;
-		line-height: 1.3;
-	}
-
-	.entry :global(.row__number) {
-		width: 96px;
 	}
 
 	.entry__note {

@@ -18,7 +18,7 @@
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	const questions = $derived(recruitmentTemplate.questions[data.role]);
-	const rows = $derived(questions.map((q) => ({ key: q.key, label: q.prompt, help: q.help })));
+	const rows = $derived(questions.map((q) => ({ key: q.key, label: q.label, help: q.prompt })));
 	const symbol = $derived(symbolFor(data.currency));
 
 	let values = $state<(string | null)[]>([null, null, null, null]);
@@ -90,11 +90,12 @@
 				min={0}
 				max={250000}
 				step={500}
+				example={[45000, 52000, 60000, 75000]}
 			>
 				{#snippet footer()}
 					<ol class="helps" aria-label="About each figure">
 						{#each questions as q (q.key)}
-							<li>{q.help}</li>
+							<li><strong>{q.label}.</strong> {q.prompt} <span>{q.help}</span></li>
 						{/each}
 					</ol>
 					<div class="entry-actions">
@@ -131,8 +132,8 @@
 		<section class="panel next" aria-labelledby="next-title">
 			<h2 id="next-title" class="panel__title">What happens next</h2>
 			<p class="panel__lede">
-				When the recruiter's budget is also in, the fair salary is worked out on the server. You
-				will see your own range, the fair figure and whether the two ranges meet. This page updates
+				When the recruiter's budget is also in, the fair salary is worked out privately. You will
+				see your own range, the fair figure and whether the two ranges meet. This page updates
 				itself.
 			</p>
 			{#if form?.error}

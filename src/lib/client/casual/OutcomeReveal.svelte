@@ -9,24 +9,27 @@
 	import ResultCard from './ResultCard.svelte';
 	import { formatMoney, niceAxis } from './casualClient';
 	import type { CasualResultPayload } from '$lib/server/casual/casualPayload';
+	import type { CasualScenario } from '$lib/casual/casualTemplate';
 
 	let {
 		result,
 		shareRef,
-		rows,
+		scenario,
 		labels,
 		currency = '£',
 		onrestart
 	}: {
 		result: CasualResultPayload;
 		shareRef: string;
-		rows: readonly { key: string; label: string }[];
+		scenario: CasualScenario;
 		labels: { a: string; b: string };
 		currency?: string;
 		onrestart: () => void;
 	} = $props();
 
 	let numbersShown = $state(false);
+	const rowsFor = (side: CasualScenario['a']) =>
+		side.points.map((p) => ({ key: p.key, label: p.label, help: p.prompt }));
 
 	const a = $derived(result.input['low-preferring'].tuple);
 	const b = $derived(result.input['high-preferring'].tuple);
@@ -123,19 +126,23 @@
 			<div id="the-numbers" class="outcome__meters" data-numbers-shown>
 				<MeterPanel
 					title={labels.a}
-					{rows}
+					rows={rowsFor(scenario.a)}
 					values={[...a]}
 					mode="display"
 					accent="blue"
 					{currency}
+					min={scenario.min}
+					max={scenario.max}
 				/>
 				<MeterPanel
 					title={labels.b}
-					{rows}
+					rows={rowsFor(scenario.b)}
 					values={[...b]}
 					mode="display"
 					accent="terracotta"
 					{currency}
+					min={scenario.min}
+					max={scenario.max}
 				/>
 			</div>
 		{/if}

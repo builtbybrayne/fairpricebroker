@@ -1,51 +1,46 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import RevealCanvas from '$lib/client/reveal/RevealCanvas.svelte';
-	import MeterPanel from '$lib/client/meter/MeterPanel.svelte';
 	import CasualFlow from '$lib/client/casual/CasualFlow.svelte';
 	import { formatMoney, niceAxis, type CasualState } from '$lib/client/casual/casualClient';
+	import {
+		CASUAL_SCENARIOS,
+		DEFAULT_SCENARIO,
+		type CasualScenario
+	} from '$lib/casual/casualTemplate';
 	import type { CasualResultPayload } from '$lib/server/casual/casualPayload';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
-	// The casual template's four questions, in the short form the meter shows.
-	const demoRows = [
-		{ key: 'too-cheap', label: 'Too cheap — I’d worry' },
-		{ key: 'bargain', label: 'A bargain' },
-		{ key: 'expensive', label: 'Getting expensive' },
-		{ key: 'too-expensive', label: 'Too much — I’m out' }
-	];
-	const labels = { a: 'Your meter', b: 'Their meter' };
-
-	// Illustrative positions for the sealed demo panels (no real figures).
-	const yourDemo = ['340', '420', '560', '640'];
-	const theirDemo = ['300', '380', '520', '600'];
-
-	let phase = $state<CasualState>('idle');
+	let scenario = $state<CasualScenario>(DEFAULT_SCENARIO);
+	let phase = $state<CasualState>('entry');
 	// Which of the three steps the pair is on (the row lights up as they go).
 	const step = $derived(
-		phase === 'idle' || phase === 'party-a-entry' || phase === 'a-confirm-hide'
-			? 1
-			: phase === 'handover' || phase === 'party-b-entry'
-				? 2
-				: 3
+		phase === 'entry' ? 1 : phase === 'a-sealed' || phase === 'b-sealed' ? 2 : 3
 	);
 	let flow = $state<CasualFlow | null>(null);
-	let flowEl = $state<HTMLElement | null>(null);
+	let stepsEl = $state<HTMLElement | null>(null);
 
-	// The hero's reveal shows the demo until a real reconciliation lands,
-	// then the pair's own result (casual is the full-detail mode, so both
-	// ranges are permitted here).
-	let hero = $state({
-		axis: { min: 200, max: 800, step: 100 },
-		yours: { lo: 210, hi: 605 },
-		theirs: { lo: 275, hi: 785 },
-		zone: { lo: 467, hi: 580 } as { lo: number; hi: number } | null,
-		fair: 512.5,
+	// The hero's reveal shows the scenario's example until a real
+	// reconciliation lands, then the pair's own result (casual is the
+	// full-detail mode, so both ranges are permitted here).
+	const exampleHero = (s: CasualScenario) => ({
+		axis: niceAxis([...s.a.example, ...s.b.example, s.exampleOutcome.fair]),
+		yours: { lo: s.a.example[0], hi: s.a.example[3] },
+		theirs: { lo: s.b.example[0], hi: s.b.example[3] },
+		zone: s.exampleOutcome.zone as { lo: number; hi: number } | null,
+		fair: s.exampleOutcome.fair,
 		fairLabel: null as string | null,
 		live: false
 	});
+	let hero = $state(exampleHero(DEFAULT_SCENARIO));
+
+	function pickScenario(s: CasualScenario) {
+		if (!(flow?.untouched() ?? true)) return;
+		scenario = s;
+		hero = exampleHero(s);
+	}
 
 	function onreveal(r: CasualResultPayload) {
 		const a = r.input['low-preferring'].tuple.map(Number);
@@ -68,8 +63,9 @@
 
 	function startFromHero(e: Event) {
 		e.preventDefault();
-		flow?.start();
-		requestAnimationFrame(() => flowEl?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+		// Land with the step row at the top so both meters are in view.
+		stepsEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		setTimeout(() => flow?.start(), 450);
 	}
 </script>
 
@@ -118,7 +114,7 @@
 		</div>
 	</section>
 
-	<ol class="steps" aria-label="How it works" data-step={step}>
+	<ol class="steps" aria-label="How it works" data-step={step} bind:this={stepsEl}>
 		{#each ['You set yours', 'They set theirs', 'The reveal'] as label, i (label)}
 			{#if i > 0}<li
 					class="steps__line"
@@ -136,74 +132,47 @@
 		{/each}
 	</ol>
 
-	<section class="meters" id="set-your-meter" aria-label="The instrument" bind:this={flowEl}>
+	<section class="meters" id="set-your-meter" aria-label="The instrument">
+		<div class="meters__scenario" role="group" aria-label="Try it on">
+			<span class="meters__scenario-label">Try it on</span>
+			{#each CASUAL_SCENARIOS as s (s.id)}
+				<button
+					type="button"
+					class="pill meters__scenario-opt"
+					class:meters__scenario-opt--on={scenario.id === s.id}
+					aria-pressed={scenario.id === s.id}
+					disabled={phase !== 'entry'}
+					onclick={() => pickScenario(s)}>{s.name}</button
+				>
+			{/each}
+		</div>
 		<CasualFlow
 			bind:this={flow}
 			ref={data.ref}
-			rows={demoRows}
-			{labels}
+			{scenario}
 			onphase={(p) => (phase = p)}
 			{onreveal}
-		>
-			{#snippet idle(start)}
-				<div class="meters__demo">
-					<MeterPanel
-						title="Your meter"
-						rows={demoRows}
-						values={yourDemo}
-						mode="sealed"
-						accent="blue"
-					/>
-					<div class="meters__lock" aria-hidden="true">
-						<svg viewBox="0 0 34 40"
-							><rect x="3" y="17" width="28" height="20" rx="4" fill="currentColor" /><path
-								d="M9 17v-5a8 8 0 0 1 16 0v5"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="4"
-							/></svg
-						>
-						<span class="caps">Both set<br />in private<br />Figures hidden<br />until reveal</span>
-					</div>
-					<MeterPanel
-						title="Their meter"
-						rows={demoRows}
-						values={theirDemo}
-						mode="sealed"
-						accent="terracotta"
-					/>
-				</div>
-				<div class="meters__start">
-					<button class="pill pill--gold meters__start-btn" type="button" onclick={start}>
-						Set your meter
-					</button>
-					<span>Two people, one phone. Nothing is stored.</span>
-				</div>
-			{/snippet}
-		</CasualFlow>
+		/>
+		<p class="meters__note">Two people, one phone. Nothing you type is kept.</p>
 	</section>
 
 	<section class="how" aria-labelledby="how-title">
 		<h2 id="how-title" class="how__title">Nobody sees the other side’s numbers.</h2>
 		<div class="how__cols">
 			<p>
-				Each of you answers the four Van Westendorp price questions: too cheap, a bargain, getting
-				expensive, too much. That is a range, not a single number, so nobody has to name their
-				number first.
+				Each of you answers four quick questions: too cheap, a bargain, getting expensive, too much.
+				That gives a range, not a single number, so nobody has to name their number first.
 			</p>
 			<p>
-				The maths runs on our server, never in the page. It finds where the two ranges overlap and
-				the price that is fair to both. On this free instrument nothing you type is stored: the only
-				trace is that a reconciliation completed.
+				Your figures stay private, securely and secretly. The instrument finds where the two ranges
+				overlap and the price that is fair to both. On this free version nothing you type is kept.
 			</p>
 			<p><a href={resolve('/method')}>Read the method</a></p>
 		</div>
 	</section>
 
 	<section class="verticals" aria-labelledby="verticals-title">
-		<h2 id="verticals-title" class="verticals__title">
-			The same instrument, built for the moments that need it.
-		</h2>
+		<h2 id="verticals-title" class="verticals__title">Useful everywhere.</h2>
 		<div class="verticals__grid">
 			<article class="vertical vertical--recruit">
 				<h3>Recruiters</h3>
@@ -216,18 +185,18 @@
 			<article class="vertical vertical--soon">
 				<h3>Founders</h3>
 				<p>
-					Ask your first users the same four questions and get a pricing table back. The survey mode
-					is next on the bench.
+					Ask your first users the same four questions and get a price your market will actually
+					pay.
 				</p>
-				<span class="vertical__soon caps">Next</span>
+				<span class="vertical__soon caps">Coming next</span>
 			</article>
 			<article class="vertical vertical--agents">
 				<h3>AI assistants</h3>
 				<p>
-					Every capability a person has here ships for agents too, behind the same blindness rules.
-					An assistant acting for one side can never reach the other.
+					Let your assistant play your side. It follows the same rules you do: it can never see the
+					other person's numbers.
 				</p>
-				<span class="vertical__soon caps">Same milestone</span>
+				<span class="vertical__soon caps">Coming next</span>
 			</article>
 		</div>
 	</section>
@@ -239,9 +208,7 @@
 			<a href={resolve('/recruitment')}>For recruiters</a>
 			<a href={resolve('/signin')}>Sign in</a>
 		</nav>
-		<span class="foot__note"
-			>Blindness is enforced on the server. This free instrument stores no prices.</span
-		>
+		<span class="foot__note">Your numbers stay private. This free instrument keeps no prices.</span>
 	</footer>
 </main>
 
@@ -372,29 +339,52 @@
 	/* the instrument ------------------------------------------------------ */
 	.meters {
 		margin: calc(22 * var(--u)) calc(53 * var(--u)) 0;
-		scroll-margin-top: 24px;
 	}
 
-	.meters__demo {
-		display: grid;
-		grid-template-columns: 1fr calc(166 * var(--u)) 1fr;
-		align-items: start;
+	.steps {
+		scroll-margin-top: 20px;
 	}
 
-	.meters__start {
+	.meters__scenario {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: 20px;
-		margin-top: 34px;
-		color: var(--slate);
-		font-size: 16px;
+		flex-wrap: wrap;
+		gap: 10px;
+		margin-bottom: 22px;
 	}
 
-	.meters__start-btn {
-		height: 58px;
-		padding: 0 34px;
-		font-size: 22px;
+	.meters__scenario-label {
+		font-size: 15px;
+		color: var(--slate);
+		margin-right: 6px;
+	}
+
+	.meters__scenario-opt {
+		height: 40px;
+		padding: 0 18px;
+		font-size: 15px;
+		color: var(--navy);
+		background: var(--ground);
+		box-shadow: var(--raise-sm);
+	}
+
+	.meters__scenario-opt--on {
+		box-shadow: var(--inset-sm);
+		color: var(--navy);
+		font-weight: 700;
+	}
+
+	.meters__scenario-opt:disabled {
+		opacity: 0.55;
+		cursor: default;
+	}
+
+	.meters__note {
+		margin: 26px 0 0;
+		text-align: center;
+		color: var(--slate);
+		font-size: 15px;
 	}
 
 	.hero--live {
@@ -535,24 +525,6 @@
 		margin-left: auto;
 	}
 
-	.meters__lock {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 12px;
-		padding-top: 62px;
-		color: var(--slate);
-		text-align: center;
-		font-size: 12px;
-		letter-spacing: 0.16em;
-		line-height: 1.6;
-	}
-
-	.meters__lock svg {
-		width: 34px;
-		height: 40px;
-	}
-
 	/* responsive (refined in the responsive phase) ------------------------ */
 	@media (max-width: 1024px) {
 		.hero {
@@ -580,13 +552,6 @@
 		}
 		.meters {
 			margin: 24px 0 0;
-		}
-		.meters__demo {
-			grid-template-columns: 1fr;
-			gap: 24px;
-		}
-		.meters__lock {
-			padding-top: 0;
 		}
 		.how,
 		.verticals__grid {
@@ -631,10 +596,6 @@
 		}
 		.steps__line {
 			width: 20px;
-		}
-		.meters__start {
-			flex-direction: column;
-			gap: 12px;
 		}
 		.how__title,
 		.verticals__title {

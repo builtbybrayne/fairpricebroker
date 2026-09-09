@@ -5,9 +5,13 @@
 <main class="method">
 	<h1>The method</h1>
 	<p>
-		Each side answers the four Van Westendorp price questions in private: too cheap, a bargain,
-		getting expensive, too much. The engine finds where the two ranges overlap and the price that is
-		fair to both. Nobody ever sees the other side's numbers; the maths runs on the server.
+		Each side answers four quick questions in private: too cheap, a bargain, getting expensive, too
+		much. Those four points describe a range, and a range is far easier to give honestly than a
+		single number.
+	</p>
+	<p>
+		The instrument finds where the two ranges overlap and the price that is fair to both. Nobody
+		ever sees the other side's numbers: you get the outcome, not their figures.
 	</p>
 </main>
 
