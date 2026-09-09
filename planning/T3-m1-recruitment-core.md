@@ -96,6 +96,36 @@ the placement is unlikely. Candidate-facing copy for each, without the
 client's numbers. Exact wording is authored during the comp round and
 lives in this file, not in components.
 
+## 2b. Roles: many candidates per check (operator ruling, 9 Sep 2026)
+
+> "The recruitment opportunity should allow *multiple* candidates to
+> answer the same check. It's for a *role* rather than a particular
+> pairing. The email of the candidate is the differentiator."
+
+- A **role** (`roles`: title, currency, the client budget as four
+  figures, owner = the signed-in recruiter) is the unit the recruiter
+  works with. Creating a role spends nothing.
+- Each **candidate** added to a role is still exactly the invited
+  session of §1 (creator-as-host, one email-bound grant, one credit),
+  joined to the role in `role_candidates` (unique per role + email). On
+  creation the role's budget is copied into that session and submitted
+  as the host's position, so the check locks the moment the candidate
+  answers. Engine, payload classes, RLS and the candidate surface are
+  unchanged; the candidate never learns that other candidates exist.
+- The budget is edited on the role page only; an edit re-submits it on
+  every candidate session still open. Candidates who have answered keep
+  the budget they answered against (their session is locked or closed).
+- Routes: `/app` lists roles with their candidates' states; `/app/new`
+  creates a role (title, currency, budget); `/app/r/[id]` is the role
+  page (budget, add candidate, per-candidate progress and result summary,
+  fresh links shown once); `/app/s/[id]` remains the per-candidate page
+  (result, both tuples behind the toggle, what the candidate sees) and
+  links back to its role.
+- Migration `20260909120000_roles.sql`; server module
+  `src/lib/server/recruitment/roles.ts`; e2e V1/V3a/V3b re-driven
+  through the role flow, V3a now covering budget propagation and a second
+  candidate on the same role.
+
 ## 3. Routes and surfaces
 
 - `src/routes/app/+page.svelte` — dashboard: balance, session list

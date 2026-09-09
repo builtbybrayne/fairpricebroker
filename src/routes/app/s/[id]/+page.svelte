@@ -98,7 +98,13 @@
 <main class="shell">
 	<header class="shell__head">
 		<div>
-			<a class="link-quiet" href={resolve('/app')}>All checks</a>
+			{#if data.role}
+				<a class="link-quiet" href={resolve('/app/r/[id]', { id: data.role.id })}
+					>{data.role.title}</a
+				>
+			{:else}
+				<a class="link-quiet" href={resolve('/app')}>All roles</a>
+			{/if}
 			<h1 class="shell__title check-title">
 				{data.candidateEmail ?? 'Salary check'}
 			</h1>
@@ -205,9 +211,16 @@
 					The link for <strong>{data.candidateEmail}</strong> is no longer available here: it is shown
 					once, when the check is created. If it was not sent, cancel this check and start a new one.
 				</p>
-				<a class="pill pill--navy btn btn--sm newcheck" href={resolve('/app/new')}
-					>Start a new check</a
-				>
+				{#if data.role}
+					<a
+						class="pill pill--navy btn btn--sm newcheck"
+						href={resolve('/app/r/[id]', { id: data.role.id })}>Back to the role</a
+					>
+				{:else}
+					<a class="pill pill--navy btn btn--sm newcheck" href={resolve('/app/new')}
+						>Start a new check</a
+					>
+				{/if}
 			{:else}
 				<p class="panel__lede">The candidate has opened their link.</p>
 			{/if}
@@ -236,11 +249,13 @@
 			<p class="panel__lede">This page updates itself when the candidate submits.</p>
 			<div class="wait-actions">
 				{#if data.candidateStatus !== 'submitted'}
-					<form method="POST" action="?/recall" use:enhance>
-						<button class="pill btn btn--sm btn--quiet" type="submit"
-							>Recall and edit the budget</button
-						>
-					</form>
+					{#if !data.role}
+						<form method="POST" action="?/recall" use:enhance>
+							<button class="pill btn btn--sm btn--quiet" type="submit"
+								>Recall and edit the budget</button
+							>
+						</form>
+					{/if}
 					<form method="POST" action="?/cancel" use:enhance>
 						<button class="pill btn btn--sm btn--quiet" type="submit">Cancel this check</button>
 					</form>

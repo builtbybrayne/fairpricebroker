@@ -7,7 +7,7 @@ related_targets: ["src/routes/s/[id]/party/+page.svelte","src/routes/app/+page.s
 
 # Surface brief — recruiter session page (src/routes/app/s/[id]/+page.svelte)
 
-Scope: the recruiter's one-route, state-driven session page for the recruitment composition (T3-m1-recruitment-core §3), with its siblings the dashboard (`/app`), the create form (`/app/new`) and the candidate surface (`/s/[id]/party`). Mode: Operate. Audience: a recruiter at a desk, returning to this page several times over a day or two; secondarily the same recruiter on a phone between calls. The candidate surface is opened on a phone from a link.
+Scope: the recruiter's one-route, state-driven session page for the recruitment composition (T3-m1-recruitment-core §3), with its siblings the dashboard (`/app`, roles with their candidates), the role form (`/app/new`: title, currency, budget), the role page (`/app/r/[id]`: budget, add candidates, progress, fresh links shown once; 9 Sep 2026) and the candidate surface (`/s/[id]/party`). Mode: Operate. Audience: a recruiter at a desk, returning to this page several times over a day or two; secondarily the same recruiter on a phone between calls. The candidate surface is opened on a phone from a link.
 
 Task: enter the client's budget as four figures; obtain and send the candidate's private link; wait; read the fair salary, the overlap level and the non-salary steer; see exactly what the candidate was shown.
 

@@ -8,7 +8,7 @@ import { expect, test, type Browser, type BrowserContext, type Page } from '@pla
 
 const EMPLOYER = ['41250', '46500', '51750', '57800'] as const;
 const CANDIDATE = ['42000.1234', '48000.5', '55000', '65000'] as const;
-const NO_OVERLAP_CANDIDATE = ['70000', '75000', '80000', '90000'] as const;
+const NO_OVERLAP_CANDIDATE = ['70000', '76000', '81000', '90000'] as const;
 
 /** The dev server hydrates slowly on cold routes; interact only once idle. */
 async function settle(page: Page) {
@@ -31,7 +31,7 @@ async function fillMeter(page: Page, title: string, tuple: readonly string[]) {
 	for (let i = 0; i < 4; i++) await inputs.nth(i).fill(tuple[i]);
 }
 
-/** Recruiter signs in, creates a check, submits the budget; returns the invite URL. */
+/** Recruiter signs in, creates a role with the budget, adds a candidate; returns the invite URL. */
 async function recruiterToLink(
 	browser: Browser,
 	employer: readonly string[] = EMPLOYER
@@ -40,6 +40,7 @@ async function recruiterToLink(
 	page: Page;
 	email: string;
 	candidateEmail: string;
+	roleId: string;
 	sessionId: string;
 	inviteUrl: string;
 }> {
@@ -50,25 +51,41 @@ async function recruiterToLink(
 	await signIn(page, email);
 	await expect(page.getByTestId('balance')).toHaveText('20');
 
+	const roleId = await createRole(page, employer);
+	const { sessionId, inviteUrl } = await addCandidate(page, candidateEmail);
+	return { ctx, page, email, candidateEmail, roleId, sessionId, inviteUrl };
+}
+
+/** From the dashboard: new role with title + budget; returns the role id. */
+async function createRole(page: Page, employer: readonly string[] = EMPLOYER): Promise<string> {
 	await page
-		.getByRole('link', { name: /New salary check|Start your first check/ })
+		.getByRole('link', { name: /New role|Start your first role/ })
 		.first()
 		.click();
 	await expect(page).toHaveURL(/\/app\/new$/);
 	await settle(page);
-	await page.getByLabel("Candidate's email").fill(candidateEmail);
-	await page.getByRole('button', { name: 'Start the check' }).click();
-	await expect(page).toHaveURL(/\/app\/s\/[0-9a-f-]{36}$/);
-	const sessionId = page.url().split('/').pop()!;
-	await settle(page);
-
+	await page.getByLabel('Role title').fill('Senior product designer');
 	await fillMeter(page, 'Client budget', employer);
-	await page.getByRole('button', { name: 'Submit the budget' }).click();
-	const urlInput = page.getByTestId('invite-url');
+	await page.getByRole('button', { name: 'Create the role' }).click();
+	await expect(page).toHaveURL(/\/app\/r\/[0-9a-f-]{36}$/);
+	await settle(page);
+	return page.url().split('/').pop()!;
+}
+
+/** On the role page: add a candidate by email; returns their session id and fresh link. */
+async function addCandidate(
+	page: Page,
+	candidateEmail: string
+): Promise<{ sessionId: string; inviteUrl: string }> {
+	await page.getByLabel("Candidate's email").fill(candidateEmail);
+	await page.getByRole('button', { name: 'Add candidate' }).click();
+	const row = page.locator('[data-testid="candidate-row"]', { hasText: candidateEmail });
+	const urlInput = row.getByTestId('invite-url');
 	await expect(urlInput).toBeVisible();
 	const inviteUrl = await urlInput.inputValue();
 	expect(inviteUrl).toMatch(/\/join\/[A-Za-z0-9_-]{40,}$/);
-	return { ctx, page, email, candidateEmail, sessionId, inviteUrl };
+	const sessionId = (await row.getAttribute('data-session-id'))!;
+	return { sessionId, inviteUrl };
 }
 
 async function candidateOpens(browser: Browser, inviteUrl: string, sessionId: string) {
@@ -95,17 +112,17 @@ test('V1 + V2 + V5: full happy path with payload safety and 4-d.p. round trip', 
 }) => {
 	const r = await recruiterToLink(browser);
 
-	// Balance was debited: 20 -> 19.
+	// Copy control works on the role page (clipboard permission granted to this context).
+	await r.ctx.grantPermissions(['clipboard-read', 'clipboard-write']);
+	await r.page.getByRole('button', { name: 'Copy link' }).click();
+	await expect(r.page.getByRole('button', { name: 'Copied' })).toBeVisible();
+
+	// Balance was debited: 20 -> 19. One role row on the dashboard.
 	await r.page.goto('/app');
 	await expect(r.page.getByTestId('balance')).toHaveText('19');
 	await expect(r.page.getByTestId('session-row')).toHaveCount(1);
 	await r.page.goto(`/app/s/${r.sessionId}`);
 	await expect(r.page.getByTestId('candidate-opened')).toHaveText('Not yet');
-
-	// Copy control works (clipboard permission granted to this context).
-	await r.ctx.grantPermissions(['clipboard-read', 'clipboard-write']);
-	await r.page.getByRole('button', { name: 'Copy link' }).click();
-	await expect(r.page.getByRole('button', { name: 'Copied' })).toBeVisible();
 
 	const c = await candidateOpens(browser, r.inviteUrl, r.sessionId);
 
@@ -168,53 +185,45 @@ test('V1 + V2 + V5: full happy path with payload safety and 4-d.p. round trip', 
 	await c.ctx.close();
 });
 
-test('V3a: candidate recalls and re-submits; only then does the session lock', async ({
+test('V3a: the role budget can change until a candidate answers; the candidate can recall until then', async ({
 	browser
 }) => {
-	const email = `e2e-rec-${randomUUID().slice(0, 8)}@example.test`;
-	const candidateEmail = `e2e-cand-${randomUUID().slice(0, 8)}@example.test`;
-	const rctx = await browser.newContext();
-	const r = await rctx.newPage();
-	await signIn(r, email);
-	await r.goto('/app/new');
-	await settle(r);
-	await r.getByLabel("Candidate's email").fill(candidateEmail);
-	await r.getByRole('button', { name: 'Start the check' }).click();
-	await expect(r).toHaveURL(/\/app\/s\/[0-9a-f-]{36}$/);
-	const sessionId = r.url().split('/').pop()!;
-	await settle(r);
+	const r = await recruiterToLink(browser);
 
-	// Recruiter submits first to obtain the link, then recalls (candidate not in).
-	await fillMeter(r, 'Client budget', EMPLOYER);
-	await r.getByRole('button', { name: 'Submit the budget' }).click();
-	const inviteUrl = await r.getByTestId('invite-url').inputValue();
-	await r.getByRole('button', { name: 'Recall and edit the budget' }).click();
-	await expect(r.getByRole('button', { name: 'Submit the budget' })).toBeVisible();
+	// Recruiter edits the budget on the role page; the open check follows.
+	await r.page.getByTestId('edit-budget').click();
+	await fillMeter(r.page, 'Client budget', ['30000', '34000', '38000', '41000']);
+	await r.page.getByRole('button', { name: 'Save the budget' }).click();
+	await expect(r.page.getByTestId('edit-budget')).toBeVisible({ timeout: 15000 });
 
-	// Candidate submits while the recruiter has not; recalls; re-submits.
-	const c = await candidateOpens(browser, inviteUrl, sessionId);
-	await fillMeter(c.page, 'Your meter', CANDIDATE);
-	await c.page.getByRole('button', { name: 'Submit my figures' }).click();
-	await expect(c.page.getByTestId('recall')).toBeVisible();
-	await c.page.getByTestId('recall').click();
-	await expect(c.page.getByRole('button', { name: 'Submit my figures' })).toBeVisible();
-	// The recalled draft is editable and pre-filled.
-	const meter = c.page.getByRole('region', { name: 'Your meter' });
-	await expect(meter.locator('input[type="text"]').first()).toHaveValue('42000.1234');
+	// Candidate answers with a range that no longer overlaps that budget.
+	const c = await candidateOpens(browser, r.inviteUrl, r.sessionId);
 	await fillMeter(c.page, 'Your meter', NO_OVERLAP_CANDIDATE);
 	await c.page.getByRole('button', { name: 'Submit my figures' }).click();
-	await expect(c.page.getByTestId('recall')).toBeVisible();
+	await expect(c.page.getByTestId('fair-salary')).toBeVisible({ timeout: 20000 });
+	await expect(c.page.getByTestId('overlap-label')).toHaveText('No overlap');
+	assertNoFigures(await c.page.content(), ['30000', '34000', '38000', '41000']);
 
-	// Still open: the recruiter can still edit. Now the recruiter submits -> lock.
-	await fillMeter(r, 'Client budget', EMPLOYER);
-	await r.getByRole('button', { name: 'Submit the budget' }).click();
-	await expect(r.getByTestId('fair-salary')).toBeVisible({ timeout: 20000 });
-	await expect(r.getByTestId('overlap-label')).toHaveText('No overlap');
-	await expect(c.page.getByTestId('overlap-label')).toHaveText('No overlap', { timeout: 20000 });
-	assertNoFigures(await c.page.content(), EMPLOYER);
+	// The role page shows the result against the edited budget.
+	await r.page.reload();
+	await expect(r.page.getByTestId('candidate-progress')).toHaveText('Result ready', {
+		timeout: 15000
+	});
+	await expect(r.page.getByText('No overlap')).toBeVisible();
 
-	await rctx.close();
+	// A second candidate on the same role gets their own link and check.
+	const second = `e2e-cand2-${randomUUID().slice(0, 8)}@example.test`;
+	const c2 = await addCandidate(r.page, second);
+	expect(c2.sessionId).not.toBe(r.sessionId);
+	await expect(r.page.getByTestId('candidate-row')).toHaveCount(2);
+	const opened = await candidateOpens(browser, c2.inviteUrl, c2.sessionId);
+	await expect(opened.page.getByTestId('disclosure')).toBeVisible();
+	// The first candidate's result and figures never reach the second.
+	assertNoFigures(await opened.page.content(), NO_OVERLAP_CANDIDATE);
+
+	await r.ctx.close();
 	await c.ctx.close();
+	await opened.ctx.close();
 });
 
 test('V3b: recruiter cancels before both submitted; both pages show cancelled and the link dies', async ({
@@ -224,6 +233,9 @@ test('V3b: recruiter cancels before both submitted; both pages show cancelled an
 	const c = await candidateOpens(browser, r.inviteUrl, r.sessionId);
 	await expect(c.page.getByTestId('disclosure')).toBeVisible();
 
+	// Cancelling is per candidate, on that candidate's page.
+	await r.page.goto(`/app/s/${r.sessionId}`);
+	await settle(r.page);
 	await r.page.getByRole('button', { name: 'Cancel this check' }).click();
 	await expect(r.page.getByRole('heading', { name: 'This check was cancelled' })).toBeVisible();
 	await c.page.reload();

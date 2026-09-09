@@ -9,13 +9,13 @@
 </script>
 
 <svelte:head>
-	<title>Salary checks</title>
+	<title>Roles</title>
 </svelte:head>
 
 <main class="shell">
 	<header class="shell__head">
 		<div>
-			<h1 class="shell__title">Salary checks</h1>
+			<h1 class="shell__title">Roles</h1>
 			<p class="shell__sub">
 				Signed in as <strong data-testid="email">{data.email}</strong>
 				<span aria-hidden="true"> · </span>
@@ -26,42 +26,49 @@
 			</p>
 		</div>
 		<div class="shell__actions">
-			<a class="pill pill--gold btn" href={resolve('/app/new')}>New salary check</a>
+			<a class="pill pill--gold btn" href={resolve('/app/new')}>New role</a>
 			<form method="POST" action="/signout">
 				<button class="link-quiet" type="submit">Sign out</button>
 			</form>
 		</div>
 	</header>
 
-	{#if data.sessions.length === 0}
+	{#if data.roles.length === 0}
 		<section class="panel empty" aria-labelledby="empty-title">
-			<h2 id="empty-title" class="panel__title">No checks yet</h2>
+			<h2 id="empty-title" class="panel__title">No roles yet</h2>
 			<p class="panel__lede">
-				A salary check asks you for the client's budget as four figures and the candidate for their
-				expectations as four more. Neither side sees the other's numbers while they enter their own.
-				When both are in, you get the fair salary, whether the two ranges meet, and what the
-				candidate was shown.
+				A role holds the client's budget as four figures. Each candidate you add gets a private link
+				and answers with four of their own. Neither side sees the other's numbers. When a candidate
+				answers, you get the fair salary, whether the two ranges meet, and what they were shown.
 			</p>
 			<ol class="empty__steps">
-				<li>Enter the client's budget.</li>
-				<li>Send the candidate their private link.</li>
-				<li>Read the result together with what they saw.</li>
+				<li>Name the role and enter the client's budget.</li>
+				<li>Add candidates by email and send each their private link.</li>
+				<li>Read each result together with what the candidate saw.</li>
 			</ol>
-			<a class="pill pill--navy btn" href={resolve('/app/new')}>Start your first check</a>
+			<a class="pill pill--navy btn" href={resolve('/app/new')}>Start your first role</a>
 		</section>
 	{:else}
-		<section class="panel list" aria-label="Your salary checks">
+		<section class="panel list" aria-label="Your roles">
 			<ul class="list__rows">
-				{#each data.sessions as s (s.id)}
+				{#each data.roles as r (r.id)}
 					<li>
 						<a
 							class="list__row"
-							href={resolve('/app/s/[id]', { id: s.id })}
+							href={resolve('/app/r/[id]', { id: r.id })}
 							data-testid="session-row"
 						>
-							<StateBadge state={s.state} />
-							<span class="list__email">{s.candidateEmail ?? 'No candidate'}</span>
-							<time class="list__date" datetime={s.createdAt}>{formatDate(s.createdAt)}</time>
+							<span class="list__title">{r.title}</span>
+							<span class="list__cands">
+								{#if r.candidates.length === 0}
+									<span class="list__none">No candidates yet</span>
+								{:else}
+									{#each r.candidates as c (c.sessionId)}
+										<span class="list__cand"><StateBadge state={c.state} /> {c.email}</span>
+									{/each}
+								{/if}
+							</span>
+							<time class="list__date" datetime={r.createdAt}>{formatDate(r.createdAt)}</time>
 							<svg class="list__arrow" viewBox="0 0 24 24" aria-hidden="true"
 								><path
 									d="M5 12h13M13 6l6 6-6 6"
@@ -98,6 +105,36 @@
 		padding: 8px 0;
 	}
 
+	.list__title {
+		grid-area: title;
+		font-weight: 700;
+		color: var(--navy);
+		font-family: var(--font-display);
+		font-size: 18px;
+	}
+
+	.list__cands {
+		grid-area: cands;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px 16px;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.list__cand {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 14px;
+		color: var(--ink);
+	}
+
+	.list__none {
+		font-size: 14px;
+		color: var(--slate);
+	}
+
 	.list__rows {
 		list-style: none;
 		margin: 0;
@@ -106,10 +143,10 @@
 
 	.list__row {
 		display: grid;
-		grid-template-columns: auto 1fr auto;
+		grid-template-columns: 1fr auto auto;
 		grid-template-areas:
-			'badge date arrow'
-			'email email arrow';
+			'title date arrow'
+			'cands cands arrow';
 		align-items: center;
 		gap: 8px 14px;
 		padding: 16px 22px;
@@ -129,13 +166,6 @@
 
 	.list__row :global(.badge) {
 		grid-area: badge;
-	}
-
-	.list__email {
-		grid-area: email;
-		font-weight: 600;
-		font-size: 16px;
-		overflow-wrap: anywhere;
 	}
 
 	.list__date {

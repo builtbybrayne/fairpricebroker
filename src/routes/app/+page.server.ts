@@ -1,7 +1,7 @@
-// T3-m1-recruitment-core §3: the recruiter's dashboard.
+// The recruiter's dashboard: roles, each with its candidates' states.
 import type { PageServerLoad } from './$types';
-import { listRecruiterSessions } from '$lib/server/recruitment/sessions';
+import { listRoles } from '$lib/server/recruitment/roles';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	return { sessions: await listRecruiterSessions(locals.supabase) };
+	return { roles: await listRoles(locals.supabase) };
 };

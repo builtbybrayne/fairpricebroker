@@ -25,6 +25,7 @@ import {
 	type CandidateStatus
 } from '$lib/server/recruitment/sessions';
 import { recruitmentTemplate, RECRUITMENT_DIRECTION } from '$lib/templates/recruitment';
+import { roleOfSession } from '$lib/server/recruitment/roles';
 
 export type Phase = 'enter' | 'waiting' | 'locked' | 'closed' | 'cancelled';
 
@@ -49,9 +50,10 @@ export const load: PageServerLoad = async ({ locals, params, cookies, url }) => 
 		if (again) session.state = again.state;
 	}
 
-	const [own, invite] = await Promise.all([
+	const [own, invite, role] = await Promise.all([
 		readOwnPosition(locals.supabase, id),
-		readCandidateInvite(locals.supabase, id)
+		readCandidateInvite(locals.supabase, id),
+		roleOfSession(locals.supabase, id)
 	]);
 	const submitted = session.state === 'open' ? await candidateSubmitted(id) : false;
 	const candidateStatus: CandidateStatus = submitted
@@ -74,6 +76,7 @@ export const load: PageServerLoad = async ({ locals, params, cookies, url }) => 
 		currency: session.currency,
 		createdAt: session.created_at,
 		candidateEmail: invite?.email ?? null,
+		role,
 		candidateStatus,
 		inviteUrl,
 		ownStatus: own?.status ?? null,
