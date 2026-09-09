@@ -4,7 +4,7 @@ plan_kind: thematic
 tier: 3
 t2_parent: T2-product-surfaces
 milestone: M1-working-instrument
-status: draft
+status: active
 ---
 
 # T3 — One domain vocabulary under every vertical
@@ -236,6 +236,10 @@ risk sits in the guarded functions and policies, which is why the
 rebaseline route is preferred.
 
 ## 6. Decisions for the operator
+
+> **Ruled 9 Sep 2026 (operator, in chat):** all eleven as recommended.
+> Core words reconciliation / buyer / seller / offer; the access map as
+> shaped in §4; rebaseline the schema; the rest taken as read.
 
 | # | Decision | Recommendation |
 |---|---|---|
