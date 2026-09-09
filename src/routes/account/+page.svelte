@@ -34,8 +34,8 @@
 			{#each data.verticals as v (v.id)}
 				<li class="vertical">
 					<span class="vertical__name">{v.name}</span>
-					{#if v.ready && v.href}
-						<a class="vertical__link" href={v.href}>Open</a>
+					{#if v.id === 'recruiting'}
+						<a class="vertical__link" href={resolve('/app/roles')}>Open</a>
 					{:else}
 						<span class="caps vertical__soon">Coming next</span>
 					{/if}

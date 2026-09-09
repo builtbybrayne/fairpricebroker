@@ -1,22 +1,20 @@
 // The role page: the client's budget (set once, editable until a candidate
-// answers), the candidates with their progress, and adding a candidate,
-// which spends one credit and shows their private link once.
+// answers), the candidate links with their progress, and generating more
+// links, one credit each. Candidates are identified by their link; the
+// email arrives when they open it.
 import { randomUUID } from 'node:crypto';
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { normaliseEmail } from '$lib/server/auth/naiveSignIn';
 import { friendlyError, parseTuple } from '$lib/server/recruitment/positions';
 import {
-	addCandidate,
-	forgetRoleInviteToken,
+	generateLink,
 	listCandidates,
 	readRole,
-	readRoleInviteTokens,
-	stashRoleInviteToken,
 	updateBudget
 } from '$lib/server/recruitment/roles';
 
 const UUID_RE = /^[0-9a-f-]{36}$/i;
+const MAX_LINKS_AT_ONCE = 10;
 
 async function guard(locals: App.Locals, id: string) {
 	const { user } = await locals.safeGetSession();
@@ -26,26 +24,15 @@ async function guard(locals: App.Locals, id: string) {
 	return { user, role };
 }
 
-export const load: PageServerLoad = async ({ locals, params, cookies, url }) => {
+export const load: PageServerLoad = async ({ locals, params, url }) => {
 	const { user, role } = await guard(locals, params.id);
 	const candidates = await listCandidates(
 		locals.supabase,
 		{ sub: user.id, email: user.email },
-		role.id
+		role.id,
+		url.origin
 	);
-	// Fresh links, shown once: only for candidates who have not opened theirs.
-	const tokens = readRoleInviteTokens(cookies);
-	const inviteUrls: Record<string, string> = {};
-	for (const c of candidates) {
-		const t = tokens[c.sessionId];
-		if (!t) continue;
-		if (c.state === 'open' && c.progress === 'not-opened') {
-			inviteUrls[c.sessionId] = `${url.origin}/join/${t}`;
-		} else {
-			forgetRoleInviteToken(cookies, role.id, c.sessionId);
-		}
-	}
-	return { role, candidates, inviteUrls, requestKey: randomUUID() };
+	return { role, candidates, requestKey: randomUUID() };
 };
 
 export const actions: Actions = {
@@ -61,23 +48,24 @@ export const actions: Actions = {
 		}
 		return { budgetSaved: true };
 	},
-	add: async ({ locals, params, request, cookies }) => {
-		const { user, role } = await guard(locals, params.id);
+	generate: async ({ locals, params, request }) => {
+		const { role } = await guard(locals, params.id);
 		const form = await request.formData();
-		const rawEmail = form.get('email');
-		const email = normaliseEmail(rawEmail);
 		const requestKey = String(form.get('requestKey') ?? '');
-		const values = { email: typeof rawEmail === 'string' ? rawEmail : '' };
-		if (!email) return fail(400, { ...values, addError: "Enter the candidate's email address." });
-		if ((user.email ?? '').toLowerCase() === email) {
-			return fail(400, { ...values, addError: "The candidate's email must differ from your own." });
-		}
+		const count = Math.min(MAX_LINKS_AT_ONCE, Math.max(1, Number(form.get('count') ?? 1) || 1));
 		if (!UUID_RE.test(requestKey)) {
-			return fail(400, { ...values, addError: 'This form has expired. Reload and try again.' });
+			return fail(400, { addError: 'This form has expired. Reload and try again.' });
 		}
-		const out = await addCandidate(locals.supabase, role, email, requestKey);
-		if (!out.ok) return fail(400, { ...values, addError: out.error });
-		stashRoleInviteToken(cookies, role.id, out.sessionId, out.plaintextToken);
-		return { added: out.sessionId };
+		let made = 0;
+		for (let i = 0; i < count; i += 1) {
+			// One request key per link so a replayed form cannot double-spend.
+			const out = await generateLink(locals.supabase, role, `${requestKey}:${i}`);
+			if (!out.ok) {
+				if (made === 0) return fail(400, { addError: out.error });
+				return { generated: made, addError: out.error };
+			}
+			made += 1;
+		}
+		return { generated: made };
 	}
 };

@@ -3,9 +3,19 @@
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import MeterPanel from '$lib/client/meter/MeterPanel.svelte';
+	import RevealCanvas from '$lib/client/reveal/RevealCanvas.svelte';
 	import LivePoll from '$lib/client/recruitment/LivePoll.svelte';
 	import StateBadge from '$lib/client/recruitment/StateBadge.svelte';
-	import { formatDate, formatFair, OVERLAP_LABEL, symbolFor } from '$lib/client/recruitment/format';
+	import {
+		formatDate,
+		formatFair,
+		niceAxis,
+		OVERLAP_LABEL,
+		quantiseRange,
+		rangeOverlap,
+		symbolFor,
+		tupleRange
+	} from '$lib/client/recruitment/format';
 	import { recruitmentTemplate } from '$lib/templates/recruitment';
 	import type { ActionData, PageData } from './$types';
 
@@ -22,6 +32,8 @@
 	});
 	let busy = $state(false);
 	let copied = $state<string | null>(null);
+	let count = $state(1);
+	let openOverlap = $state<string | null>(null);
 
 	const anyAnswered = $derived(
 		data.candidates.some((c) => c.progress === 'answered' || c.progress === 'result')
@@ -38,13 +50,33 @@
 		}
 	}
 
+	/** A link shown short: the start and the end, an ellipsis between. */
+	function shorten(url: string): string {
+		const tail = url.split('/').pop() ?? '';
+		return `${url.slice(0, url.length - tail.length)}${tail.slice(0, 4)}…${tail.slice(-4)}`;
+	}
+
 	const PROGRESS: Record<string, string> = {
-		'not-opened': 'Link not opened yet',
-		opened: 'Opened their link',
+		'not-opened': 'Not opened yet',
+		opened: 'Opened',
 		answered: 'Answered',
 		result: 'Result ready',
 		cancelled: 'Cancelled'
 	};
+
+	/** The overlap picture for a finished check: the client's range and the zone. */
+	function picture(c: (typeof data.candidates)[number]) {
+		if (!c.employer || !c.candidate || !c.fair) return null;
+		const employer = tupleRange(c.employer);
+		const candidate = tupleRange(c.candidate);
+		const axis = niceAxis([employer.lo, employer.hi, candidate.lo, candidate.hi, Number(c.fair)]);
+		return {
+			axis,
+			yours: quantiseRange(employer, axis),
+			zone: rangeOverlap(employer, candidate),
+			fair: Number(c.fair)
+		};
+	}
 </script>
 
 <svelte:head>
@@ -152,67 +184,133 @@
 		<h2 id="cands-title" class="panel__title">Candidates</h2>
 		{#if data.candidates.length === 0}
 			<p class="panel__lede">
-				Nobody yet. Add a candidate by email to get their private link; each candidate costs one
-				credit and answers on their own.
+				No links yet. Generate a private link for each candidate and send it yourself; each link
+				works once, costs one credit, and tells you who used it when they open it.
 			</p>
 		{:else}
-			<ul class="cands">
-				{#each data.candidates as c (c.sessionId)}
-					<li class="cand" data-testid="candidate-row" data-session-id={c.sessionId}>
-						<div class="cand__head">
-							<a class="cand__email" href={resolve('/app/s/[id]', { id: c.sessionId })}>{c.email}</a
-							>
-							<StateBadge state={c.state} />
-							<span class="cand__progress" data-testid="candidate-progress"
-								>{PROGRESS[c.progress]}</span
-							>
-						</div>
-						{#if c.progress === 'result' && c.fair && c.overlap}
-							<p class="cand__result">
-								<span class="cand__fair">{formatFair(c.fair, data.role.currency)}</span>
-								<span class="caps cand__overlap">{OVERLAP_LABEL[c.overlap]}</span>
-								<span class="cand__nonrem">
-									{c.nonRemunerationInPlay
-										? 'Non-salary factors need to be in play'
-										: 'Closable on salary alone'}
-								</span>
-								<a class="cand__open" href={resolve('/app/s/[id]', { id: c.sessionId })}
-									>See the result</a
-								>
-							</p>
-						{/if}
-						{#if data.inviteUrls[c.sessionId]}
-							<div class="linkbox">
-								<input
-									class="linkbox__url inset"
-									type="text"
-									readonly
-									value={data.inviteUrls[c.sessionId]}
-									data-testid="invite-url"
-									aria-label={`Invite link for ${c.email}`}
-								/>
-								<button
-									class="pill pill--navy btn btn--sm"
-									type="button"
-									onclick={() => copy(c.sessionId, data.inviteUrls[c.sessionId])}
-								>
-									{copied === c.sessionId ? 'Copied' : 'Copy link'}
-								</button>
-							</div>
-							<p class="linkbox__note">
-								We haven't emailed it. Send it to {c.email} yourself; it works once, for that address
-								only, for 14 days, and is shown only now.
-							</p>
-						{/if}
-					</li>
-				{/each}
-			</ul>
+			<p class="panel__lede">
+				One private link per candidate, sent by you. Each works once; the candidate's email appears
+				when they open it.
+			</p>
+			<div class="table-wrap">
+				<table class="cands">
+					<thead>
+						<tr>
+							<th scope="col">Link</th>
+							<th scope="col">Candidate</th>
+							<th scope="col">Fair salary</th>
+							<th scope="col">Overlap</th>
+							<th scope="col">Reconciled</th>
+							<th scope="col"><span class="sr-only">Open</span></th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each data.candidates as c, i (c.sessionId)}
+							<tr data-testid="candidate-row" data-session-id={c.sessionId}>
+								<td class="cands__link">
+									{#if c.link}
+										<span class="linkcell">
+											<input
+												class="sr-only"
+												type="text"
+												readonly
+												value={c.link}
+												data-testid="invite-url"
+												aria-label={`Link ${i + 1}`}
+											/>
+											<code class="linkcell__short" title={c.link}>{shorten(c.link)}</code>
+											<button
+												class="pill btn btn--sm btn--quiet linkcell__copy"
+												type="button"
+												onclick={() => copy(c.sessionId, c.link ?? '')}
+												>{copied === c.sessionId ? 'Copied' : 'Copy'}</button
+											>
+										</span>
+									{:else}
+										<span class="cands__used">Used</span>
+									{/if}
+								</td>
+								<td class="cands__who">
+									{#if c.email}
+										<a href={resolve('/app/s/[id]', { id: c.sessionId })}>{c.email}</a>
+										<span class="cands__progress" data-testid="candidate-progress"
+											>{PROGRESS[c.progress]}</span
+										>
+									{:else}
+										<span class="cands__muted" data-testid="candidate-progress"
+											>{PROGRESS[c.progress]}</span
+										>
+									{/if}
+								</td>
+								<td class="cands__fair">
+									{#if c.fair}{formatFair(c.fair, data.role.currency)}{:else}<span
+											class="cands__muted">—</span
+										>{/if}
+								</td>
+								<td class="cands__overlap">
+									{#if c.overlap}
+										<button
+											class="pill btn btn--sm btn--quiet"
+											type="button"
+											aria-expanded={openOverlap === c.sessionId}
+											onclick={() =>
+												(openOverlap = openOverlap === c.sessionId ? null : c.sessionId)}
+											>{OVERLAP_LABEL[c.overlap]}</button
+										>
+									{:else}
+										<StateBadge state={c.state} />
+									{/if}
+								</td>
+								<td class="cands__date">
+									{#if c.computedAt}<time datetime={c.computedAt}>{formatDate(c.computedAt)}</time
+										>{:else}<span class="cands__muted">—</span>{/if}
+								</td>
+								<td class="cands__open">
+									<a href={resolve('/app/s/[id]', { id: c.sessionId })}>Open</a>
+								</td>
+							</tr>
+							{#if openOverlap === c.sessionId}
+								{@const pic = picture(c)}
+								{#if pic}
+									<tr class="cands__detail">
+										<td colspan="6">
+											<div class="overlap">
+												<RevealCanvas
+													axis={pic.axis}
+													currency={symbol}
+													yours={pic.yours}
+													zone={pic.zone}
+													fair={pic.fair}
+													fairLabel={formatFair(pic.fair, data.role.currency)}
+													yourLabel="Client budget"
+													zoneLabel="Overlap"
+													variant="outcome"
+													animate={false}
+													compact
+												/>
+											</div>
+											<p class="overlap__note">
+												{c.nonRemunerationInPlay
+													? 'Non-salary factors need to be in play.'
+													: 'Closable on salary alone.'}
+												<a href={resolve('/app/s/[id]', { id: c.sessionId })}
+													>Full result and both sets of figures</a
+												>
+											</p>
+										</td>
+									</tr>
+								{/if}
+							{/if}
+						{/each}
+					</tbody>
+				</table>
+			</div>
 		{/if}
 
 		<form
 			class="add"
 			method="POST"
-			action="?/add"
+			action="?/generate"
 			use:enhance={() => {
 				busy = true;
 				return async ({ update }) => {
@@ -222,21 +320,6 @@
 			}}
 		>
 			<input type="hidden" name="requestKey" value={data.requestKey} />
-			<div class="field add__field">
-				<label class="field__label" for="email">Candidate's email</label>
-				<input
-					id="email"
-					class="field__input"
-					type="email"
-					name="email"
-					autocomplete="off"
-					required
-					placeholder="name@example.com"
-					value={form?.email ?? ''}
-					aria-invalid={form?.addError ? 'true' : undefined}
-					disabled={!data.role.budget}
-				/>
-			</div>
 			{#if form?.addError}
 				<p class="form-error" role="alert">{form.addError}</p>
 			{/if}
@@ -247,14 +330,27 @@
 						href={resolve('/account/billing')}
 						data-testid="buy-credits">Buy credits</a
 					>
-					<span class="entry-note">You have no credits left; each candidate link uses one.</span>
+					<span class="entry-note">You have no credits left; each link uses one.</span>
 				{:else}
-					<button class="pill pill--gold btn" type="submit" disabled={busy || !data.role.budget}>
-						{busy ? 'Adding…' : 'Add candidate'}
+					<button
+						class="pill pill--gold btn"
+						type="submit"
+						disabled={busy || !data.role.budget}
+						data-testid="generate-link"
+					>
+						{busy ? 'Generating…' : count === 1 ? 'Generate a link' : `Generate ${count} links`}
 					</button>
+					<label class="add__count">
+						<span class="sr-only">How many links</span>
+						<select name="count" class="field__input add__select" bind:value={count}>
+							{#each [1, 2, 3, 5, 10] as n (n)}
+								<option value={n}>{n}</option>
+							{/each}
+						</select>
+					</label>
 					<span class="entry-note">
 						{data.role.budget
-							? `One credit (${data.balance} left). You get their private link to send yourself.`
+							? `One credit each (${data.balance} left). Each link works once.`
 							: 'Save the budget first.'}
 					</span>
 				{/if}
@@ -283,93 +379,109 @@
 		color: var(--slate);
 	}
 
+	.table-wrap {
+		overflow-x: auto;
+		margin-top: 14px;
+	}
+
 	.cands {
-		list-style: none;
-		margin: 6px 0 0;
-		padding: 0;
-		display: grid;
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 15px;
+	}
+
+	.cands th {
+		text-align: left;
+		font-family: var(--font-display);
+		font-weight: 700;
+		font-size: 11px;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--slate);
+		padding: 8px 12px 10px 0;
+		border-bottom: 1px solid var(--hairline);
+	}
+
+	.cands td {
+		padding: 12px 12px 12px 0;
+		border-bottom: 1px solid var(--hairline);
+		vertical-align: middle;
+	}
+
+	.cands__detail td {
+		padding: 6px 0 18px;
+	}
+
+	.linkcell {
+		display: inline-flex;
+		align-items: center;
 		gap: 10px;
 	}
 
-	.cand {
-		padding: 14px 0 16px;
-		border-top: 1px solid var(--hairline);
-	}
-
-	.cand__head {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		flex-wrap: wrap;
-	}
-
-	.cand__email {
-		font-weight: 600;
-		color: var(--navy);
-		text-decoration: none;
-	}
-
-	.cand__email:hover {
-		text-decoration: underline;
-	}
-
-	.cand__progress {
-		color: var(--slate);
+	.linkcell__short {
+		font-family: var(--font-body);
+		font-variant-numeric: tabular-nums;
 		font-size: 14px;
+		color: var(--navy);
+		background: var(--ground);
+		box-shadow: var(--inset-sm);
+		padding: 6px 10px;
+		border-radius: 8px;
+		white-space: nowrap;
 	}
 
-	.cand__result {
-		display: flex;
-		align-items: baseline;
-		gap: 14px;
-		flex-wrap: wrap;
-		margin: 10px 0 0;
+	.cands__used,
+	.cands__muted {
+		color: var(--slate);
 	}
 
-	.cand__fair {
+	.cands__who a {
+		color: var(--navy);
+		font-weight: 600;
+	}
+
+	.cands__progress {
+		display: block;
+		font-size: 13px;
+		color: var(--slate);
+	}
+
+	.cands__fair {
 		font-family: var(--font-display);
 		font-weight: 700;
-		font-size: 22px;
 		color: var(--navy);
+		white-space: nowrap;
 	}
 
-	.cand__overlap {
-		font-size: 12px;
-		letter-spacing: 0.16em;
+	.cands__date {
+		white-space: nowrap;
 		color: var(--ink);
 	}
 
-	.cand__nonrem,
-	.cand__open {
-		font-size: 14px;
+	.cands__open a {
 		color: var(--slate);
-	}
-
-	.cand__open {
 		text-decoration: underline;
 		text-underline-offset: 0.2em;
 	}
 
-	.linkbox {
-		display: flex;
-		gap: 10px;
-		margin-top: 12px;
+	.overlap {
+		position: relative;
+		height: 300px;
+		padding: 28px 24px 30px 28px;
+		background: var(--navy);
+		border-radius: 16px;
+		box-shadow: var(--lift-navy);
 	}
 
-	.linkbox__url {
-		flex: 1;
-		min-width: 0;
-		border: 0;
-		border-radius: 12px;
-		padding: 11px 14px;
-		font-size: 14px;
-		color: var(--ink);
-	}
-
-	.linkbox__note {
-		margin: 8px 0 0;
+	.overlap__note {
+		margin: 10px 0 0;
 		font-size: 14px;
 		color: var(--slate);
+	}
+
+	.overlap__note a {
+		margin-left: 8px;
+		color: var(--navy);
 	}
 
 	.add {
@@ -378,21 +490,31 @@
 		border-top: 1px solid var(--hairline);
 	}
 
-	.add__field {
-		max-width: 420px;
-	}
-
 	.add__actions {
 		display: flex;
 		align-items: center;
 		gap: 14px;
 		flex-wrap: wrap;
-		margin-top: 14px;
+	}
+
+	.add__select {
+		width: 72px;
+		padding: 8px 10px;
+	}
+
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect(0 0 0 0);
+		white-space: nowrap;
 	}
 
 	@media (max-width: 640px) {
-		.linkbox {
-			flex-direction: column;
+		.cands th:nth-child(5),
+		.cands td:nth-child(5) {
+			display: none;
 		}
 	}
 </style>

@@ -7,7 +7,7 @@
 	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
 
 	const scopeName = $derived(data.verticals.find((v) => v.id === data.scope)?.name ?? null);
-	const scopeHref = $derived(data.scope === 'recruiting' ? '/recruitment' : '/');
+	const scopeHref = $derived(data.scope === 'recruiting' ? resolve('/recruitment') : resolve('/'));
 </script>
 
 <svelte:head>
@@ -25,6 +25,7 @@
 			<span>fair price broker</span>
 		</a>
 		{#if scopeName}
+			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- resolved above -->
 			<a class="scope caps" href={scopeHref} data-testid="scope">{scopeName}</a>
 		{/if}
 	</div>

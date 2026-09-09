@@ -52,7 +52,7 @@ async function recruiterToLink(
 	await expect(page.getByTestId('balance')).toHaveText('20');
 
 	const roleId = await createRole(page, employer);
-	const { sessionId, inviteUrl } = await addCandidate(page, candidateEmail);
+	const { sessionId, inviteUrl } = await addCandidate(page);
 	return { ctx, page, email, candidateEmail, roleId, sessionId, inviteUrl };
 }
 
@@ -72,29 +72,34 @@ async function createRole(page: Page, employer: readonly string[] = EMPLOYER): P
 	return page.url().split('/').pop()!;
 }
 
-/** On the role page: add a candidate by email; returns their session id and fresh link. */
-async function addCandidate(
-	page: Page,
-	candidateEmail: string
-): Promise<{ sessionId: string; inviteUrl: string }> {
-	await page.getByLabel("Candidate's email").fill(candidateEmail);
-	await page.getByRole('button', { name: 'Add candidate' }).click();
-	const row = page.locator('[data-testid="candidate-row"]', { hasText: candidateEmail });
-	const urlInput = row.getByTestId('invite-url');
-	await expect(urlInput).toBeVisible();
-	const inviteUrl = await urlInput.inputValue();
+/** On the role page: generate one link; returns the new row's session id and link. */
+async function addCandidate(page: Page): Promise<{ sessionId: string; inviteUrl: string }> {
+	const before = await page.getByTestId('candidate-row').count();
+	await page.getByTestId('generate-link').click();
+	await expect(page.getByTestId('candidate-row')).toHaveCount(before + 1);
+	const row = page.getByTestId('candidate-row').nth(before);
+	const inviteUrl = await row.getByTestId('invite-url').inputValue();
 	expect(inviteUrl).toMatch(/\/join\/[A-Za-z0-9_-]{40,}$/);
 	const sessionId = (await row.getAttribute('data-session-id'))!;
 	return { sessionId, inviteUrl };
 }
 
-async function candidateOpens(browser: Browser, inviteUrl: string, sessionId: string) {
+async function candidateOpens(
+	browser: Browser,
+	inviteUrl: string,
+	sessionId: string,
+	email = `e2e-cand-${randomUUID().slice(0, 8)}@example.test`
+) {
 	const ctx = await browser.newContext();
 	const page = await ctx.newPage();
 	await page.goto(inviteUrl);
+	// An unbound link asks who is opening it, then signs them in and redeems.
+	await page.waitForLoadState('networkidle');
+	await page.getByLabel('Your email').fill(email);
+	await page.getByRole('button', { name: 'Continue' }).click();
 	await expect(page).toHaveURL(new RegExp(`/s/${sessionId}/party$`));
 	await settle(page);
-	return { ctx, page };
+	return { ctx, page, email };
 }
 
 function assertNoFigures(html: string, figures: readonly string[]) {
@@ -114,7 +119,7 @@ test('V1 + V2 + V5: full happy path with payload safety and 4-d.p. round trip', 
 
 	// Copy control works on the role page (clipboard permission granted to this context).
 	await r.ctx.grantPermissions(['clipboard-read', 'clipboard-write']);
-	await r.page.getByRole('button', { name: 'Copy link' }).click();
+	await r.page.getByRole('button', { name: 'Copy' }).click();
 	await expect(r.page.getByRole('button', { name: 'Copied' })).toBeVisible();
 
 	// Balance was debited: 20 -> 19. One role row in the roles list.
@@ -124,7 +129,13 @@ test('V1 + V2 + V5: full happy path with payload safety and 4-d.p. round trip', 
 	await r.page.goto(`/app/s/${r.sessionId}`);
 	await expect(r.page.getByTestId('candidate-opened')).toHaveText('Not yet');
 
-	const c = await candidateOpens(browser, r.inviteUrl, r.sessionId);
+	const c = await candidateOpens(browser, r.inviteUrl, r.sessionId, r.candidateEmail);
+
+	// The role page learns who opened the link; the link itself is spent.
+	await r.page.goto(`/app/r/${r.roleId}`);
+	await expect(r.page.getByTestId('candidate-row')).toContainText(r.candidateEmail);
+	await expect(r.page.getByTestId('invite-url')).toHaveCount(0);
+	await r.page.goto(`/app/s/${r.sessionId}`);
 
 	// R11: disclosure and incentive precede any input, in DOM order.
 	const disclosure = c.page.getByTestId('disclosure');
@@ -211,9 +222,8 @@ test('V3a: the role budget can change until a candidate answers; the candidate c
 	});
 	await expect(r.page.getByText('No overlap')).toBeVisible();
 
-	// A second candidate on the same role gets their own link and check.
-	const second = `e2e-cand2-${randomUUID().slice(0, 8)}@example.test`;
-	const c2 = await addCandidate(r.page, second);
+	// A second link on the same role is its own check.
+	const c2 = await addCandidate(r.page);
 	expect(c2.sessionId).not.toBe(r.sessionId);
 	await expect(r.page.getByTestId('candidate-row')).toHaveCount(2);
 	const opened = await candidateOpens(browser, c2.inviteUrl, c2.sessionId);

@@ -7,7 +7,7 @@
 // locks the moment the candidate answers. Editing the budget re-submits it
 // on every candidate session that is still open.
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Cookies } from '@sveltejs/kit';
+import { roleDb } from '$lib/server/data/db';
 import { RECRUITMENT_DIRECTION, recruitmentTemplate } from '$lib/templates/recruitment';
 import type { OverlapLevel } from '$lib/templates/recruitment';
 import { readOwnPosition, recallPosition, savePositionAndSubmit, type Tuple } from './positions';
@@ -27,7 +27,7 @@ export interface RoleRow {
 }
 
 export interface RoleListItem extends RoleRow {
-	candidates: { sessionId: string; email: string; state: SessionState }[];
+	candidates: { sessionId: string; email: string | null; state: SessionState }[];
 }
 
 type RawRole = {
@@ -86,22 +86,25 @@ export async function listRoles(supabase: SupabaseClient): Promise<RoleListItem[
 	const { data, error } = await supabase
 		.from('roles')
 		.select(
-			'id, title, currency, created_at, v1, v2, v3, v4, role_candidates(session_id, email, sessions(state))'
+			'id, title, currency, created_at, v1, v2, v3, v4, role_candidates(session_id, sessions(state, invites(email, role)))'
 		)
 		.order('created_at', { ascending: false });
 	if (error) throw new Error(`roles: ${error.message}`);
 	type Raw = RawRole & {
 		role_candidates: {
 			session_id: string;
-			email: string;
-			sessions: { state: SessionState } | null;
+			sessions: {
+				state: SessionState;
+				invites: { email: string | null; role: string }[] | null;
+			} | null;
 		}[];
 	};
 	return ((data ?? []) as unknown as Raw[]).map((r) => ({
 		...rowOf(r),
 		candidates: (r.role_candidates ?? []).map((c) => ({
 			sessionId: c.session_id,
-			email: c.email,
+			email:
+				c.sessions?.invites?.find((i) => i.role === RECRUITMENT_DIRECTION.candidate)?.email ?? null,
 			state: c.sessions?.state ?? 'open'
 		}))
 	}));
@@ -141,21 +144,22 @@ async function openCandidateSessions(supabase: SupabaseClient, roleId: string): 
 		.map((c) => c.session_id);
 }
 
-export type AddCandidateOutcome =
+export type GenerateOutcome =
 	{ ok: true; sessionId: string; plaintextToken: string } | { ok: false; error: string };
 
 /**
- * One credit, one invited session, one join row, and the role's budget
- * submitted as the host's position so the check locks on the candidate's
- * answer.
+ * One credit, one invited session with an unbound single-use invite, one
+ * join row carrying the plaintext link (shown until it is used), and the
+ * role's budget submitted as the host's position so the check locks on
+ * the candidate's answer. Candidates are identified by the link; their
+ * email is learned when they open it.
  */
-export async function addCandidate(
+export async function generateLink(
 	supabase: SupabaseClient,
 	role: RoleRow,
-	email: string,
 	requestKey: string
-): Promise<AddCandidateOutcome> {
-	if (!role.budget) return { ok: false, error: 'Set the client budget before adding candidates.' };
+): Promise<GenerateOutcome> {
+	if (!role.budget) return { ok: false, error: 'Set the client budget before generating links.' };
 	const { data, error } = await supabase.rpc('launch_invited_session', {
 		p_request_key: requestKey,
 		template_id: recruitmentTemplate.id,
@@ -163,27 +167,22 @@ export async function addCandidate(
 		composition: 'creator-as-host',
 		visit_id: null,
 		creator_direction: RECRUITMENT_DIRECTION.budget,
-		invite_grants: [{ role: RECRUITMENT_DIRECTION.candidate, email }]
+		invite_grants: [{ role: RECRUITMENT_DIRECTION.candidate }]
 	});
 	if (error) {
 		const msg = error.message.includes('insufficient-credits')
-			? 'You have no credits left, so another candidate cannot be added.'
+			? 'You have no credits left, so another link cannot be generated.'
 			: error.message.includes('duplicate-request')
-				? 'That candidate was already added. Reload to see them.'
-				: `Could not add the candidate: ${error.message}`;
+				? 'Those links were already generated. Reload to see them.'
+				: `Could not generate the link: ${error.message}`;
 		return { ok: false, error: msg };
 	}
 	const row = (data as { session_id: string; plaintext_token: string }[] | null)?.[0];
 	if (!row) return { ok: false, error: 'The check was not created.' };
 	const join = await supabase
 		.from('role_candidates')
-		.insert({ role_id: role.id, session_id: row.session_id, email });
-	if (join.error) {
-		const msg = join.error.message.includes('duplicate')
-			? 'That email is already a candidate for this role.'
-			: `Could not attach the candidate: ${join.error.message}`;
-		return { ok: false, error: msg };
-	}
+		.insert({ role_id: role.id, session_id: row.session_id, join_token: row.plaintext_token });
+	if (join.error) return { ok: false, error: `Could not attach the link: ${join.error.message}` };
 	await savePositionAndSubmit(supabase, row.session_id, RECRUITMENT_DIRECTION.budget, role.budget);
 	return { ok: true, sessionId: row.session_id, plaintextToken: row.plaintext_token };
 }
@@ -192,13 +191,20 @@ export type CandidateProgress = 'not-opened' | 'opened' | 'answered' | 'result' 
 
 export interface CandidateView {
 	sessionId: string;
-	email: string;
+	/** Known once the candidate has opened their link. */
+	email: string | null;
+	/** The private link, until it has been used. */
+	link: string | null;
+	createdAt: string;
 	state: SessionState;
 	progress: CandidateProgress;
 	/** Only when the check is closed. */
 	fair: string | null;
 	overlap: OverlapLevel | null;
 	nonRemunerationInPlay: boolean | null;
+	employer: Tuple | null;
+	candidate: Tuple | null;
+	computedAt: string | null;
 }
 
 type Claims = { sub: string; email?: string | null };
@@ -206,53 +212,78 @@ type Claims = { sub: string; email?: string | null };
 export async function listCandidates(
 	supabase: SupabaseClient,
 	claims: Claims,
-	roleId: string
+	roleId: string,
+	origin: string
 ): Promise<CandidateView[]> {
 	const { data, error } = await supabase
 		.from('role_candidates')
-		.select('session_id, email, created_at, sessions(state)')
+		.select('session_id, join_token, created_at, sessions(state)')
 		.eq('role_id', roleId)
 		.order('created_at', { ascending: true });
 	if (error) throw new Error(`role_candidates: ${error.message}`);
-	type Raw = { session_id: string; email: string; sessions: { state: SessionState } | null };
+	type Raw = {
+		session_id: string;
+		join_token: string | null;
+		created_at: string;
+		sessions: { state: SessionState } | null;
+	};
 	const rows = (data ?? []) as unknown as Raw[];
 	return Promise.all(
 		rows.map(async (c) => {
 			const state = c.sessions?.state ?? 'open';
+			const invite = await readCandidateInvite(supabase, c.session_id);
 			const base = {
 				sessionId: c.session_id,
-				email: c.email,
+				email: invite?.email ?? null,
+				link: null as string | null,
+				createdAt: c.created_at,
 				state,
 				fair: null as string | null,
 				overlap: null as OverlapLevel | null,
-				nonRemunerationInPlay: null as boolean | null
+				nonRemunerationInPlay: null as boolean | null,
+				employer: null as Tuple | null,
+				candidate: null as Tuple | null,
+				computedAt: null as string | null
 			};
 			if (state === 'cancelled') return { ...base, progress: 'cancelled' as const };
 			if (state === 'closed') {
-				const r = await hostFullResult(claims, c.session_id);
+				const [r, computedAt] = await Promise.all([
+					hostFullResult(claims, c.session_id),
+					resultComputedAt(c.session_id)
+				]);
 				return {
 					...base,
 					progress: 'result' as const,
 					fair: r.fair,
 					overlap: r.guidance.overlap,
-					nonRemunerationInPlay: r.guidance.nonRemunerationInPlay
+					nonRemunerationInPlay: r.guidance.nonRemunerationInPlay,
+					employer: r.employer,
+					candidate: r.candidate,
+					computedAt
 				};
 			}
 			if (state === 'locked') return { ...base, progress: 'answered' as const };
-			const [invite, submitted] = await Promise.all([
-				readCandidateInvite(supabase, c.session_id),
-				candidateSubmitted(c.session_id)
-			]);
+			const submitted = await candidateSubmitted(c.session_id);
+			const opened = invite?.opened ?? false;
 			return {
 				...base,
+				link: !opened && c.join_token ? `${origin}/join/${c.join_token}` : null,
 				progress: submitted
 					? ('answered' as const)
-					: invite?.opened
+					: opened
 						? ('opened' as const)
 						: ('not-opened' as const)
 			};
 		})
 	);
+}
+
+/** When the engine closed the check. Read under the payload-reader role; only the timestamp leaves. */
+async function resultComputedAt(sessionId: string): Promise<string | null> {
+	const rows = await roleDb('payload_reader')<{ computed_at: string }[]>`
+		select computed_at from results where session_id = ${sessionId}::uuid
+	`;
+	return rows[0]?.computed_at ?? null;
 }
 
 /** Which role, if any, a session belongs to (for the session page's back link). */
@@ -269,35 +300,4 @@ export async function roleOfSession(
 	if (!data) return null;
 	const roles = data.roles as unknown as { title: string } | null;
 	return { id: data.role_id as string, title: roles?.title ?? 'Role' };
-}
-
-// Fresh invite links are shown once, on the role page, from a short-lived
-// cookie scoped to that page. One cookie per candidate session.
-const TOKEN_COOKIE_TTL_SECONDS = 60 * 60;
-const PREFIX = 'fp-role-invite-';
-
-export function stashRoleInviteToken(
-	cookies: Cookies,
-	roleId: string,
-	sessionId: string,
-	token: string
-): void {
-	cookies.set(`${PREFIX}${sessionId}`, token, {
-		path: `/app/r/${roleId}`,
-		httpOnly: true,
-		sameSite: 'lax',
-		maxAge: TOKEN_COOKIE_TTL_SECONDS
-	});
-}
-
-export function readRoleInviteTokens(cookies: Cookies): Record<string, string> {
-	const out: Record<string, string> = {};
-	for (const c of cookies.getAll()) {
-		if (c.name.startsWith(PREFIX)) out[c.name.slice(PREFIX.length)] = c.value;
-	}
-	return out;
-}
-
-export function forgetRoleInviteToken(cookies: Cookies, roleId: string, sessionId: string): void {
-	cookies.delete(`${PREFIX}${sessionId}`, { path: `/app/r/${roleId}` });
 }

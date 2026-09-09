@@ -105,20 +105,29 @@ lives in this file, not in components.
 - A **role** (`roles`: title, currency, the client budget as four
   figures, owner = the signed-in recruiter) is the unit the recruiter
   works with. Creating a role spends nothing.
-- Each **candidate** added to a role is still exactly the invited
-  session of §1 (creator-as-host, one email-bound grant, one credit),
-  joined to the role in `role_candidates` (unique per role + email). On
-  creation the role's budget is copied into that session and submitted
-  as the host's position, so the check locks the moment the candidate
-  answers. Engine, payload classes, RLS and the candidate surface are
-  unchanged; the candidate never learns that other candidates exist.
+- Each **candidate** on a role is still exactly the invited session of
+  §1 (creator-as-host, one grant, one credit), joined to the role in
+  `role_candidates`. *Revised the same day:* no email is asked for up
+  front; the recruiter generates as many links as they need (one credit
+  each, single use), and the invite is **unbound** — it learns the
+  candidate's email when they open it (the join page asks, signs them in
+  under it, and `redeem_invite` records it). The plaintext link is kept
+  on the candidate row so the role page can show and copy it until it is
+  used (**Deviation D2-naive**: the invite itself still stores only the
+  hash). On creation the role's budget is copied into that session and
+  submitted as the host's position, so the check locks the moment the
+  candidate answers. Engine, payload classes, RLS and the candidate
+  surface are unchanged; the candidate never learns that other
+  candidates exist.
 - The budget is edited on the role page only; an edit re-submits it on
   every candidate session still open. Candidates who have answered keep
   the budget they answered against (their session is locked or closed).
-- Routes: `/app` lists roles with their candidates' states; `/app/new`
-  creates a role (title, currency, budget); `/app/r/[id]` is the role
-  page (budget, add candidate, per-candidate progress and result summary,
-  fresh links shown once); `/app/s/[id]` remains the per-candidate page
+- Routes: `/app` is the account home (verticals, credits); `/app/roles`
+  lists roles with their candidates' states; `/app/new` creates a role
+  (title, currency, budget); `/app/r/[id]` is the role page (budget,
+  generate links, a table of links with the candidate's email once known,
+  the fair salary, an overlap disclosure and the reconciled date);
+  `/app/s/[id]` remains the per-candidate page
   (result, both tuples behind the toggle, what the candidate sees) and
   links back to its role.
 - Migration `20260909120000_roles.sql`; server module
