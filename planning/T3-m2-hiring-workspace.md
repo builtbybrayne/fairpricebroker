@@ -9,6 +9,11 @@ status: draft
 
 # T3 — The hiring workspace: candidates, recruiters and employers as one shared vertical
 
+> **Naming superseded, 9 Sep 2026:** the vertical and object names in
+> §2 ("Hiring", "role") are replaced by `T3-m2-domain-terms` (Salary
+> Negotiation; buyer / seller / broker; offer). The candidate-side product
+> thinking in §3 stands.
+>
 > **Draft for the operator, 9 Sep 2026.** Written in answer to the
 > questions raised in review: can a candidate log back in, do they get a
 > record, what happens when they have several roles on the go, could they
