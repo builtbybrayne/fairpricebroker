@@ -84,24 +84,41 @@
 	let touched = $state(0);
 	const prompt = $derived(rows[touched]?.help ?? null);
 
-	// Collision avoidance: when two points sit close, the later figure lifts
-	// and the later label drops to a second row, so nothing overprints.
+	// Collision avoidance: labels and figures stay on their row but are
+	// pushed apart horizontally so they never overprint; an offset is a
+	// translateX from the point they belong to.
 	let stageWidth = $state(0);
 	const pad = $derived(stageWidth < 420 ? 34 : 44);
 	const xs = $derived(rows.map((_, i) => pad + posOf(i) * Math.max(0, stageWidth - 2 * pad)));
-	const rowsFor = (widths: number[]) => {
-		const row = [0, 0, 0, 0];
-		for (let i = 1; i < rows.length; i += 1) {
-			for (let j = 0; j < i; j += 1) {
-				if (row[j] === 0 && Math.abs(xs[i] - xs[j]) < (widths[i] + widths[j]) / 2 + 8) {
-					row[i] = 1;
-				}
+	const separate = (widths: number[], gap = 8) => {
+		const n = rows.length;
+		const x = xs.slice();
+		// left-to-right: push right when overlapping the previous
+		for (let i = 1; i < n; i += 1) {
+			const minX = x[i - 1] + (widths[i - 1] + widths[i]) / 2 + gap;
+			if (x[i] < minX) x[i] = minX;
+		}
+		// keep the last inside the stage, then push back leftwards
+		const maxX = stageWidth - widths[n - 1] / 2;
+		if (x[n - 1] > maxX) x[n - 1] = maxX;
+		for (let i = n - 2; i >= 0; i -= 1) {
+			const maxI = x[i + 1] - (widths[i] + widths[i + 1]) / 2 - gap;
+			if (x[i] > maxI) x[i] = maxI;
+		}
+		// never off the left edge: if there is no room, neighbours may touch
+		if (x[0] < widths[0] / 2) {
+			x[0] = widths[0] / 2;
+			for (let i = 1; i < n; i += 1) {
+				const minX = x[i - 1] + (widths[i - 1] + widths[i]) / 2;
+				if (x[i] < minX) x[i] = Math.min(minX, xs[i] > x[i] ? xs[i] : minX);
 			}
 		}
-		return row;
+		return x.map((v, i) => v - xs[i]);
 	};
-	const labelRows = $derived(rowsFor(rows.map((r) => Math.min(104, r.label.length * 7.4))));
-	const figureRows = $derived(rowsFor(values.map((v) => ((v ?? '').length + 2) * 10 + 8)));
+	const labelWidth = (label: string) =>
+		stageWidth < 420 ? Math.min(72, label.length * 6.6) : Math.min(104, label.length * 7.4);
+	const labelDx = $derived(separate(rows.map((r) => labelWidth(r.label))));
+	const figureDx = $derived(separate(values.map((v) => ((v ?? '').length + 2) * 10 + 8)));
 
 	function commit(next: number[]) {
 		values = next.map(toRaw);
@@ -242,10 +259,10 @@
 				<div
 					class="pt"
 					class:pt--anchor={anchor}
-					class:pt--lift={figureRows[i] === 1}
-					class:pt--drop={labelRows[i] === 1}
 					class:pt--touched={entry && touched === i}
 					style:--p={posOf(i)}
+					style:--fdx={`${figureDx[i] ?? 0}px`}
+					style:--ldx={`${labelDx[i] ?? 0}px`}
 				>
 					<span class="pt__figure">
 						{#if entry}
@@ -408,16 +425,16 @@
 	/* the stage ----------------------------------------------------------- */
 	.stage {
 		position: relative;
-		height: 166px;
-		margin: 20px 0 0;
+		height: 150px;
+		margin: 6px 0 0;
 	}
 
-	.pt--lift .pt__figure {
-		top: -18px;
+	.pt__figure {
+		transform: translateX(var(--fdx, 0px));
 	}
 
-	.pt--drop .pt__label {
-		top: 118px;
+	.pt__label {
+		transform: translateX(var(--ldx, 0px));
 	}
 
 	.track {
@@ -620,7 +637,7 @@
 			font-size: 10px;
 		}
 		.stage {
-			height: 170px;
+			height: 156px;
 		}
 		.dial {
 			width: 36px;

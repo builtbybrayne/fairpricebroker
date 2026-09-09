@@ -30,6 +30,19 @@
 
 	const result = $derived(data.result);
 	const ownRange = $derived(result ? tupleRange(result.own) : null);
+	const ownInner = $derived(
+		result ? { lo: Number(result.own[1]), hi: Number(result.own[2]) } : null
+	);
+	// What to do now, by outcome: the recruiter has the same read.
+	const nextStep = $derived(
+		!result
+			? ''
+			: result.zone === 'comfort'
+				? 'The recruiter sees the same result. Expect to hear from them about the role; salary should not be the sticking point, so use the conversation for everything else that matters to you.'
+				: result.zone === 'deal'
+					? 'The recruiter sees the same result. There is a deal here but it is a stretch, so when they get in touch, be ready to talk about what beyond salary would make it work for you.'
+					: 'The recruiter sees the same gap. Unless this role appeals for reasons beyond salary, it may not be worth pursuing hard; if it does, say so when they get in touch.'
+	);
 	const axis = $derived(
 		result
 			? niceAxis([...result.own.map(Number), Number(result.fair)])
@@ -173,6 +186,7 @@
 					{axis}
 					currency={symbol}
 					yours={ownRange}
+					yoursInner={ownInner}
 					fair={Number(result.fair)}
 					fairLabel={formatFair(result.fair, data.currency)}
 					yourLabel="Your range"
@@ -206,16 +220,33 @@
 				</button>
 			</div>
 			{#if showNumbers}
-				<dl id="numbers" class="numbers__side own-numbers" data-testid="numbers">
-					<span class="caps numbers__title numbers__title--terracotta">Your figures</span>
-					{#each questions as q, i (q.key)}
-						<div class="numbers__row">
-							<dt>{q.prompt}</dt>
-							<dd data-testid="own-figure">{formatMoney(result.own[i], data.currency)}</dd>
-						</div>
-					{/each}
-				</dl>
+				<div id="numbers" class="own-numbers" data-testid="numbers">
+					<MeterPanel
+						title="Your meter"
+						{rows}
+						values={[...result.own]}
+						mode="display"
+						accent="terracotta"
+						currency={symbol}
+						min={0}
+						max={250000}
+					/>
+					<ul class="sr-only" aria-label="Your figures">
+						{#each result.own as v, i (i)}
+							<li data-testid="own-figure">{formatMoney(v, data.currency)}</li>
+						{/each}
+					</ul>
+				</div>
 			{/if}
+		</section>
+
+		<section class="panel" aria-labelledby="after-title">
+			<h2 id="after-title" class="panel__title">What to do now</h2>
+			<p class="panel__lede" data-testid="next-step">{nextStep}</p>
+			<p class="panel__lede after__note">
+				This page stays yours: the link you were sent brings you back to it on this device, and
+				signing in with the same email brings you back from anywhere.
+			</p>
 		</section>
 	{/if}
 </main>
@@ -303,6 +334,11 @@
 
 	.toggle-row {
 		margin-top: 22px;
+	}
+
+	.after__note {
+		margin-top: 10px;
+		font-size: 14px;
 	}
 
 	.own-numbers {

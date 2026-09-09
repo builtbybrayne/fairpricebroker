@@ -45,6 +45,22 @@
 	});
 	let busy = $state(false);
 
+	let copiedShort = $state(false);
+	function shortLink(url: string): string {
+		const tail = url.split('/').pop() ?? '';
+		return `${url.slice(0, url.length - tail.length)}${tail.slice(0, 4)}…${tail.slice(-4)}`;
+	}
+	async function copyShort() {
+		if (!data.role?.link) return;
+		try {
+			await navigator.clipboard.writeText(data.role.link);
+			copiedShort = true;
+			setTimeout(() => (copiedShort = false), 2200);
+		} catch {
+			copiedShort = false;
+		}
+	}
+
 	// Invite link copy control.
 	let copied = $state(false);
 	async function copyLink() {
@@ -114,6 +130,19 @@
 					Started {formatDate(data.createdAt)} · {data.currency}
 				</span>
 			</p>
+			{#if data.role?.link}
+				<p class="shell__sub linkline">
+					<span class="sub-meta">Link</span>
+					<code class="linkline__short" title={data.role.link}>{shortLink(data.role.link)}</code>
+					{#if data.role.copyable}
+						<button class="pill btn btn--sm btn--quiet" type="button" onclick={copyShort}
+							>{copiedShort ? 'Copied' : 'Copy'}</button
+						>
+					{:else}
+						<span class="sub-meta">used</span>
+					{/if}
+				</p>
+			{/if}
 		</div>
 	</header>
 
@@ -173,13 +202,6 @@
 				<input type="hidden" name={`v${i + 1}`} value={v ?? ''} />
 			{/each}
 		</form>
-
-		<section class="panel panel--cancel">
-			<form method="POST" action="?/cancel" use:enhance>
-				<button class="btn btn--sm btn--quiet pill" type="submit">Cancel this check</button>
-				<span class="cancel-note">The credit is not returned.</span>
-			</form>
-		</section>
 	{:else if data.phase === 'waiting'}
 		<section class="panel" aria-labelledby="link-title">
 			<h2 id="link-title" class="panel__title">Send the candidate their link</h2>
@@ -209,7 +231,7 @@
 			{:else if data.candidateStatus === 'not-opened'}
 				<p class="panel__lede">
 					The link for <strong>{data.candidateEmail}</strong> is no longer available here: it is shown
-					once, when the check is created. If it was not sent, cancel this check and start a new one.
+					once, when the check is created. If it was not sent, generate a new link on the role page.
 				</p>
 				{#if data.role}
 					<a
@@ -256,9 +278,6 @@
 							>
 						</form>
 					{/if}
-					<form method="POST" action="?/cancel" use:enhance>
-						<button class="pill btn btn--sm btn--quiet" type="submit">Cancel this check</button>
-					</form>
 				{/if}
 			</div>
 		</section>
@@ -302,6 +321,12 @@
 					currency={symbol}
 					yours={drawnEmployer}
 					theirs={drawnCandidate}
+					yoursInner={showNumbers
+						? { lo: Number(result.employer[1]), hi: Number(result.employer[2]) }
+						: null}
+					theirsInner={showNumbers
+						? { lo: Number(result.candidate[1]), hi: Number(result.candidate[2]) }
+						: null}
 					zone={drawnZone}
 					fair={Number(result.fair)}
 					fairLabel={formatFair(result.fair, data.currency)}
@@ -439,24 +464,6 @@
 		color: var(--slate);
 		font-size: 14px;
 		max-width: 38ch;
-	}
-
-	.panel--cancel {
-		margin-top: 22px;
-		box-shadow: none;
-		padding: 0 6px;
-		display: flex;
-	}
-
-	.panel--cancel form {
-		display: flex;
-		align-items: center;
-		gap: 14px;
-	}
-
-	.cancel-note {
-		color: var(--slate);
-		font-size: 14px;
 	}
 
 	.linkbox {
@@ -640,5 +647,22 @@
 		.cv-frame {
 			padding: 24px 28px 22px;
 		}
+	}
+
+	.linkline {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin-top: 8px;
+	}
+
+	.linkline__short {
+		font-family: var(--font-body);
+		font-size: 13px;
+		color: var(--navy);
+		background: var(--ground);
+		box-shadow: var(--inset-sm);
+		padding: 4px 8px;
+		border-radius: 6px;
 	}
 </style>

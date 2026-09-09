@@ -131,9 +131,9 @@ test('V1 + V2 + V5: full happy path with payload safety and 4-d.p. round trip', 
 
 	const c = await candidateOpens(browser, r.inviteUrl, r.sessionId, r.candidateEmail);
 
-	// The role page learns who opened the link; the link itself is spent.
+	// The role page learns who opened the link; the link can no longer be copied.
 	await r.page.goto(`/app/r/${r.roleId}`);
-	await expect(r.page.getByTestId('candidate-row')).toContainText(r.candidateEmail);
+	await expect(r.page.getByTestId('candidate-row').first()).toContainText(r.candidateEmail);
 	await expect(r.page.getByTestId('invite-url')).toHaveCount(0);
 	await r.page.goto(`/app/s/${r.sessionId}`);
 
@@ -225,7 +225,7 @@ test('V3a: the role budget can change until a candidate answers; the candidate c
 	// A second link on the same role is its own check.
 	const c2 = await addCandidate(r.page);
 	expect(c2.sessionId).not.toBe(r.sessionId);
-	await expect(r.page.getByTestId('candidate-row')).toHaveCount(2);
+	await expect(r.page.locator('tr[data-testid="candidate-row"]')).toHaveCount(2);
 	const opened = await candidateOpens(browser, c2.inviteUrl, c2.sessionId);
 	await expect(opened.page.getByTestId('disclosure')).toBeVisible();
 	// The first candidate's result and figures never reach the second.
@@ -236,23 +236,25 @@ test('V3a: the role budget can change until a candidate answers; the candidate c
 	await opened.ctx.close();
 });
 
-test('V3b: recruiter cancels before both submitted; both pages show cancelled and the link dies', async ({
+test('V3b: the recruiter tags a candidate with a tag they invent; the tag is theirs alone', async ({
 	browser
 }) => {
 	const r = await recruiterToLink(browser);
+	// The link stays visible (so links can be told apart) and copyable until opened.
+	await expect(r.page.getByTestId('invite-url')).toHaveCount(1);
+	await r.page.getByTestId('tag-input').first().fill('Shortlist');
+	await r.page.getByTestId('tag-input').first().press('Enter');
+	await expect(r.page.getByTestId('candidate-tags').first()).toContainText('Shortlist');
+	// It is offered again for the next link.
+	await expect(r.page.locator('#known-tags option[value="Shortlist"]')).toHaveCount(1);
+	await r.page.getByRole('button', { name: 'Remove tag Shortlist' }).click();
+	await expect(r.page.getByTestId('candidate-tags').first()).not.toContainText('Shortlist');
+
+	// Once the candidate opens the link it can no longer be copied, but is still shown.
 	const c = await candidateOpens(browser, r.inviteUrl, r.sessionId);
-	await expect(c.page.getByTestId('disclosure')).toBeVisible();
-
-	// Cancelling is per candidate, on that candidate's page.
-	await r.page.goto(`/app/s/${r.sessionId}`);
-	await settle(r.page);
-	await r.page.getByRole('button', { name: 'Cancel this check' }).click();
-	await expect(r.page.getByRole('heading', { name: 'This check was cancelled' })).toBeVisible();
-	await c.page.reload();
-	await expect(c.page.getByRole('heading', { name: 'This check was cancelled' })).toBeVisible();
-
-	await r.page.goto('/app/roles');
-	await expect(r.page.getByTestId('session-row')).toContainText('Cancelled');
+	await r.page.reload();
+	await expect(r.page.getByTestId('invite-url')).toHaveCount(0);
+	await expect(r.page.getByTestId('candidate-row').first()).toContainText('…');
 
 	await r.ctx.close();
 	await c.ctx.close();

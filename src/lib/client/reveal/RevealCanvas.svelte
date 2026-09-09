@@ -17,6 +17,8 @@
 		yours,
 		theirs = null,
 		zone = null,
+		yoursInner = null,
+		theirsInner = null,
 		fair = null,
 		fairLabel = null,
 		yourLabel = 'Your range',
@@ -33,6 +35,9 @@
 		yours: Range;
 		theirs?: Range | null;
 		zone?: Range | null;
+		/** When given, the bar is the inner pair and the full range is a thin line behind it. */
+		yoursInner?: Range | null;
+		theirsInner?: Range | null;
 		fair?: number | null;
 		fairLabel?: string | null;
 		yourLabel?: string;
@@ -103,10 +108,17 @@
 			<span class="lane__label caps" class:lane__label--terracotta={yourAccent === 'terracotta'}
 				>{yourLabel}</span
 			>
+			{#if yoursInner && !full}
+				<i
+					class="outer outer--{yourAccent}"
+					style:left={`${clampPct(yours.lo)}%`}
+					style:width={`${clampPct(yours.hi) - clampPct(yours.lo)}%`}
+				></i>
+			{/if}
 			<div
 				class="bar bar--yours bar--{yourAccent}"
-				style:left={`${left(yours.lo)}%`}
-				style:width={`${span(yours.lo, yours.hi)}%`}
+				style:left={`${left(yoursInner && !full ? yoursInner.lo : yours.lo)}%`}
+				style:width={`${span(yoursInner && !full ? yoursInner.lo : yours.lo, yoursInner && !full ? yoursInner.hi : yours.hi)}%`}
 			>
 				<i class="bar__end bar__end--lo"></i>
 				<i class="bar__end bar__end--hi"></i>
@@ -126,10 +138,17 @@
 
 		{#if showTheirs && theirs}
 			<div class="lane lane--theirs">
+				{#if theirsInner && !full}
+					<i
+						class="outer outer--terracotta outer--theirs"
+						style:left={`${clampPct(theirs.lo)}%`}
+						style:width={`${clampPct(theirs.hi) - clampPct(theirs.lo)}%`}
+					></i>
+				{/if}
 				<div
 					class="bar bar--theirs"
-					style:left={`${left(theirs.lo)}%`}
-					style:width={`${span(theirs.lo, theirs.hi)}%`}
+					style:left={`${left(theirsInner && !full ? theirsInner.lo : theirs.lo)}%`}
+					style:width={`${span(theirsInner && !full ? theirsInner.lo : theirs.lo, theirsInner && !full ? theirsInner.hi : theirs.hi)}%`}
 				>
 					<i class="bar__end bar__end--lo"></i>
 					<i class="bar__end bar__end--hi"></i>
@@ -284,6 +303,43 @@
 		box-shadow:
 			0 0 calc(24 * var(--rs, 1px)) rgba(198, 121, 104, 0.55),
 			-20px 0 calc(60 * var(--rs, 1px)) -10px rgba(198, 121, 104, 0.5);
+	}
+
+	/* the outer range: a thin line behind the inner bar, with end ticks */
+	.outer {
+		position: absolute;
+		top: calc(37 * var(--rs, 1px));
+		height: calc(4 * var(--rs, 1px));
+		border-radius: calc(2 * var(--rs, 1px));
+		background: rgba(92, 142, 200, 0.45);
+		z-index: 1;
+	}
+
+	.outer::before,
+	.outer::after {
+		content: '';
+		position: absolute;
+		top: calc(-6 * var(--rs, 1px));
+		width: calc(2 * var(--rs, 1px));
+		height: calc(16 * var(--rs, 1px));
+		background: inherit;
+		border-radius: 1px;
+	}
+
+	.outer::before {
+		left: 0;
+	}
+
+	.outer::after {
+		right: 0;
+	}
+
+	.outer--terracotta {
+		background: rgba(198, 121, 104, 0.5);
+	}
+
+	.lane--theirs .outer {
+		top: calc(11 * var(--rs, 1px));
 	}
 
 	/* the wake: a soft trail behind each bar, fading as it settles */

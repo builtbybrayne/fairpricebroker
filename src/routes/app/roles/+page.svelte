@@ -161,10 +161,6 @@
 		background: rgba(255, 255, 255, 0.45);
 	}
 
-	.list__row :global(.badge) {
-		grid-area: badge;
-	}
-
 	.list__date {
 		grid-area: date;
 		color: var(--slate);
@@ -180,8 +176,10 @@
 
 	@media (min-width: 720px) {
 		.list__row {
-			grid-template-columns: 150px 1fr auto 24px;
-			grid-template-areas: 'badge email date arrow';
+			grid-template-columns: 1fr auto 24px;
+			grid-template-areas:
+				'title date arrow'
+				'cands cands arrow';
 			padding: 18px 32px;
 		}
 		.list__date {

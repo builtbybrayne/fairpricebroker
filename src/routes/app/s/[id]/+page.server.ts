@@ -7,7 +7,6 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { claimAndOrchestrate } from '$lib/server/data/orchestrator';
 import {
-	cancelSession,
 	friendlyError,
 	parseTuple,
 	readOwnPosition,
@@ -53,7 +52,7 @@ export const load: PageServerLoad = async ({ locals, params, cookies, url }) => 
 	const [own, invite, role] = await Promise.all([
 		readOwnPosition(locals.supabase, id),
 		readCandidateInvite(locals.supabase, id),
-		roleOfSession(locals.supabase, id)
+		roleOfSession(locals.supabase, id, url.origin)
 	]);
 	const submitted = session.state === 'open' ? await candidateSubmitted(id) : false;
 	const candidateStatus: CandidateStatus = submitted
@@ -118,16 +117,6 @@ export const actions: Actions = {
 		} catch (e) {
 			return fail(400, { error: friendlyError(e) });
 		}
-		return { ok: true };
-	},
-	cancel: async ({ locals, params, cookies }) => {
-		await guard(locals, params.id);
-		try {
-			await cancelSession(locals.supabase, params.id);
-		} catch (e) {
-			return fail(400, { error: friendlyError(e) });
-		}
-		forgetInviteToken(cookies, params.id);
 		return { ok: true };
 	}
 };

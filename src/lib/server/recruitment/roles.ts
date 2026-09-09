@@ -193,8 +193,11 @@ export interface CandidateView {
 	sessionId: string;
 	/** Known once the candidate has opened their link. */
 	email: string | null;
-	/** The private link, until it has been used. */
+	/** The private link (always shown so the recruiter can tell links apart). */
 	link: string | null;
+	/** Only until the link has been opened. */
+	copyable: boolean;
+	tags: { id: string; name: string }[];
 	createdAt: string;
 	state: SessionState;
 	progress: CandidateProgress;
@@ -217,7 +220,7 @@ export async function listCandidates(
 ): Promise<CandidateView[]> {
 	const { data, error } = await supabase
 		.from('role_candidates')
-		.select('session_id, join_token, created_at, sessions(state)')
+		.select('session_id, join_token, created_at, sessions(state, candidate_tags(tags(id, name)))')
 		.eq('role_id', roleId)
 		.order('created_at', { ascending: true });
 	if (error) throw new Error(`role_candidates: ${error.message}`);
@@ -225,17 +228,26 @@ export async function listCandidates(
 		session_id: string;
 		join_token: string | null;
 		created_at: string;
-		sessions: { state: SessionState } | null;
+		sessions: {
+			state: SessionState;
+			candidate_tags: { tags: { id: string; name: string } | null }[] | null;
+		} | null;
 	};
 	const rows = (data ?? []) as unknown as Raw[];
 	return Promise.all(
 		rows.map(async (c) => {
 			const state = c.sessions?.state ?? 'open';
 			const invite = await readCandidateInvite(supabase, c.session_id);
+			const opened = invite?.opened ?? false;
 			const base = {
 				sessionId: c.session_id,
 				email: invite?.email ?? null,
-				link: null as string | null,
+				link: c.join_token ? `${origin}/join/${c.join_token}` : null,
+				copyable: !!c.join_token && !opened,
+				tags: (c.sessions?.candidate_tags ?? [])
+					.map((t) => t.tags)
+					.filter((t): t is { id: string; name: string } => t !== null)
+					.sort((a, b) => a.name.localeCompare(b.name)),
 				createdAt: c.created_at,
 				state,
 				fair: null as string | null,
@@ -264,10 +276,8 @@ export async function listCandidates(
 			}
 			if (state === 'locked') return { ...base, progress: 'answered' as const };
 			const submitted = await candidateSubmitted(c.session_id);
-			const opened = invite?.opened ?? false;
 			return {
 				...base,
-				link: !opened && c.join_token ? `${origin}/join/${c.join_token}` : null,
 				progress: submitted
 					? ('answered' as const)
 					: opened
@@ -286,18 +296,89 @@ async function resultComputedAt(sessionId: string): Promise<string | null> {
 	return rows[0]?.computed_at ?? null;
 }
 
-/** Which role, if any, a session belongs to (for the session page's back link). */
+/** Which role a session belongs to, with its link (copyable only until opened). */
 export async function roleOfSession(
 	supabase: SupabaseClient,
-	sessionId: string
-): Promise<{ id: string; title: string } | null> {
+	sessionId: string,
+	origin: string
+): Promise<{ id: string; title: string; link: string | null; copyable: boolean } | null> {
 	const { data, error } = await supabase
 		.from('role_candidates')
-		.select('role_id, roles(title)')
+		.select('role_id, join_token, roles(title)')
 		.eq('session_id', sessionId)
 		.maybeSingle();
 	if (error) throw new Error(`role_candidates: ${error.message}`);
 	if (!data) return null;
 	const roles = data.roles as unknown as { title: string } | null;
-	return { id: data.role_id as string, title: roles?.title ?? 'Role' };
+	const invite = await readCandidateInvite(supabase, sessionId);
+	const token = data.join_token as string | null;
+	return {
+		id: data.role_id as string,
+		title: roles?.title ?? 'Role',
+		link: token ? `${origin}/join/${token}` : null,
+		copyable: !!token && !(invite?.opened ?? false)
+	};
+}
+
+// Tags: invented by the recruiter, owned per user and per vertical --------
+
+export interface Tag {
+	id: string;
+	name: string;
+}
+
+export async function listTags(supabase: SupabaseClient, vertical = 'recruiting'): Promise<Tag[]> {
+	const { data, error } = await supabase
+		.from('tags')
+		.select('id, name')
+		.eq('vertical', vertical)
+		.order('name');
+	if (error) throw new Error(`tags: ${error.message}`);
+	return (data ?? []) as Tag[];
+}
+
+/** Find-or-create the tag by name, then attach it to the candidate's check. */
+export async function tagCandidate(
+	supabase: SupabaseClient,
+	sessionId: string,
+	name: string,
+	vertical = 'recruiting'
+): Promise<void> {
+	const clean = name.trim().slice(0, 40);
+	if (!clean) throw new Error('empty-tag');
+	const existing = await supabase
+		.from('tags')
+		.select('id')
+		.eq('vertical', vertical)
+		.eq('name', clean)
+		.maybeSingle();
+	if (existing.error) throw new Error(`tags: ${existing.error.message}`);
+	let tagId = existing.data?.id as string | undefined;
+	if (!tagId) {
+		const created = await supabase
+			.from('tags')
+			.insert({ vertical, name: clean })
+			.select('id')
+			.single();
+		if (created.error) throw new Error(`tags: ${created.error.message}`);
+		tagId = created.data.id as string;
+	}
+	// A plain insert: tagging twice is a no-op (23505), not an error.
+	const { error } = await supabase
+		.from('candidate_tags')
+		.insert({ session_id: sessionId, tag_id: tagId });
+	if (error && error.code !== '23505') throw new Error(`candidate_tags: ${error.message}`);
+}
+
+export async function untagCandidate(
+	supabase: SupabaseClient,
+	sessionId: string,
+	tagId: string
+): Promise<void> {
+	const { error } = await supabase
+		.from('candidate_tags')
+		.delete()
+		.eq('session_id', sessionId)
+		.eq('tag_id', tagId);
+	if (error) throw new Error(`candidate_tags: ${error.message}`);
 }

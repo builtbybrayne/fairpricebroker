@@ -201,7 +201,7 @@
 							<th scope="col">Fair salary</th>
 							<th scope="col">Overlap</th>
 							<th scope="col">Reconciled</th>
-							<th scope="col"><span class="sr-only">Open</span></th>
+							<th scope="col"><span class="sr-only">Details</span></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -210,24 +210,28 @@
 								<td class="cands__link">
 									{#if c.link}
 										<span class="linkcell">
-											<input
-												class="sr-only"
-												type="text"
-												readonly
-												value={c.link}
-												data-testid="invite-url"
-												aria-label={`Link ${i + 1}`}
-											/>
 											<code class="linkcell__short" title={c.link}>{shorten(c.link)}</code>
-											<button
-												class="pill btn btn--sm btn--quiet linkcell__copy"
-												type="button"
-												onclick={() => copy(c.sessionId, c.link ?? '')}
-												>{copied === c.sessionId ? 'Copied' : 'Copy'}</button
-											>
+											{#if c.copyable}
+												<input
+													class="sr-only"
+													type="text"
+													readonly
+													value={c.link}
+													data-testid="invite-url"
+													aria-label={`Link ${i + 1}`}
+												/>
+												<button
+													class="pill btn btn--sm btn--quiet linkcell__copy"
+													type="button"
+													onclick={() => copy(c.sessionId, c.link ?? '')}
+													>{copied === c.sessionId ? 'Copied' : 'Copy'}</button
+												>
+											{:else}
+												<span class="cands__used">used</span>
+											{/if}
 										</span>
 									{:else}
-										<span class="cands__used">Used</span>
+										<span class="cands__muted">—</span>
 									{/if}
 								</td>
 								<td class="cands__who">
@@ -266,7 +270,39 @@
 										>{:else}<span class="cands__muted">—</span>{/if}
 								</td>
 								<td class="cands__open">
-									<a href={resolve('/app/s/[id]', { id: c.sessionId })}>Open</a>
+									<a href={resolve('/app/s/[id]', { id: c.sessionId })}>Details</a>
+								</td>
+							</tr>
+							<tr class="cands__tags" data-testid="candidate-tags">
+								<td colspan="6">
+									<div class="tags">
+										{#each c.tags as t (t.id)}
+											<form method="POST" action="?/untag" use:enhance class="tag">
+												<input type="hidden" name="sessionId" value={c.sessionId} />
+												<input type="hidden" name="tagId" value={t.id} />
+												<span class="tag__name">{t.name}</span>
+												<button
+													class="tag__remove"
+													type="submit"
+													aria-label={`Remove tag ${t.name}`}>×</button
+												>
+											</form>
+										{/each}
+										<form method="POST" action="?/tag" use:enhance class="tag-add">
+											<input type="hidden" name="sessionId" value={c.sessionId} />
+											<input
+												class="tag-add__input inset"
+												type="text"
+												name="name"
+												maxlength="40"
+												placeholder="Add a tag"
+												list="known-tags"
+												aria-label={`Add a tag to link ${i + 1}`}
+												data-testid="tag-input"
+											/>
+											<button class="tag-add__go" type="submit" aria-label="Add the tag">+</button>
+										</form>
+									</div>
 								</td>
 							</tr>
 							{#if openOverlap === c.sessionId}
@@ -305,6 +341,14 @@
 					</tbody>
 				</table>
 			</div>
+			<datalist id="known-tags">
+				{#each data.tags as t (t.id)}
+					<option value={t.name}></option>
+				{/each}
+			</datalist>
+			{#if form?.tagError}
+				<p class="form-error" role="alert">{form.tagError}</p>
+			{/if}
 		{/if}
 
 		<form
@@ -410,6 +454,86 @@
 
 	.cands__detail td {
 		padding: 6px 0 18px;
+	}
+
+	.cands__tags td {
+		padding: 4px 0 12px;
+		border-bottom: 1px solid var(--hairline);
+	}
+
+	.cands tbody tr:not(.cands__tags) td {
+		border-bottom: 0;
+	}
+
+	.tags {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+
+	.tag {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		height: 28px;
+		padding: 0 6px 0 12px;
+		border-radius: var(--radius-pill);
+		box-shadow: var(--inset-sm);
+		font-size: 13px;
+		color: var(--navy);
+		font-weight: 600;
+	}
+
+	.tag__remove {
+		width: 18px;
+		height: 18px;
+		border: 0;
+		border-radius: 50%;
+		background: transparent;
+		color: var(--slate);
+		font-size: 15px;
+		line-height: 1;
+		cursor: pointer;
+	}
+
+	.tag__remove:hover {
+		color: var(--terracotta);
+	}
+
+	.tag-add {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.tag-add__input {
+		height: 28px;
+		width: 130px;
+		border: 0;
+		border-radius: var(--radius-pill);
+		padding: 0 12px;
+		font: inherit;
+		font-size: 13px;
+		color: var(--ink);
+	}
+
+	.tag-add__input:focus {
+		outline: 2px solid var(--gold);
+		outline-offset: 1px;
+	}
+
+	.tag-add__go {
+		width: 26px;
+		height: 26px;
+		border: 0;
+		border-radius: 50%;
+		background: var(--ground);
+		box-shadow: var(--raise-sm);
+		color: var(--navy);
+		font-size: 16px;
+		line-height: 1;
+		cursor: pointer;
 	}
 
 	.linkcell {

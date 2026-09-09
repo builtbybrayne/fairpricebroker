@@ -9,7 +9,10 @@ import { friendlyError, parseTuple } from '$lib/server/recruitment/positions';
 import {
 	generateLink,
 	listCandidates,
+	listTags,
 	readRole,
+	tagCandidate,
+	untagCandidate,
 	updateBudget
 } from '$lib/server/recruitment/roles';
 
@@ -32,7 +35,8 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 		role.id,
 		url.origin
 	);
-	return { role, candidates, requestKey: randomUUID() };
+	const tags = await listTags(locals.supabase);
+	return { role, candidates, tags, requestKey: randomUUID() };
 };
 
 export const actions: Actions = {
@@ -47,6 +51,33 @@ export const actions: Actions = {
 			return fail(400, { budgetError: friendlyError(e) });
 		}
 		return { budgetSaved: true };
+	},
+	tag: async ({ locals, params, request }) => {
+		const { role } = await guard(locals, params.id);
+		const form = await request.formData();
+		const sessionId = String(form.get('sessionId') ?? '');
+		const name = String(form.get('name') ?? '');
+		if (!UUID_RE.test(sessionId) || !name.trim()) return fail(400, { tagError: 'Type a tag.' });
+		try {
+			await tagCandidate(locals.supabase, sessionId, name);
+		} catch (e) {
+			return fail(400, { tagError: `Could not add the tag: ${(e as Error).message}` });
+		}
+		return { tagged: sessionId, role: role.id };
+	},
+	untag: async ({ locals, params, request }) => {
+		await guard(locals, params.id);
+		const form = await request.formData();
+		const sessionId = String(form.get('sessionId') ?? '');
+		const tagId = String(form.get('tagId') ?? '');
+		if (!UUID_RE.test(sessionId) || !UUID_RE.test(tagId))
+			return fail(400, { tagError: 'No such tag.' });
+		try {
+			await untagCandidate(locals.supabase, sessionId, tagId);
+		} catch (e) {
+			return fail(400, { tagError: `Could not remove the tag: ${(e as Error).message}` });
+		}
+		return { untagged: sessionId };
 	},
 	generate: async ({ locals, params, request }) => {
 		const { role } = await guard(locals, params.id);
