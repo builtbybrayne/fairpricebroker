@@ -47,8 +47,8 @@ MoR approval, no business prerequisite gates any M1 item.
 4. **Casual mode on the landing page** — The Instrument design language,
    stateless server computation, zero signup, shareable result card with
    ref codes — with the **seal-and-hide choreography** (operator ruling,
-   20 Aug 2026, revised 8 Sep 2026): both meters are live side by side;
-   each person seals their own, which hides it behind an opaque plate
+   20 Aug 2026, revised 8 Sep 2026): both meters, the buyer's and the
+   seller's, are live side by side; each person seals their own, which hides it behind an opaque plate
    for the handover; once both are sealed a "both look now" gate
    precedes the reveal. **The outcome shows the reconciliation (fair price, zones,
    animation) WITHOUT either side's raw figures by default; a "show the
@@ -58,9 +58,11 @@ MoR approval, no business prerequisite gates any M1 item.
    Google), free launch credits (idempotent grant; balance visible; no
    checkout anywhere), email-bound single-use invites via the
    transactional provider (SPF/DKIM/DMARC green; caps + auto-pause wired),
-   both compositions (creator-as-party, creator-as-host with safety
-   panels), full lifecycle contract, blind-safe reveal, no-deal view.
-   *(T2-product-surfaces, T2-platform)*
+   the creator in any seat (a buyer or seller inviting the other side; a
+   broker inviting both sides, with the safety panels where the vertical
+   keeps the broker blind), full lifecycle contract, blind-safe reveal,
+   no-deal view. *(T2-product-surfaces, T2-platform; reworded 9 Sep 2026,
+   see §8)*
 6. **The agent doorway, at parity from day one** (operator ruling,
    20 Aug 2026: agentic and human accessibility must NEVER go out of
    sync) — the capability catalogue covering every M1 human capability,
@@ -104,12 +106,14 @@ page, launch week (M3) · Umami analytics MAY slip to M2 without failing M1
    domain; the 51st recipient is refused.
 7. Privacy policy and ToS are live; ICO registration confirmed.
 8. An AI agent, using only the MCP tool list and its own credentials,
-   completes everything a human can in M1 — creates an invited session,
-   redeems a party grant, submits, reads its role-safe result, and runs a
-   casual reconciliation — and the catalogue parity suite is green.
+   completes everything a human can in M1 — launches a reconciliation,
+   redeems a side's invite, submits its figures, reads its seat-safe
+   result, and runs a casual reconciliation — and the catalogue parity
+   suite is green.
 9. The casual seal-and-hide flow works on one phone: a sealed side's
-   figures are hidden behind its plate, the other side cannot reveal
-   them, and the outcome appears only at the "both look" step.
+   figures (buyer or seller) are hidden behind its plate, the other side
+   cannot reveal them, and the outcome appears only at the "both look"
+   step.
 
 ## 5. Sequencing sketch beyond M1 (context, not commitment)
 
@@ -137,3 +141,14 @@ page, launch week (M3) · Umami analytics MAY slip to M2 without failing M1
 agent-parity ruling and were left stale at approval: the agent doorway IS
 in M1 (item 6, DoD 8); M2's doorway work is only the survey capabilities'
 agent access per the parity law. §2 items and §4 are authoritative.
+
+## 8. Vocabulary note (9 Sep 2026, appended post-approval)
+
+`T3-m2-domain-terms` (ruled 9 Sep 2026) named the underlying things
+once: a **reconciliation** with two **sides** (buyer / seller), a
+**broker** seat that may act for a side, an **offer** that collects
+reconciliations, and a **vertical** dictionary for the on-screen names.
+§2 items 4 and 5 and §4 items 8 and 9 were reworded to those terms on
+that date; "session", "party A / B", "host" and the two "compositions"
+(creator-as-party / creator-as-host) are now the creator's seat plus
+whom a broker acts for. Scope and the definition of done are unchanged.

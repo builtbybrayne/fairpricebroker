@@ -1,5 +1,5 @@
 <script lang="ts">
-	import '$lib/client/recruitment/recruit.css';
+	import '$lib/client/offers/offers.css';
 	import { resolve } from '$app/paths';
 	import type { PageData } from './$types';
 
@@ -16,7 +16,7 @@
 			<h1 class="shell__title">Billing</h1>
 			<p class="shell__sub">
 				You have <strong data-testid="balance">{data.balance}</strong>
-				{data.balance === 1 ? 'credit' : 'credits'}. Each candidate link uses one.
+				{data.balance === 1 ? 'credit' : 'credits'}. Each link you generate uses one.
 			</p>
 		</div>
 		<a class="link-quiet" href={resolve('/account')}>Account</a>

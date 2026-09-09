@@ -9,6 +9,8 @@ status: draft
 
 # T3 — M1 data core: the vault, the ledger, the payload constructor
 
+> **Vocabulary superseded, 9 Sep 2026.** This plan is written in M1's words; `T3-m2-domain-terms` (§2–§3, ruled §6) replaced them and the schema was rebaselined as `supabase/migrations/20260910000001..7`. The body below is unchanged history; read it with the map: session → reconciliation (`sessions` → `reconciliations`, `session_id` → `reconciliation_id`, also on `events` and `share_refs`); party / `direction` → side (`buyer` / `seller`; the engine alone keeps low-/high-preferring, mapped by `sideToDirection` / `directionToSide` in `src/lib/domain/terms.ts`); host / `is_host` → broker, a seat that may `act_for` a side; `session_participants` → `participants` (seat, acts_for, generated `side`); `party_positions` → `figures`; composition + `creator_direction` → `p_creator_seat` + `p_creator_acts_for`; `host_visibility` → `broker_sees_figures`; `create_invited_session` / `launch_invited_session` → `launch_reconciliation`; `submit_position` / `recall_position` / `cancel_session` → `submit_figures` / `recall_figures` / `cancel_reconciliation`; `is_session_host` → `is_broker`; `session_role_for` → `side_for`; `is_session_creator` → `is_creator`; `request_visibility_disclosure` → `broker_sees_figures_for` (boolean); payload classes party / blind-host / host-full → side / broker-blind / broker-full; `creator_auth_uid` ownership → `access_maps` / `access_members` (`personal_map()`, `may_access()`); `honesty_signal_storage.direction` → `.side`. §2.2 is the section most affected.
+
 ## 0. Human summary (plain language)
 
 **Build the database and the one safe doorway to it.** This brief creates

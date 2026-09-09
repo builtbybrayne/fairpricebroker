@@ -1,5 +1,5 @@
-// VERIFY items 5 and 6: completeCasualPlay, issueSessionRef, recordVisit,
-// activation_events attribution, forged visit refusal.
+// VERIFY items 5 and 6: completeCasualPlay, issueReconciliationRef,
+// recordVisit, activation_events attribution, forged visit refusal.
 import { randomUUID } from 'node:crypto';
 import { afterAll, describe, expect, it } from 'vitest';
 import postgres from 'postgres';
@@ -12,11 +12,14 @@ import {
 	expectPgError
 } from '../../../../tests/helpers/db';
 import {
-	createRecruitmentSession,
-	lockedRecruitmentSession
+	createBrokeredReconciliation,
+	enterFigures,
+	lockedBrokeredReconciliation,
+	redeem,
+	submitFigures
 } from '../../../../tests/helpers/fixtures';
 import { closeAllDb } from './db';
-import { completeCasualPlay, issueSessionRef, mintRefCode } from './events';
+import { completeCasualPlay, issueReconciliationRef, mintRefCode } from './events';
 import { claimAndOrchestrate } from './orchestrator';
 import { recordVisit } from './visits';
 
@@ -80,11 +83,11 @@ describe('completeCasualPlay', () => {
 				await tx`select pg_advisory_xact_lock(hashtextextended(${key}::text, 0))`;
 				const ex = await tx<
 					{ s: string }[]
-				>`select payload->>'share_ref' as s from events where idempotency_key = ${key}::uuid and session_id is null and event_type = 'reconciliation_completed'`;
+				>`select payload->>'share_ref' as s from events where idempotency_key = ${key}::uuid and reconciliation_id is null and event_type = 'reconciliation_completed'`;
 				if (ex.length) return ex[0].s;
 				const ref = mintRefCode();
 				await tx`insert into share_refs (ref_code) values (${ref})`;
-				await tx`insert into events (session_id, event_type, payload, idempotency_key) values (null, 'reconciliation_completed', ${tx.json({ share_ref: ref, ref_code: null, template_id: 'generic' })}, ${key}::uuid)`;
+				await tx`insert into events (reconciliation_id, event_type, payload, idempotency_key) values (null, 'reconciliation_completed', ${tx.json({ share_ref: ref, ref_code: null, template_id: 'generic' })}, ${key}::uuid)`;
 				return ref;
 			});
 		const [a, b] = await Promise.all([run(c1), run(c2)]);
@@ -104,61 +107,60 @@ describe('completeCasualPlay', () => {
 });
 
 describe('invited funnel attribution', () => {
-	it('recordVisit + create with visit_id -> activation_events carries ref_code and visit_id; issueSessionRef idempotent', async () => {
+	it('recordVisit + launch with visit_id -> activation_events carries ref_code and visit_id; issueReconciliationRef idempotent', async () => {
 		const inbound = mintRefCode();
 		await admin()`insert into share_refs (ref_code) values (${inbound})`;
 		const visitId = await recordVisit(inbound);
 		expect(visitId).toBeTruthy();
 		expect(await recordVisit(null)).toBeNull();
 
-		const creator = await createAuthUser('rec');
-		const candidate = await createAuthUser('cand');
-		const [inv] = await createRecruitmentSession(creator, candidate.email, { visitId });
-		const { redeem, enterPosition, submit } = await import('../../../../tests/helpers/fixtures');
-		await redeem(candidate, inv.plaintext_token);
-		await enterPosition(creator, inv.session_id, 'low-preferring');
-		await enterPosition(candidate, inv.session_id, 'high-preferring');
-		await submit(creator, inv.session_id);
-		await submit(candidate, inv.session_id);
-		expect(await claimAndOrchestrate(inv.session_id)).toBe('closed');
+		const creator = await createAuthUser('bro');
+		const seller = await createAuthUser('sel');
+		const [inv] = await createBrokeredReconciliation(creator, seller.email, { visitId });
+		await redeem(seller, inv.plaintext_token);
+		await enterFigures(creator, inv.reconciliation_id, 'buyer');
+		await enterFigures(seller, inv.reconciliation_id, 'seller');
+		await submitFigures(creator, inv.reconciliation_id);
+		await submitFigures(seller, inv.reconciliation_id);
+		expect(await claimAndOrchestrate(inv.reconciliation_id)).toBe('closed');
 
 		const act = await admin()<{ funnel: string; ref_code: string; visit_id: string }[]>`
-			select funnel, ref_code, visit_id from activation_events where session_id = ${inv.session_id}::uuid`;
+			select funnel, ref_code, visit_id from activation_events where reconciliation_id = ${inv.reconciliation_id}::uuid`;
 		expect(act).toEqual([{ funnel: 'invited', ref_code: inbound, visit_id: visitId }]);
 
-		const r1 = await issueSessionRef(inv.session_id);
-		const r2 = await issueSessionRef(inv.session_id);
+		const r1 = await issueReconciliationRef(inv.reconciliation_id);
+		const r2 = await issueReconciliationRef(inv.reconciliation_id);
 		expect(isRefCode(r1.ref)).toBe(true);
 		expect(r2.ref).toBe(r1.ref);
 		const [n] = await admin()<
 			{ n: number }[]
-		>`select count(*)::int as n from share_refs where issued_for_session_id = ${inv.session_id}::uuid`;
+		>`select count(*)::int as n from share_refs where issued_for_reconciliation_id = ${inv.reconciliation_id}::uuid`;
 		expect(n.n).toBe(1);
 
-		// a visit can attribute at most one session
+		// a visit can attribute at most one reconciliation
 		await expectPgError(
-			createRecruitmentSession(creator, candidate.email, { visitId }),
-			'sessions_visit_id_unique'
+			createBrokeredReconciliation(creator, seller.email, { visitId }),
+			'reconciliations_visit_id_unique'
 		);
 	});
 
 	it('a forged visit_id is refused', async () => {
-		const creator = await createAuthUser('rec');
+		const creator = await createAuthUser('bro');
 		await expectPgError(
-			createRecruitmentSession(creator, 'c@example.test', { visitId: randomUUID() }),
+			createBrokeredReconciliation(creator, 'c@example.test', { visitId: randomUUID() }),
 			'unknown-visit'
 		);
 	});
 
-	it('demo sessions are excluded from activation_events', async () => {
-		const { sessionId } = await lockedRecruitmentSession();
-		await admin()`update sessions set is_demo = true where id = ${sessionId}::uuid`;
-		expect(await claimAndOrchestrate(sessionId)).toBe('closed');
+	it('demo reconciliations are excluded from activation_events', async () => {
+		const { reconciliationId } = await lockedBrokeredReconciliation();
+		await admin()`update reconciliations set is_demo = true where id = ${reconciliationId}::uuid`;
+		expect(await claimAndOrchestrate(reconciliationId)).toBe('closed');
 		const act =
-			await admin()`select id from activation_events where session_id = ${sessionId}::uuid`;
+			await admin()`select id from activation_events where reconciliation_id = ${reconciliationId}::uuid`;
 		expect(act).toHaveLength(0);
 		const ev =
-			await admin()`select id from events where session_id = ${sessionId}::uuid and event_type = 'reconciliation_completed'`;
+			await admin()`select id from events where reconciliation_id = ${reconciliationId}::uuid and event_type = 'reconciliation_completed'`;
 		expect(ev).toHaveLength(1);
 	});
 });

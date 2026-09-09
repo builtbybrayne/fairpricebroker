@@ -1,12 +1,13 @@
 // The account home: the verticals this account can use, with a glance at
-// each, and the credit balance. Roles live one level down.
+// each, and the credit balance. Offers live one level down.
 import type { PageServerLoad } from './$types';
-import { listRoles } from '$lib/server/recruitment/roles';
+import { listOffers } from '$lib/server/offers/offers';
+import { salaryNegotiationTemplate } from '$lib/templates/salaryNegotiation';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	const roles = await listRoles(locals.supabase);
+	const offers = await listOffers(locals.supabase, salaryNegotiationTemplate.id);
 	return {
-		roleCount: roles.length,
-		openCount: roles.filter((r) => r.candidates.some((c) => c.state === 'open')).length
+		offerCount: offers.length,
+		openCount: offers.filter((o) => o.responses.some((r) => r.state === 'open')).length
 	};
 };

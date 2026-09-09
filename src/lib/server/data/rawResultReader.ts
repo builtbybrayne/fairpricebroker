@@ -3,10 +3,10 @@
 // table; a static test asserts no other importer exists.
 import { roleDb } from './db';
 
-export async function readRawResult(sessionId: string): Promise<unknown> {
+export async function readRawResult(reconciliationId: string): Promise<unknown> {
 	const rows = await roleDb('payload_reader')<{ payload: unknown }[]>`
-		select payload from results where session_id = ${sessionId}::uuid
+		select payload from results where reconciliation_id = ${reconciliationId}::uuid
 	`;
-	if (rows.length === 0) throw new Error('no result for this session');
+	if (rows.length === 0) throw new Error('no result for this reconciliation');
 	return rows[0].payload;
 }

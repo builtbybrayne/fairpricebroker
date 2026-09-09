@@ -1,5 +1,5 @@
 // T3-m1-platform-naive-auth §3.7: naive invite redemption.
-// 9 Sep 2026: invites may be unbound (candidates are identified by their
+// 9 Sep 2026: invites may be unbound (responders are identified by their
 // link). An unbound link asks the visitor for their email, signs them in
 // under it (D1-naive), and redeems; the invite records that email.
 import { createHash } from 'node:crypto';
@@ -8,16 +8,17 @@ import type { Actions, PageServerLoad } from './$types';
 import { naiveSignIn, normaliseEmail } from '$lib/server/auth/naiveSignIn';
 
 interface InvitePreview {
-	session_id: string;
-	role: string;
+	reconciliation_id: string;
+	seat: string;
+	acts_for: string | null;
 	email: string | null;
 	email_bound: boolean;
-	host_visibility: string;
+	broker_sees_figures: boolean;
 	state: string;
 	redeemable: boolean;
 }
 
-const partyUrl = (sessionId: string) => `/s/${sessionId}/party`;
+const sideUrl = (reconciliationId: string) => `/rec/${reconciliationId}`;
 
 async function preview(locals: App.Locals, token: string): Promise<InvitePreview | null> {
 	const r = await locals.supabase.rpc('invite_preview', { p_token: token });
@@ -41,11 +42,11 @@ export const load: PageServerLoad = async (event) => {
 			const tokenHash = createHash('sha256').update(token, 'utf8').digest('hex');
 			const own = await supabase
 				.from('invites')
-				.select('session_id')
+				.select('reconciliation_id')
 				.eq('token_hash', tokenHash)
 				.eq('redeemed_by_auth_uid', user.id)
 				.maybeSingle();
-			if (own.data?.session_id) redirect(303, partyUrl(own.data.session_id));
+			if (own.data?.reconciliation_id) redirect(303, sideUrl(own.data.reconciliation_id));
 		}
 		return { dead: true as const, needEmail: false as const };
 	}
@@ -62,7 +63,7 @@ export const load: PageServerLoad = async (event) => {
 
 	const redeemed = await supabase.rpc('redeem_invite', { token });
 	if (redeemed.error) return { dead: true as const, needEmail: false as const };
-	redirect(303, partyUrl(redeemed.data as string));
+	redirect(303, sideUrl(redeemed.data as string));
 };
 
 export const actions: Actions = {
@@ -84,6 +85,6 @@ export const actions: Actions = {
 		await naiveSignIn(event, email); // D1-naive
 		const redeemed = await event.locals.supabase.rpc('redeem_invite', { token });
 		if (redeemed.error) return fail(400, { email, error: 'This link is no longer live.' });
-		redirect(303, partyUrl(redeemed.data as string));
+		redirect(303, sideUrl(redeemed.data as string));
 	}
 };

@@ -17,8 +17,8 @@ import { handleCasualReconcile, type RawTuple } from './casualReconcile';
 import { createCasualReconcileHandler, INVALID_REF_BODY } from './casualRoute';
 
 const fixture = golden.fixtures.find((f) => f.id === 'comfort-zone')!;
-const A: RawTuple = fixture.input.lowPreferrer.map(String) as unknown as RawTuple;
-const B: RawTuple = fixture.input.highPreferrer.map(String) as unknown as RawTuple;
+const BUYER: RawTuple = fixture.input.lowPreferrer.map(String) as unknown as RawTuple;
+const SELLER: RawTuple = fixture.input.highPreferrer.map(String) as unknown as RawTuple;
 const NOT_ASCENDING: RawTuple = ['100', '90', '110', '120'];
 const VALID_REF = 'abcdefg234' as RefCode;
 
@@ -43,14 +43,14 @@ describe('handleCasualReconcile', () => {
 		const { completer, completeCasualPlay } = spyCompleter();
 		const idempotencyKey = randomUUID();
 		const res = await handleCasualReconcile(
-			{ partyATuple: A, partyBTuple: B, ref: VALID_REF, idempotencyKey },
+			{ buyerTuple: BUYER, sellerTuple: SELLER, ref: VALID_REF, idempotencyKey },
 			{ completer }
 		);
 		expect(res.ok).toBe(true);
 		if (!res.ok) return;
 		const expected = reconcile(
-			{ tuple: A as unknown as VWTuple, direction: 'low-preferring' },
-			{ tuple: B as unknown as VWTuple, direction: 'high-preferring' }
+			{ tuple: BUYER as unknown as VWTuple, direction: 'low-preferring' },
+			{ tuple: SELLER as unknown as VWTuple, direction: 'high-preferring' }
 		);
 		if (!expected.ok) throw new Error('fixture must reconcile');
 		expect(res.result).toEqual(buildCasualResultPayload(expected.result));
@@ -66,7 +66,7 @@ describe('handleCasualReconcile', () => {
 
 	it('V1b: replaying the same idempotencyKey returns the identical shareRef', async () => {
 		const { completer, completeCasualPlay } = spyCompleter();
-		const req = { partyATuple: A, partyBTuple: B, ref: null, idempotencyKey: randomUUID() };
+		const req = { buyerTuple: BUYER, sellerTuple: SELLER, ref: null, idempotencyKey: randomUUID() };
 		const first = await handleCasualReconcile(req, { completer });
 		const second = await handleCasualReconcile(req, { completer });
 		expect(first.ok && second.ok).toBe(true);
@@ -78,7 +78,7 @@ describe('handleCasualReconcile', () => {
 	it('V2: engine rejection -> ok:false with the engine kind; seam never called', async () => {
 		const { completer, completeCasualPlay } = spyCompleter();
 		const res = await handleCasualReconcile(
-			{ partyATuple: NOT_ASCENDING, partyBTuple: B, ref: null, idempotencyKey: randomUUID() },
+			{ buyerTuple: NOT_ASCENDING, sellerTuple: SELLER, ref: null, idempotencyKey: randomUUID() },
 			{ completer }
 		);
 		expect(res.ok).toBe(false);
@@ -93,7 +93,11 @@ describe('POST /api/casual/reconcile (adapter)', () => {
 		const { completer, completeCasualPlay } = spyCompleter();
 		const POST = createCasualReconcileHandler({ completer });
 		const res = await POST({
-			request: post({ partyATuple: NOT_ASCENDING, partyBTuple: B, idempotencyKey: randomUUID() })
+			request: post({
+				buyerTuple: NOT_ASCENDING,
+				sellerTuple: SELLER,
+				idempotencyKey: randomUUID()
+			})
 		});
 		expect(res.status).toBe(200);
 		const body = await res.json();
@@ -106,7 +110,12 @@ describe('POST /api/casual/reconcile (adapter)', () => {
 		const { completer, completeCasualPlay } = spyCompleter();
 		const POST = createCasualReconcileHandler({ completer });
 		const res = await POST({
-			request: post({ partyATuple: A, partyBTuple: B, ref: 'abc123', idempotencyKey: randomUUID() })
+			request: post({
+				buyerTuple: BUYER,
+				sellerTuple: SELLER,
+				ref: 'abc123',
+				idempotencyKey: randomUUID()
+			})
 		});
 		expect(res.status).toBe(400);
 		expect(await res.json()).toEqual(INVALID_REF_BODY);
@@ -116,9 +125,9 @@ describe('POST /api/casual/reconcile (adapter)', () => {
 	it('V10b: ref smuggling tuple-shaped data -> 400 { error:"invalid-ref" }, zero seam calls', async () => {
 		const { completer, completeCasualPlay } = spyCompleter();
 		const POST = createCasualReconcileHandler({ completer });
-		for (const ref of [['80', '95', '110', '125'], { tuple: A }]) {
+		for (const ref of [['80', '95', '110', '125'], { tuple: BUYER }]) {
 			const res = await POST({
-				request: post({ partyATuple: A, partyBTuple: B, ref, idempotencyKey: randomUUID() })
+				request: post({ buyerTuple: BUYER, sellerTuple: SELLER, ref, idempotencyKey: randomUUID() })
 			});
 			expect(res.status).toBe(400);
 			expect(await res.json()).toEqual(INVALID_REF_BODY);
@@ -128,8 +137,8 @@ describe('POST /api/casual/reconcile (adapter)', () => {
 
 	it('V10c: omitted or explicit-null ref proceeds; seam called once with ref:null', async () => {
 		for (const body of [
-			{ partyATuple: A, partyBTuple: B, idempotencyKey: randomUUID() },
-			{ partyATuple: A, partyBTuple: B, ref: null, idempotencyKey: randomUUID() }
+			{ buyerTuple: BUYER, sellerTuple: SELLER, idempotencyKey: randomUUID() },
+			{ buyerTuple: BUYER, sellerTuple: SELLER, ref: null, idempotencyKey: randomUUID() }
 		]) {
 			const { completer, completeCasualPlay } = spyCompleter();
 			const POST = createCasualReconcileHandler({ completer });
@@ -148,8 +157,8 @@ describe('POST /api/casual/reconcile (adapter)', () => {
 		const POST = createCasualReconcileHandler({ completer });
 		const res = await POST({
 			request: post({
-				partyATuple: ['80', '95', '110'],
-				partyBTuple: B,
+				buyerTuple: ['80', '95', '110'],
+				sellerTuple: SELLER,
 				ref: VALID_REF,
 				idempotencyKey: randomUUID()
 			})
@@ -169,13 +178,13 @@ describe('POST /api/casual/reconcile (adapter)', () => {
 		const cases: unknown[] = [
 			'{not json',
 			{
-				partyATuple: A,
-				partyBTuple: ['70', '90', '105', '120', '130'],
+				buyerTuple: BUYER,
+				sellerTuple: ['70', '90', '105', '120', '130'],
 				idempotencyKey: randomUUID()
 			},
-			{ partyATuple: A, partyBTuple: ['70', 90, '105', '120'], idempotencyKey: randomUUID() },
-			{ partyATuple: A, partyBTuple: B, idempotencyKey: 'not-a-uuid' },
-			{ partyATuple: A, partyBTuple: B }
+			{ buyerTuple: BUYER, sellerTuple: ['70', 90, '105', '120'], idempotencyKey: randomUUID() },
+			{ buyerTuple: BUYER, sellerTuple: SELLER, idempotencyKey: 'not-a-uuid' },
+			{ buyerTuple: BUYER, sellerTuple: SELLER }
 		];
 		for (const c of cases) {
 			const res = await POST({ request: post(c) });

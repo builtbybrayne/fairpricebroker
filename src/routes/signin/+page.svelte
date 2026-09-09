@@ -1,5 +1,5 @@
 <script lang="ts">
-	import '$lib/client/recruitment/recruit.css';
+	import '$lib/client/offers/offers.css';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -36,8 +36,8 @@
 				aria-invalid={form?.error ? 'true' : undefined}
 			/>
 			<span class="field__help"
-				>New accounts start with 8 free credits; each candidate link uses one. This is a preview
-				sign-in while we build: your address is only used to find your roles.</span
+				>New accounts start with 8 free credits; each link you generate uses one. This is a preview
+				sign-in while we build: your address is only used to find your work.</span
 			>
 		</div>
 		{#if form?.error}

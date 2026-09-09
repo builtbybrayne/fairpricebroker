@@ -7,14 +7,14 @@ export type RawTuple = readonly [string, string, string, string];
 /**
  * Both meters are live side by side from the start; each seals on its own.
  *  entry            neither sealed (or one being re-entered after an error)
- *  a-sealed         A sealed and hidden, B still open (phone handed over)
- *  b-sealed         B sealed and hidden, A still open
+ *  buyer-sealed     the buyer sealed and hidden, the seller still open (phone handed over)
+ *  seller-sealed    the seller sealed and hidden, the buyer still open
  *  both-look-now    both sealed; the reconciliation is in flight or ready
  *  transport-error  the request did not go through; the key is kept
  *  reveal           the outcome is on screen
  */
 export type CasualState =
-	'entry' | 'a-sealed' | 'b-sealed' | 'both-look-now' | 'transport-error' | 'reveal';
+	'entry' | 'buyer-sealed' | 'seller-sealed' | 'both-look-now' | 'transport-error' | 'reveal';
 
 const DECIMAL_GRAMMAR = /^(0|[1-9][0-9]*)(\.[0-9]+)?$/;
 

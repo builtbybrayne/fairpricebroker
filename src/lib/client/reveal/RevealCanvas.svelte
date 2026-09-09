@@ -5,7 +5,7 @@
 	 *
 	 * Disclosure rule (docs/design-brief.md ruling; T2-product-surfaces §2.6):
 	 * `variant: 'both'` renders both parties' ranges and is permitted ONLY
-	 * on full-detail payloads (casual, host-visible host view). `variant:
+	 * on full-detail payloads (casual, and the broker view when the broker sees figures). `variant:
 	 * 'blind'` renders the viewer's own range and the fair price landing —
 	 * the counterparty's positions are never passed in, so they cannot leak.
 	 */

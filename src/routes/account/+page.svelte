@@ -1,5 +1,5 @@
 <script lang="ts">
-	import '$lib/client/recruitment/recruit.css';
+	import '$lib/client/offers/offers.css';
 	import { resolve } from '$app/paths';
 	import type { PageData } from './$types';
 
@@ -22,8 +22,8 @@
 		<h2 id="credits-title" class="panel__title">Credits</h2>
 		<p class="panel__lede">
 			You have <strong data-testid="balance">{data.balance}</strong>
-			{data.balance === 1 ? 'credit' : 'credits'}. Each candidate link you generate uses one; new
-			accounts start with 8.
+			{data.balance === 1 ? 'credit' : 'credits'}. Each link you generate uses one; new accounts
+			start with 8.
 		</p>
 		<a class="pill pill--gold btn" href={resolve('/account/billing')}>Buy credits</a>
 	</section>
@@ -34,8 +34,8 @@
 			{#each data.verticals as v (v.id)}
 				<li class="vertical">
 					<span class="vertical__name">{v.name}</span>
-					{#if v.id === 'recruiting'}
-						<a class="vertical__link" href={resolve('/app/roles')}>Open</a>
+					{#if v.ready}
+						<a class="vertical__link" href={resolve('/app/offers')}>Open</a>
 					{:else}
 						<span class="caps vertical__soon">Coming next</span>
 					{/if}

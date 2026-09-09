@@ -3,16 +3,19 @@
 // standalone; the default config builds + previews on :4173).
 //
 // Flow as revised 8 Sep 2026: both meters are live side by side; each side
-// seals its own; both sealed → both look → reveal.
+// seals its own; both sealed → both look → reveal. The sides are the buyer
+// (the one paying) and the seller (T3-m2-domain-terms).
 import { expect, test, type Page } from '@playwright/test';
 
-const A = ['312.5', '420.25', '560.75', '640.5'];
-const B = ['301.5', '381.25', '521.75', '601.5'];
-const A4 = ['12.3456', '18.7891', '24.1234', '31.5678'];
-const B4 = ['11.2222', '17.3333', '23.4444', '30.5555'];
+type Side = 'buyer' | 'seller';
 
-async function seal(page: Page, party: 'A' | 'B', values: string[]) {
-	const form = page.locator(`form[data-party="${party}"]`);
+const BUYER = ['312.5', '420.25', '560.75', '640.5'];
+const SELLER = ['301.5', '381.25', '521.75', '601.5'];
+const BUYER4 = ['12.3456', '18.7891', '24.1234', '31.5678'];
+const SELLER4 = ['11.2222', '17.3333', '23.4444', '30.5555'];
+
+async function seal(page: Page, side: Side, values: string[]) {
+	const form = page.locator(`form[data-side="${side}"]`);
 	await expect(form).toBeVisible();
 	const inputs = form.locator('input[type="text"]');
 	await expect(inputs).toHaveCount(4);
@@ -30,22 +33,22 @@ async function ready(page: Page) {
 	await expect(page.locator('[data-casual-state][data-hydrated]')).toBeAttached();
 }
 
-async function driveToReveal(page: Page, a = A, b = B) {
+async function driveToReveal(page: Page, buyer = BUYER, seller = SELLER) {
 	await ready(page);
 	await expect(page.locator('[data-casual-state="entry"]')).toBeVisible();
 	// both meters are live from the start, with example figures in them
-	await expect(page.locator('form[data-party="A"] input[type="text"]')).toHaveCount(4);
-	await expect(page.locator('form[data-party="B"] input[type="text"]')).toHaveCount(4);
-	await seal(page, 'A', a);
-	// A is behind its plate: no figure of A's anywhere, and B's meter is still open
-	await expect(page.locator('[data-casual-state="a-sealed"]')).toBeVisible();
-	await expectNoneOf(page, a);
-	await expect(page.locator('form[data-party="A"] [data-meter-sealed]')).toBeVisible();
-	// V5: no control on the handed-over phone reveals A or the outcome
+	await expect(page.locator('form[data-side="buyer"] input[type="text"]')).toHaveCount(4);
+	await expect(page.locator('form[data-side="seller"] input[type="text"]')).toHaveCount(4);
+	await seal(page, 'buyer', buyer);
+	// the buyer is behind its plate: none of its figures anywhere, and the seller's meter is still open
+	await expect(page.locator('[data-casual-state="buyer-sealed"]')).toBeVisible();
+	await expectNoneOf(page, buyer);
+	await expect(page.locator('form[data-side="buyer"] [data-meter-sealed]')).toBeVisible();
+	// V5: no control on the handed-over phone reveals the buyer's figures or the outcome
 	await expect(page.getByRole('button', { name: /show|reveal|unseal/i })).toHaveCount(0);
-	await seal(page, 'B', b);
+	await seal(page, 'seller', seller);
 	await expect(page.locator('[data-state-screen="both-look-now"]')).toBeVisible();
-	await expectNoneOf(page, [...a, ...b]);
+	await expectNoneOf(page, [...buyer, ...seller]);
 	// V6: reveal markers absent before continue
 	await expect(page.locator('[data-state-screen="reveal"]')).toHaveCount(0);
 	await page.getByRole('button', { name: /reveal the fair price/i }).click();
@@ -61,22 +64,22 @@ test('V4–V7: figures hidden through handover, outcome only at both-look, numbe
 	// V8: under sixty seconds end to end
 	expect(Date.now() - t0).toBeLessThan(60_000);
 	// V7: raw figures absent until "show the numbers"
-	await expectNoneOf(page, [...A, ...B]);
+	await expectNoneOf(page, [...BUYER, ...SELLER]);
 	await expect(page.locator('[data-fair-price]')).toBeVisible();
 	await page.getByRole('button', { name: /show the numbers/i }).click();
 	const shown = await page.locator('[data-numbers-shown]').innerText();
-	for (const v of [...A, ...B]) expect(shown).toContain(Number(v).toFixed(2));
+	for (const v of [...BUYER, ...SELLER]) expect(shown).toContain(Number(v).toFixed(2));
 });
 
 test('either side may seal first; the step row follows', async ({ page }) => {
 	await page.goto('/');
 	await ready(page);
 	await expect(page.locator('.steps')).toHaveAttribute('data-step', '1');
-	await seal(page, 'B', B);
-	await expect(page.locator('[data-casual-state="b-sealed"]')).toBeVisible();
+	await seal(page, 'seller', SELLER);
+	await expect(page.locator('[data-casual-state="seller-sealed"]')).toBeVisible();
 	await expect(page.locator('.steps')).toHaveAttribute('data-step', '2');
-	await expectNoneOf(page, B);
-	await seal(page, 'A', A);
+	await expectNoneOf(page, SELLER);
+	await seal(page, 'buyer', BUYER);
 	await expect(page.locator('.steps')).toHaveAttribute('data-step', '3');
 	await page.getByRole('button', { name: /reveal the fair price/i }).click();
 	await expect(page.locator('[data-state-screen="reveal"]')).toBeVisible();
@@ -113,10 +116,10 @@ test('V12: transport failure preserves the key; retry succeeds with the same key
 	});
 	await page.goto('/');
 	await ready(page);
-	await seal(page, 'A', A);
-	await seal(page, 'B', B);
+	await seal(page, 'buyer', BUYER);
+	await seal(page, 'seller', SELLER);
 	await expect(page.locator('[data-state-screen="transport-error"]')).toBeVisible();
-	await expectNoneOf(page, [...A, ...B]);
+	await expectNoneOf(page, [...BUYER, ...SELLER]);
 	await page.getByRole('button', { name: /try again/i }).click();
 	await expect(page.locator('[data-state-screen="both-look-now"]')).toBeVisible();
 	await page.getByRole('button', { name: /reveal the fair price/i }).click();
@@ -149,9 +152,9 @@ test('V12b: a malformed inbound ref is discarded silently and retried with ref n
 test('V13/V15: mobile viewport, 4-d.p. precision survives to the reveal', async ({ page }) => {
 	await page.setViewportSize({ width: 375, height: 812 });
 	await page.goto('/');
-	await driveToReveal(page, A4, B4);
-	await expectNoneOf(page, [...A4, ...B4]);
+	await driveToReveal(page, BUYER4, SELLER4);
+	await expectNoneOf(page, [...BUYER4, ...SELLER4]);
 	await page.getByRole('button', { name: /show the numbers/i }).click();
 	const shown = await page.locator('[data-numbers-shown]').innerText();
-	for (const v of [...A4, ...B4]) expect(shown).toContain(v);
+	for (const v of [...BUYER4, ...SELLER4]) expect(shown).toContain(v);
 });

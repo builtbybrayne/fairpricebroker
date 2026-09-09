@@ -26,7 +26,7 @@ async function rowsFor(demoId: string) {
 	return sql<{ event_type: string; stage: number }[]>`
 		select e.event_type, (e.payload ->> 'stage')::int as stage
 		from events e
-		where e.session_id is null
+		where e.reconciliation_id is null
 			and e.payload ->> 'demo_id' = ${demoId}
 			and coalesce((e.payload ->> 'demo')::boolean, false)
 		order by e.id`;
@@ -180,9 +180,9 @@ test('V4: stage 3 shows the disclosure and incentive before any input; stage 4 s
 	// Stage 4: overlap level + steer, and the candidate view beside it.
 	await expect(page.locator('[data-overlap-level]')).toHaveText('In range');
 	await expect(page.locator('[data-non-remuneration]')).toHaveText('Not needed to close');
-	await expect(page.locator('[data-host-copy]')).toContainText(
+	await expect(page.locator('[data-broker-copy]')).toContainText(
 		'Non-salary factors are a bonus here'
 	);
-	await expect(page.locator('[data-party-copy]')).toContainText('Nothing needs bridging on salary');
+	await expect(page.locator('[data-side-copy]')).toContainText('Nothing needs bridging on salary');
 	await expect(page.getByRole('img', { name: /Employer budget/ })).toBeVisible();
 });

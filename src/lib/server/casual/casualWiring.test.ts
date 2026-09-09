@@ -15,8 +15,8 @@ import { dbCasualPlayCompleter } from './casualCompletionSeam';
 import { handleCasualReconcile, type RawTuple } from './casualReconcile';
 
 const fixture = golden.fixtures.find((f) => f.id === 'comfort-zone')!;
-const A: RawTuple = fixture.input.lowPreferrer.map(String) as unknown as RawTuple;
-const B: RawTuple = fixture.input.highPreferrer.map(String) as unknown as RawTuple;
+const BUYER: RawTuple = fixture.input.lowPreferrer.map(String) as unknown as RawTuple;
+const SELLER: RawTuple = fixture.input.highPreferrer.map(String) as unknown as RawTuple;
 
 afterAll(async () => {
 	await closeAllDb();
@@ -52,7 +52,7 @@ describe('Stage-2 wiring: route -> real completeCasualPlay', () => {
 		const inbound = mintRefCode();
 		await admin()`insert into share_refs (ref_code) values (${inbound})`;
 		const idempotencyKey = randomUUID();
-		const body = { partyATuple: A, partyBTuple: B, ref: inbound, idempotencyKey };
+		const body = { buyerTuple: BUYER, sellerTuple: SELLER, ref: inbound, idempotencyKey };
 
 		// First call: the seam commits, but the client "never observes" the
 		// response — we deliberately do not read it.
@@ -80,7 +80,7 @@ describe('Stage-2 wiring: route -> real completeCasualPlay', () => {
 		const inbound = mintRefCode();
 		await admin()`insert into share_refs (ref_code) values (${inbound})`;
 		const idempotencyKey = randomUUID();
-		const req = { partyATuple: A, partyBTuple: B, ref: inbound, idempotencyKey };
+		const req = { buyerTuple: BUYER, sellerTuple: SELLER, ref: inbound, idempotencyKey };
 
 		const [x, y] = await Promise.all([
 			handleCasualReconcile(req, { completer: dbCasualPlayCompleter }),

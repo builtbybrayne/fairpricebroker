@@ -4,15 +4,16 @@
 //
 // Location note: the brief lists this under `src/lib/client/casual/`, but
 // the config is pure data consumed by BOTH the server orchestration
-// (`CASUAL_TEMPLATE_ID`, the directional mapping) and the client flow
-// (question copy, party labels), so it lives in the neutral `src/lib/casual/`
-// where either side can import it. Only a type is imported from the engine
-// (erased at build time), so this module carries no server-only code.
-import type { Role } from '$lib/server/engine/types';
+// (`CASUAL_TEMPLATE_ID`) and the client flow (question copy, side titles),
+// so it lives in the neutral `src/lib/casual/` where either side can
+// import it. It carries no server-only code.
+//
+// Sides (T3-m2-domain-terms): casual mode has a BUYER (the side that
+// prefers a lower price; the engine's low-preferring) and a SELLER. The
+// mapping onto the engine's words lives in $lib/domain/terms, not here.
+import type { Side } from '$lib/domain/terms';
 
 export const CASUAL_TEMPLATE_ID = 'generic-m1-casual' as const;
-
-export type CasualPartyKey = 'A' | 'B';
 
 export type CasualQuestionKey = 'too-cheap' | 'bargain' | 'expensive' | 'too-expensive';
 
@@ -21,17 +22,10 @@ export interface CasualQuestion {
 	readonly prompt: string;
 }
 
-export interface CasualParty {
-	readonly label: string;
-	/** Fixed directional mapping consumed by handleCasualReconcile (§4 step 1). */
-	readonly direction: Role;
-}
-
 export interface CasualTemplate {
 	readonly id: typeof CASUAL_TEMPLATE_ID;
 	/** The four price points, in the ascending order the engine expects. */
 	readonly questions: readonly [CasualQuestion, CasualQuestion, CasualQuestion, CasualQuestion];
-	readonly parties: Readonly<Record<CasualPartyKey, CasualParty>>;
 	readonly currency: 'GBP';
 }
 
@@ -43,17 +37,7 @@ export const CASUAL_TEMPLATE: CasualTemplate = {
 		{ key: 'expensive', prompt: 'At what price would it start to feel expensive?' },
 		{ key: 'too-expensive', prompt: 'At what price would it be too expensive to consider?' }
 	],
-	parties: {
-		A: { label: 'Party A', direction: 'low-preferring' },
-		B: { label: 'Party B', direction: 'high-preferring' }
-	},
 	currency: 'GBP'
-};
-
-/** Party A = low-preferring, Party B = high-preferring (§7). */
-export const CASUAL_PARTY_DIRECTION: Readonly<Record<CasualPartyKey, Role>> = {
-	A: CASUAL_TEMPLATE.parties.A.direction,
-	B: CASUAL_TEMPLATE.parties.B.direction
 };
 
 // ---------------------------------------------------------------------------
@@ -77,17 +61,17 @@ export interface CasualSide {
 	readonly example: readonly [number, number, number, number];
 }
 
-export interface CasualScenario {
+export interface CasualScenario extends Readonly<Record<Side, CasualSide>> {
 	readonly id: string;
 	readonly name: string;
 	readonly currency: '£';
 	readonly min: number;
 	readonly max: number;
 	readonly step: number;
-	/** The side that prefers a lower price (buyer, payer): Party A. */
-	readonly a: CasualSide;
-	/** The side that prefers a higher price (seller, receiver): Party B. */
-	readonly b: CasualSide;
+	/** The side that prefers a lower price (the payer). */
+	readonly buyer: CasualSide;
+	/** The side that prefers a higher price (the receiver). */
+	readonly seller: CasualSide;
 	/** The engine's outcome for the two example tuples. */
 	readonly exampleOutcome: {
 		readonly zone: { readonly lo: number; readonly hi: number } | null;
@@ -103,7 +87,7 @@ export const CASUAL_SCENARIOS: readonly CasualScenario[] = [
 		min: 0,
 		max: 1500,
 		step: 5,
-		a: {
+		buyer: {
 			title: 'Buying it',
 			points: [
 				{
@@ -129,7 +113,7 @@ export const CASUAL_SCENARIOS: readonly CasualScenario[] = [
 			],
 			example: [120, 220, 380, 500]
 		},
-		b: {
+		seller: {
 			title: 'Selling it',
 			points: [
 				{
@@ -160,7 +144,7 @@ export const CASUAL_SCENARIOS: readonly CasualScenario[] = [
 		min: 0,
 		max: 300,
 		step: 1,
-		a: {
+		buyer: {
 			title: 'Taking someone out',
 			points: [
 				{
@@ -182,7 +166,7 @@ export const CASUAL_SCENARIOS: readonly CasualScenario[] = [
 			],
 			example: [30, 50, 90, 140]
 		},
-		b: {
+		seller: {
 			title: 'Being taken out',
 			points: [
 				{
@@ -209,7 +193,7 @@ export const CASUAL_SCENARIOS: readonly CasualScenario[] = [
 		min: 0,
 		max: 2000,
 		step: 10,
-		a: {
+		buyer: {
 			title: 'Hiring the day',
 			points: [
 				{ key: 'too-cheap', label: 'Worrying', prompt: 'So cheap you would doubt the work.' },
@@ -223,7 +207,7 @@ export const CASUAL_SCENARIOS: readonly CasualScenario[] = [
 			],
 			example: [150, 280, 450, 600]
 		},
-		b: {
+		seller: {
 			title: 'Doing the day',
 			points: [
 				{
@@ -258,7 +242,7 @@ export const CUSTOM_SCENARIO: CasualScenario = {
 	min: 0,
 	max: 1000,
 	step: 5,
-	a: {
+	buyer: {
 		title: 'Paying',
 		points: [
 			{ key: 'too-cheap', label: 'Too cheap', prompt: 'So cheap you would doubt it.' },
@@ -276,7 +260,7 @@ export const CUSTOM_SCENARIO: CasualScenario = {
 		],
 		example: [100, 200, 400, 600]
 	},
-	b: {
+	seller: {
 		title: 'Being paid',
 		points: [
 			{ key: 'too-low', label: 'Too little', prompt: 'So little you would rather not.' },

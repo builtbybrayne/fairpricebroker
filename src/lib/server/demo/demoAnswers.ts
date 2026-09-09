@@ -1,5 +1,5 @@
 // T3-m1-recruitment-demo §2 / §3: recordDemoStage — one demo stage's
-// answers as a demo-flagged, session-less `events` row under the
+// answers as a demo-flagged, reconciliation-less `events` row under the
 // `casual_writer` role. Same transactional shape as data-core's
 // completeCasualPlay (advisory lock on the key, replay read, savepointed
 // insert, conflict re-read) so a retried POST never adds a row.
@@ -10,7 +10,7 @@
 // demo_answer_idempotency migration.
 import { isRefCode, type RefCode } from '$lib/server/refCodes';
 import { roleDb } from '$lib/server/data/db';
-import { RECRUITMENT_TEMPLATE_ID } from '$lib/templates/recruitment';
+import { SALARY_NEGOTIATION_ID } from '$lib/templates/salaryNegotiation';
 
 export const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -63,7 +63,7 @@ function isUniqueViolation(e: unknown): boolean {
 export function demoStagePayload(input: DemoStageInput) {
 	return {
 		demo: true as const,
-		vertical: RECRUITMENT_TEMPLATE_ID,
+		vertical: SALARY_NEGOTIATION_ID,
 		demo_id: input.demoId,
 		stage: input.stage,
 		answers: input.answers,
@@ -102,7 +102,7 @@ export async function recordDemoStage(input: DemoStageInput): Promise<DemoStageR
 			tx<{ n: number }[]>`
 				select count(*)::int as n from events
 				where idempotency_key = ${input.idempotencyKey}::uuid
-					and session_id is null and event_type in ${tx(types)}
+					and reconciliation_id is null and event_type in ${tx(types)}
 			`;
 		const existing = await replay();
 		if (existing[0].n > 0) return { outcome: 'replayed' as const };
@@ -110,7 +110,7 @@ export async function recordDemoStage(input: DemoStageInput): Promise<DemoStageR
 			await tx.savepoint(async (sp) => {
 				for (const eventType of types) {
 					await sp`
-						insert into events (session_id, event_type, payload, idempotency_key)
+						insert into events (reconciliation_id, event_type, payload, idempotency_key)
 						values (null, ${eventType}, ${sp.json(payload)}, ${input.idempotencyKey}::uuid)
 					`;
 				}

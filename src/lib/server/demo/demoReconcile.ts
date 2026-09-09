@@ -1,32 +1,36 @@
 // T3-m1-recruitment-demo §1 / §3: the demo's reconciliation. Both tuples
 // are the visitor's own (they play both hats), so the view is the
-// host-full shape plus the recruitment guidance layer (T2-product-surfaces
-// §7 R9). Pure compute: no session row, no results row, no credit, no I/O.
+// broker-full shape plus the salary-negotiation guidance layer
+// (T2-product-surfaces §7 R9). Pure compute: no reconciliation row, no
+// results row, no credit, no I/O. The engine runs in its own words
+// (low-preferring / high-preferring); sides are mapped at this edge.
 import { reconcile } from '$lib/server/engine';
 import type {
 	DirectionalParty,
 	EngineError,
 	PricePoint,
-	Role,
 	VWTuple,
 	Zone
 } from '$lib/server/engine/types';
-import { RECRUITMENT_DIRECTION, recruitmentTemplate } from '$lib/templates/recruitment';
-import type { RecruitmentGuidance } from '$lib/templates/recruitment';
+import { sideToDirection, type Side } from '$lib/domain/terms';
+import { salaryNegotiationTemplate } from '$lib/templates/salaryNegotiation';
+import type { SalaryGuidance } from '$lib/templates/salaryNegotiation';
 
 export type DemoRawTuple = readonly [string, string, string, string];
 
 export interface DemoReconcileView {
+	/** The hiring company's budget: the buyer side. */
 	readonly budgetTuple: DemoRawTuple;
+	/** The candidate's expectations: the seller side. */
 	readonly candidateTuple: DemoRawTuple;
 	readonly zone: Zone;
 	readonly fairPrice: PricePoint;
-	readonly distances: Readonly<Record<Role, PricePoint>>;
+	readonly distances: Readonly<Record<Side, PricePoint>>;
 	readonly dealLow: PricePoint;
 	readonly dealHigh: PricePoint;
 	readonly overlapLow: PricePoint;
 	readonly overlapHigh: PricePoint;
-	readonly guidance: RecruitmentGuidance;
+	readonly guidance: SalaryGuidance;
 }
 
 export type DemoReconcileResponse =
@@ -37,16 +41,18 @@ export type DemoReconcileResponse =
  * Brand-only cast: the engine is the sole validation authority
  * (T3-m1-engine-port §2.3), so nothing is re-validated here.
  */
-function asParty(tuple: DemoRawTuple, direction: Role): DirectionalParty {
-	return { tuple: tuple as unknown as VWTuple, direction };
+function asParty(tuple: DemoRawTuple, side: Side): DirectionalParty {
+	return { tuple: tuple as unknown as VWTuple, direction: sideToDirection[side] };
 }
 
 export function runDemoReconciliation(
 	budgetTuple: DemoRawTuple,
 	candidateTuple: DemoRawTuple
 ): DemoReconcileResponse {
-	const budget = asParty(budgetTuple, RECRUITMENT_DIRECTION.budget);
-	const candidate = asParty(candidateTuple, RECRUITMENT_DIRECTION.candidate);
+	const offerer = salaryNegotiationTemplate.offeredBy;
+	const respondent: Side = offerer === 'buyer' ? 'seller' : 'buyer';
+	const budget = asParty(budgetTuple, offerer);
+	const candidate = asParty(candidateTuple, respondent);
 	const outcome = reconcile(budget, candidate);
 	if (!outcome.ok) return { ok: false, error: outcome.error };
 
@@ -58,12 +64,15 @@ export function runDemoReconciliation(
 			candidateTuple,
 			zone,
 			fairPrice,
-			distances,
+			distances: {
+				buyer: distances[sideToDirection.buyer],
+				seller: distances[sideToDirection.seller]
+			},
 			dealLow,
 			dealHigh,
 			overlapLow,
 			overlapHigh,
-			guidance: recruitmentTemplate.guidance(zone)
+			guidance: salaryNegotiationTemplate.guidance(zone)
 		}
 	};
 }

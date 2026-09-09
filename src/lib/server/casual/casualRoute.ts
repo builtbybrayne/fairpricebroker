@@ -51,11 +51,11 @@ function parseBody(body: unknown): Parsed {
 		ref = rawRef;
 	}
 
-	if (!isRawTuple(b.partyATuple)) {
-		return { kind: 'structural', detail: 'partyATuple must be an array of exactly 4 strings' };
+	if (!isRawTuple(b.buyerTuple)) {
+		return { kind: 'structural', detail: 'buyerTuple must be an array of exactly 4 strings' };
 	}
-	if (!isRawTuple(b.partyBTuple)) {
-		return { kind: 'structural', detail: 'partyBTuple must be an array of exactly 4 strings' };
+	if (!isRawTuple(b.sellerTuple)) {
+		return { kind: 'structural', detail: 'sellerTuple must be an array of exactly 4 strings' };
 	}
 	if (typeof b.idempotencyKey !== 'string' || !UUID_V4.test(b.idempotencyKey)) {
 		return { kind: 'structural', detail: 'idempotencyKey must be a UUID v4' };
@@ -64,8 +64,8 @@ function parseBody(body: unknown): Parsed {
 	return {
 		kind: 'ok',
 		req: {
-			partyATuple: b.partyATuple,
-			partyBTuple: b.partyBTuple,
+			buyerTuple: b.buyerTuple,
+			sellerTuple: b.sellerTuple,
 			ref,
 			idempotencyKey: b.idempotencyKey
 		}

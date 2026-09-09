@@ -2,14 +2,15 @@
 	/**
 	 * The casual outcome (T3-m1-casual-mode §5, T2-product-surfaces §6 R6):
 	 * the reconciliation — fair price, zone, the both-ranges animation —
-	 * WITHOUT either party's raw figures until "Show the numbers".
+	 * WITHOUT either side's raw figures until "Show the numbers".
 	 */
 	import RevealCanvas from '$lib/client/reveal/RevealCanvas.svelte';
 	import MeterPanel from '$lib/client/meter/MeterPanel.svelte';
 	import ResultCard from './ResultCard.svelte';
 	import { formatMoney, niceAxis } from './casualClient';
 	import type { CasualResultPayload } from '$lib/server/casual/casualPayload';
-	import type { CasualScenario } from '$lib/casual/casualTemplate';
+	import type { CasualScenario, CasualSide } from '$lib/casual/casualTemplate';
+	import { sideToDirection, type Side } from '$lib/domain/terms';
 
 	let {
 		result,
@@ -22,7 +23,7 @@
 		result: CasualResultPayload;
 		shareRef: string;
 		scenario: CasualScenario;
-		labels: { a: string; b: string };
+		labels: Record<Side, string>;
 		currency?: string;
 		onrestart: () => void;
 	} = $props();
@@ -31,13 +32,15 @@
 	// The default reveal keeps both ranges to itself: full-width bars, the
 	// overlap and the fair figure. "Show the ranges" draws the real ends.
 	let rangesShown = $state(false);
-	const rowsFor = (side: CasualScenario['a']) =>
+	const rowsFor = (side: CasualSide) =>
 		side.points.map((p) => ({ key: p.key, label: p.label, help: p.prompt }));
 
-	const a = $derived(result.input['low-preferring'].tuple);
-	const b = $derived(result.input['high-preferring'].tuple);
-	const yours = $derived({ lo: Number(a[0]), hi: Number(a[3]) });
-	const theirs = $derived({ lo: Number(b[0]), hi: Number(b[3]) });
+	// The payload keeps the engine's keys; the sides index them through the
+	// domain's one mapping.
+	const buyer = $derived(result.input[sideToDirection.buyer].tuple);
+	const seller = $derived(result.input[sideToDirection.seller].tuple);
+	const yours = $derived({ lo: Number(buyer[0]), hi: Number(buyer[3]) });
+	const theirs = $derived({ lo: Number(seller[0]), hi: Number(seller[3]) });
 	const zone = $derived(
 		result.zone === 'comfort'
 			? { lo: result.overlapLow.float, hi: result.overlapHigh.float }
@@ -46,7 +49,9 @@
 				: null
 	);
 	const axis = $derived(
-		niceAxis([...a.map(Number), ...b.map(Number), result.fairPrice.float].filter(Number.isFinite))
+		niceAxis(
+			[...buyer.map(Number), ...seller.map(Number), result.fairPrice.float].filter(Number.isFinite)
+		)
 	);
 	const fairText = $derived(formatMoney(result.fairPrice.decimal, currency));
 	const fairExact = $derived(formatMoney(result.fairPrice.decimal, currency, true));
@@ -84,8 +89,8 @@
 				{zone}
 				fair={result.fairPrice.float}
 				fairLabel={fairText}
-				yourLabel={labels.a}
-				theirLabel={labels.b}
+				yourLabel={labels.buyer}
+				theirLabel={labels.seller}
 				{zoneLabel}
 				variant={rangesShown ? 'both' : 'zone'}
 				animate
@@ -104,12 +109,12 @@
 			</div>
 			{#if result.zone === 'no-deal'}
 				<div>
-					<dt>{labels.a} is</dt>
-					<dd>{formatMoney(result.distances['low-preferring'].decimal, currency)} away</dd>
+					<dt>{labels.buyer} is</dt>
+					<dd>{formatMoney(result.distances[sideToDirection.buyer].decimal, currency)} away</dd>
 				</div>
 				<div>
-					<dt>{labels.b} is</dt>
-					<dd>{formatMoney(result.distances['high-preferring'].decimal, currency)} away</dd>
+					<dt>{labels.seller} is</dt>
+					<dd>{formatMoney(result.distances[sideToDirection.seller].decimal, currency)} away</dd>
 				</div>
 			{/if}
 		</dl>
@@ -139,9 +144,9 @@
 		{#if numbersShown}
 			<div id="the-numbers" class="outcome__meters" data-numbers-shown>
 				<MeterPanel
-					title={labels.a}
-					rows={rowsFor(scenario.a)}
-					values={[...a]}
+					title={labels.buyer}
+					rows={rowsFor(scenario.buyer)}
+					values={[...buyer]}
 					mode="display"
 					accent="blue"
 					{currency}
@@ -149,9 +154,9 @@
 					max={scenario.max}
 				/>
 				<MeterPanel
-					title={labels.b}
-					rows={rowsFor(scenario.b)}
-					values={[...b]}
+					title={labels.seller}
+					rows={rowsFor(scenario.seller)}
+					values={[...seller]}
 					mode="display"
 					accent="terracotta"
 					{currency}

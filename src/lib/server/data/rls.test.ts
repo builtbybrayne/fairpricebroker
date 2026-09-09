@@ -1,4 +1,6 @@
-// VERIFY item 2: focused adversarial authorisation tests.
+// VERIFY item 2: focused adversarial authorisation tests, in the T3-m2
+// vocabulary: sides see their own figures only, the broker sees seats but
+// never figures, guarded transitions refuse by their new names.
 import { afterAll, describe, expect, it } from 'vitest';
 import {
 	admin,
@@ -8,11 +10,11 @@ import {
 	expectPgError
 } from '../../../../tests/helpers/db';
 import {
-	createBlindSession,
-	createRecruitmentSession,
-	enterPosition,
+	createBlindReconciliation,
+	createBrokeredReconciliation,
+	enterFigures,
 	redeem,
-	submit
+	submitFigures
 } from '../../../../tests/helpers/fixtures';
 import { closeAllDb } from './db';
 
@@ -21,105 +23,122 @@ afterAll(async () => {
 	await closeAdmin();
 });
 
-async function blindTwoParty() {
-	const host = await createAuthUser('host');
-	const low = await createAuthUser('low');
-	const high = await createAuthUser('high');
-	const invites = await createBlindSession(host, low.email, high.email);
-	const sessionId = invites[0].session_id;
-	const lowInv = invites.find((i) => i.role === 'low-preferring')!;
-	const highInv = invites.find((i) => i.role === 'high-preferring')!;
-	await redeem(low, lowInv.plaintext_token);
-	await redeem(high, highInv.plaintext_token);
-	await enterPosition(low, sessionId, 'low-preferring');
-	await enterPosition(high, sessionId, 'high-preferring');
-	return { host, low, high, sessionId, lowInv, highInv };
+async function blindTwoSided() {
+	const broker = await createAuthUser('broker');
+	const buyer = await createAuthUser('buyer');
+	const seller = await createAuthUser('seller');
+	const invites = await createBlindReconciliation(broker, buyer.email, seller.email);
+	const reconciliationId = invites[0].reconciliation_id;
+	const buyerInv = invites.find((i) => i.seat === 'buyer')!;
+	const sellerInv = invites.find((i) => i.seat === 'seller')!;
+	await redeem(buyer, buyerInv.plaintext_token);
+	await redeem(seller, sellerInv.plaintext_token);
+	await enterFigures(buyer, reconciliationId, 'buyer');
+	await enterFigures(seller, reconciliationId, 'seller');
+	return { broker, buyer, seller, reconciliationId, buyerInv, sellerInv };
 }
 
-describe('party isolation', () => {
-	it('party A sees only their own party_positions row; B likewise; host sees none', async () => {
-		const { host, low, high, sessionId } = await blindTwoParty();
-		const seenByLow = await asUser(
-			low,
+describe('side isolation', () => {
+	it('the buyer sees only their own figures row; the seller likewise; the broker sees none', async () => {
+		const { broker, buyer, seller, reconciliationId } = await blindTwoSided();
+		const seenByBuyer = await asUser(
+			buyer,
 			(tx) =>
 				tx<
-					{ direction: string }[]
-				>`select direction from party_positions where session_id = ${sessionId}::uuid`
+					{ side: string }[]
+				>`select side from figures where reconciliation_id = ${reconciliationId}::uuid`
 		);
-		expect(seenByLow.map((r) => r.direction)).toEqual(['low-preferring']);
-		const seenByHigh = await asUser(
-			high,
+		expect(seenByBuyer.map((r) => r.side)).toEqual(['buyer']);
+		const seenBySeller = await asUser(
+			seller,
 			(tx) =>
 				tx<
-					{ direction: string }[]
-				>`select direction from party_positions where session_id = ${sessionId}::uuid`
+					{ side: string }[]
+				>`select side from figures where reconciliation_id = ${reconciliationId}::uuid`
 		);
-		expect(seenByHigh.map((r) => r.direction)).toEqual(['high-preferring']);
-		const seenByHost = await asUser(
-			host,
-			(tx) => tx`select direction from party_positions where session_id = ${sessionId}::uuid`
+		expect(seenBySeller.map((r) => r.side)).toEqual(['seller']);
+		const seenByBroker = await asUser(
+			broker,
+			(tx) => tx`select side from figures where reconciliation_id = ${reconciliationId}::uuid`
 		);
-		expect(seenByHost).toHaveLength(0);
+		expect(seenByBroker).toHaveLength(0);
 		// Even an unfiltered scan returns only own rows.
 		const all = await asUser(
-			low,
+			buyer,
 			(tx) =>
 				tx<
-					{ direction: string; session_id: string }[]
-				>`select direction, session_id from party_positions`
+					{ side: string; reconciliation_id: string }[]
+				>`select side, reconciliation_id from figures`
 		);
-		expect(all.every((r) => r.session_id === sessionId && r.direction === 'low-preferring')).toBe(
+		expect(all.every((r) => r.reconciliation_id === reconciliationId && r.side === 'buyer')).toBe(
 			true
 		);
 	});
 
-	it("a party cannot update the counterparty's values (0 rows) nor set status directly", async () => {
-		const { low, sessionId } = await blindTwoParty();
-		const updated = await asUser(
-			low,
+	it('a participant sees the seats at their reconciliation, never the figures behind them', async () => {
+		const { buyer, broker, reconciliationId } = await blindTwoSided();
+		const seats = await asUser(
+			buyer,
 			(tx) =>
-				tx`update party_positions set v1 = 1 where session_id = ${sessionId}::uuid and direction = 'high-preferring'`
+				tx<
+					{ seat: string }[]
+				>`select seat from participants where reconciliation_id = ${reconciliationId}::uuid order by seat`
+		);
+		expect(seats.map((r) => r.seat)).toEqual(['broker', 'buyer', 'seller']);
+		const brokerFigures = await asUser(
+			broker,
+			(tx) => tx`select v1 from figures where reconciliation_id = ${reconciliationId}::uuid`
+		);
+		expect(brokerFigures).toHaveLength(0);
+	});
+
+	it("a side cannot update the other side's values (0 rows) nor set status directly", async () => {
+		const { buyer, reconciliationId } = await blindTwoSided();
+		const updated = await asUser(
+			buyer,
+			(tx) =>
+				tx`update figures set v1 = 1 where reconciliation_id = ${reconciliationId}::uuid and side = 'seller'`
 		);
 		expect(updated.count).toBe(0);
 		await expectPgError(
 			asUser(
-				low,
+				buyer,
 				(tx) =>
-					tx`update party_positions set status = 'submitted' where session_id = ${sessionId}::uuid`
+					tx`update figures set status = 'submitted' where reconciliation_id = ${reconciliationId}::uuid`
 			),
 			'permission denied'
 		);
 		await expectPgError(
 			asUser(
-				low,
+				buyer,
 				(tx) =>
-					tx`update party_positions set submitted_at = now() where session_id = ${sessionId}::uuid`
+					tx`update figures set submitted_at = now() where reconciliation_id = ${reconciliationId}::uuid`
 			),
 			'permission denied'
 		);
 		const [row] = await admin()<{ status: string; v1: string }[]>`
-			select status, v1 from party_positions where session_id = ${sessionId}::uuid and direction = 'high-preferring'`;
+			select status, v1 from figures where reconciliation_id = ${reconciliationId}::uuid and side = 'seller'`;
 		expect(row.status).toBe('draft');
 		expect(row.v1).toBe('110');
 	});
 
-	it('a party cannot insert a row for the other direction or another session', async () => {
-		const { low, sessionId } = await blindTwoParty();
-		const other = await blindTwoParty();
+	it('a side cannot insert figures for the other side or for another reconciliation', async () => {
+		const { buyer, reconciliationId } = await blindTwoSided();
+		const other = await blindTwoSided();
 		await expectPgError(
 			asUser(
-				low,
-				(tx) => tx`insert into party_positions (session_id, direction, v1, v2, v3, v4)
-			  values (${other.sessionId}::uuid, 'low-preferring', 1, 2, 3, 4)`
+				buyer,
+				(tx) => tx`insert into figures (reconciliation_id, side, v1, v2, v3, v4)
+			  values (${other.reconciliationId}::uuid, 'buyer', 1, 2, 3, 4)`
 			),
 			'row-level security'
 		);
-		await asUser(low, (tx) => tx`delete from party_positions where false`).catch(() => {});
+		await asUser(buyer, (tx) => tx`delete from figures where false`).catch(() => {});
 		await expectPgError(
 			asUser(
-				low,
-				(tx) => tx`insert into party_positions (session_id, direction, v1, v2, v3, v4)
-			  values (${sessionId}::uuid, 'high-preferring', 1, 2, 3, 4)`
+				buyer,
+				(tx) => tx`insert into figures (reconciliation_id, side, v1, v2, v3, v4)
+			  values (${reconciliationId}::uuid, 'seller', 1, 2, 3, 4)`
 			),
 			''
 		);
@@ -133,13 +152,14 @@ describe('deny-by-default tables', () => {
 		'events',
 		'share_refs',
 		'visits',
-		'session_participants',
 		'identities',
 		'developer_grants',
 		'purge_tombstone_log',
 		'billing_reference',
 		'credit_ledger',
-		'activation_events'
+		'credit_balances',
+		'activation_events',
+		'demo_answers'
 	];
 	for (const table of tables) {
 		it(`authenticated cannot select from ${table}`, async () => {
@@ -157,80 +177,88 @@ describe('deny-by-default tables', () => {
 			);
 		});
 	}
-	it('sessions/invites are filtered to own rows for an unrelated principal', async () => {
-		const { sessionId } = await blindTwoParty();
+	it('reconciliations/invites/participants are filtered to own rows for an unrelated principal', async () => {
+		const { reconciliationId } = await blindTwoSided();
 		const stranger = await createAuthUser('stranger');
-		const s = await asUser(
+		const r = await asUser(
 			stranger,
-			(tx) => tx`select id from sessions where id = ${sessionId}::uuid`
+			(tx) => tx`select id from reconciliations where id = ${reconciliationId}::uuid`
 		);
-		expect(s).toHaveLength(0);
+		expect(r).toHaveLength(0);
 		const i = await asUser(
 			stranger,
-			(tx) => tx`select id from invites where session_id = ${sessionId}::uuid`
+			(tx) => tx`select id from invites where reconciliation_id = ${reconciliationId}::uuid`
 		);
 		expect(i).toHaveLength(0);
+		const p = await asUser(
+			stranger,
+			(tx) => tx`select seat from participants where reconciliation_id = ${reconciliationId}::uuid`
+		);
+		expect(p).toHaveLength(0);
 	});
-	it('create_invited_session is not directly executable by authenticated; anon cannot submit', async () => {
+	it('create_reconciliation is not directly executable by authenticated; anon cannot submit', async () => {
 		const u = await createAuthUser('x');
 		await expectPgError(
 			asUser(
 				u,
 				(tx) =>
-					tx`select * from create_invited_session('generic','GBP','creator-as-party',null,'low-preferring','[]'::jsonb)`
+					tx`select * from create_reconciliation('generic','GBP','buyer',null,null::uuid,'[]'::jsonb)`
 			),
 			'permission denied'
 		);
 		await expectPgError(
-			asUser(u, (tx) => tx`select submit_position(gen_random_uuid())`, 'anon'),
+			asUser(u, (tx) => tx`select submit_figures(gen_random_uuid())`, 'anon'),
 			'permission denied'
 		);
 	});
-	it('a party cannot update sessions.state directly', async () => {
-		const { low, sessionId } = await blindTwoParty();
+	it('a side cannot update reconciliations.state directly', async () => {
+		const { buyer, reconciliationId } = await blindTwoSided();
 		await expectPgError(
-			asUser(low, (tx) => tx`update sessions set state = 'closed' where id = ${sessionId}::uuid`),
+			asUser(
+				buyer,
+				(tx) => tx`update reconciliations set state = 'closed' where id = ${reconciliationId}::uuid`
+			),
 			'permission denied'
 		);
 	});
-	it('a forged client-side host claim is ignored: is_session_host reads persisted membership only', async () => {
-		const { low, sessionId } = await blindTwoParty();
+	it('a forged client-side broker claim is ignored: is_broker reads persisted membership only', async () => {
+		const { buyer, reconciliationId } = await blindTwoSided();
 		const r = await admin().begin(async (tx) => {
-			await tx`select set_config('request.jwt.claims', ${JSON.stringify({ sub: low.sub, email: low.email, role: 'authenticated', app_role: 'host', is_host: true })}, true)`;
+			await tx`select set_config('request.jwt.claims', ${JSON.stringify({ sub: buyer.sub, email: buyer.email, role: 'authenticated', seat: 'broker', is_broker: true })}, true)`;
 			await tx`set local role authenticated`;
 			return tx<
-				{ h: boolean; d: boolean }[]
-			>`select is_session_host(${sessionId}::uuid) as h, is_developer() as d`;
+				{ b: boolean; d: boolean }[]
+			>`select is_broker(${reconciliationId}::uuid) as b, is_developer() as d`;
 		});
-		expect(r[0]).toEqual({ h: false, d: false });
+		expect(r[0]).toEqual({ b: false, d: false });
 	});
 });
 
 describe('redeem_invite guards', () => {
 	it('refuses a second redemption, an expired invite, a revoked invite, and an email mismatch', async () => {
-		const creator = await createAuthUser('rec');
-		const candidate = await createAuthUser('cand');
-		const [inv] = await createRecruitmentSession(creator, candidate.email);
+		const creator = await createAuthUser('bro');
+		const seller = await createAuthUser('sel');
+		const [inv] = await createBrokeredReconciliation(creator, seller.email);
 		// wrong email (JWT email differs from invites.email)
 		const impostor = await createAuthUser('imp');
 		await expectPgError(redeem(impostor, inv.plaintext_token), 'email-mismatch');
 		// email compare is case-insensitive
-		const upper = { sub: candidate.sub, email: candidate.email.toUpperCase() };
-		expect(await redeem(upper, inv.plaintext_token)).toBe(inv.session_id);
+		const upper = { sub: seller.sub, email: seller.email.toUpperCase() };
+		expect(await redeem(upper, inv.plaintext_token)).toBe(inv.reconciliation_id);
 		// second redemption
-		await expectPgError(redeem(candidate, inv.plaintext_token), 'invite-already-redeemed');
+		await expectPgError(redeem(seller, inv.plaintext_token), 'invite-already-redeemed');
 		// expired
-		const c2 = await createAuthUser('cand');
-		const [inv2] = await createRecruitmentSession(creator, c2.email);
+		const s2 = await createAuthUser('sel');
+		const [inv2] = await createBrokeredReconciliation(creator, s2.email);
 		await admin()`update invites set expires_at = now() - interval '1 minute' where id = ${inv2.invite_id}::uuid`;
-		await expectPgError(redeem(c2, inv2.plaintext_token), 'invite-expired');
+		await expectPgError(redeem(s2, inv2.plaintext_token), 'invite-expired');
 		// revoked
-		const c3 = await createAuthUser('cand');
-		const [inv3] = await createRecruitmentSession(creator, c3.email);
+		const s3 = await createAuthUser('sel');
+		const [inv3] = await createBrokeredReconciliation(creator, s3.email);
 		await admin()`update invites set revoked_at = now() where id = ${inv3.invite_id}::uuid`;
-		await expectPgError(redeem(c3, inv3.plaintext_token), 'invite-revoked');
+		await expectPgError(redeem(s3, inv3.plaintext_token), 'invite-revoked');
 		// unknown token
-		await expectPgError(redeem(c3, 'not-a-real-token'), 'invite-not-found');
+		await expectPgError(redeem(s3, 'not-a-real-token'), 'invite-not-found');
 		// the redeemed_at column stays null on every refused path
 		const [n] = await admin()<
 			{ n: number }[]
@@ -241,63 +269,62 @@ describe('redeem_invite guards', () => {
 
 describe('cancel / recall guards', () => {
 	it('cancel allowed with one submitted, refused once both submitted; recall refused once the other submitted', async () => {
-		const a = await blindTwoParty();
-		await submit(a.low, a.sessionId);
-		// recall by low is allowed while high has not submitted
-		await asUser(a.low, (tx) => tx`select recall_position(${a.sessionId}::uuid)`);
-		expect(await submit(a.low, a.sessionId)).toBe('open');
+		const a = await blindTwoSided();
+		await submitFigures(a.buyer, a.reconciliationId);
+		// recall by the buyer is allowed while the seller has not submitted
+		await asUser(a.buyer, (tx) => tx`select recall_figures(${a.reconciliationId}::uuid)`);
+		expect(await submitFigures(a.buyer, a.reconciliationId)).toBe('open');
 		// cancel by non-creator refused
 		await expectPgError(
-			asUser(a.low, (tx) => tx`select cancel_session(${a.sessionId}::uuid)`),
+			asUser(a.buyer, (tx) => tx`select cancel_reconciliation(${a.reconciliationId}::uuid)`),
 			'not-creator'
 		);
 		// cancel by creator with one submitted: allowed, invites revoked
-		await asUser(a.host, (tx) => tx`select cancel_session(${a.sessionId}::uuid)`);
+		await asUser(a.broker, (tx) => tx`select cancel_reconciliation(${a.reconciliationId}::uuid)`);
 		const [st] = await admin()<
 			{ state: string }[]
-		>`select state from sessions where id = ${a.sessionId}::uuid`;
+		>`select state from reconciliations where id = ${a.reconciliationId}::uuid`;
 		expect(st.state).toBe('cancelled');
 
-		const b = await blindTwoParty();
-		await submit(b.low, b.sessionId);
-		expect(await submit(b.high, b.sessionId)).toBe('locked');
+		const b = await blindTwoSided();
+		await submitFigures(b.buyer, b.reconciliationId);
+		expect(await submitFigures(b.seller, b.reconciliationId)).toBe('locked');
 		await expectPgError(
-			asUser(b.high, (tx) => tx`select recall_position(${b.sessionId}::uuid)`),
-			'session-not-open'
+			asUser(b.seller, (tx) => tx`select recall_figures(${b.reconciliationId}::uuid)`),
+			'reconciliation-not-open'
 		);
 		await expectPgError(
-			asUser(b.host, (tx) => tx`select cancel_session(${b.sessionId}::uuid)`),
-			'session-not-open'
+			asUser(b.broker, (tx) => tx`select cancel_reconciliation(${b.reconciliationId}::uuid)`),
+			'reconciliation-not-open'
 		);
 
-		const c = await blindTwoParty();
-		await submit(c.low, c.sessionId);
-		// high submits -> locked; low may not recall once high submitted. Simulate
-		// the ordering where high has submitted but low tries to recall: use a
-		// session where high submits first.
-		const d = await blindTwoParty();
-		await submit(d.high, d.sessionId);
+		const c = await blindTwoSided();
+		await submitFigures(c.buyer, c.reconciliationId);
+		// The seller submits first; the buyer may not recall figures it has
+		// not submitted, and once it submits (locking) may not recall either.
+		const d = await blindTwoSided();
+		await submitFigures(d.seller, d.reconciliationId);
 		await expectPgError(
-			asUser(d.low, (tx) => tx`select recall_position(${d.sessionId}::uuid)`),
+			asUser(d.buyer, (tx) => tx`select recall_figures(${d.reconciliationId}::uuid)`),
 			'not-submitted'
 		);
-		expect(await submit(d.low, d.sessionId)).toBe('locked');
+		expect(await submitFigures(d.buyer, d.reconciliationId)).toBe('locked');
 		await expectPgError(
-			asUser(d.low, (tx) => tx`select recall_position(${d.sessionId}::uuid)`),
-			'session-not-open'
+			asUser(d.buyer, (tx) => tx`select recall_figures(${d.reconciliationId}::uuid)`),
+			'reconciliation-not-open'
 		);
 	});
-	it('recall refused when the other party has already submitted (both submitted on an open session)', async () => {
-		// Force the state directly: both rows submitted while the session is still open.
-		const a = await blindTwoParty();
-		await submit(a.low, a.sessionId);
-		await admin()`update party_positions set status = 'submitted' where session_id = ${a.sessionId}::uuid and direction = 'high-preferring'`;
+	it('recall refused when the other side has already submitted (both submitted on an open reconciliation)', async () => {
+		// Force the state directly: both rows submitted while the reconciliation is still open.
+		const a = await blindTwoSided();
+		await submitFigures(a.buyer, a.reconciliationId);
+		await admin()`update figures set status = 'submitted' where reconciliation_id = ${a.reconciliationId}::uuid and side = 'seller'`;
 		await expectPgError(
-			asUser(a.low, (tx) => tx`select recall_position(${a.sessionId}::uuid)`),
-			'other-party-submitted'
+			asUser(a.buyer, (tx) => tx`select recall_figures(${a.reconciliationId}::uuid)`),
+			'other-side-submitted'
 		);
 		await expectPgError(
-			asUser(a.host, (tx) => tx`select cancel_session(${a.sessionId}::uuid)`),
+			asUser(a.broker, (tx) => tx`select cancel_reconciliation(${a.reconciliationId}::uuid)`),
 			'both-submitted'
 		);
 	});

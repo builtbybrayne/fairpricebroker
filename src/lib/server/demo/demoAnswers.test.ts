@@ -23,7 +23,7 @@ interface Row {
 	answers: Record<string, unknown>;
 	comment: string | null;
 	ref_code: string | null;
-	session_id: string | null;
+	reconciliation_id: string | null;
 	demo: boolean;
 	vertical: string;
 }
@@ -31,7 +31,7 @@ interface Row {
 async function rowsFor(demoId: string): Promise<Row[]> {
 	return admin()<Row[]>`
 		select event_type, (payload ->> 'stage')::int as stage, payload -> 'answers' as answers,
-		       payload ->> 'comment' as comment, payload ->> 'ref_code' as ref_code, session_id,
+		       payload ->> 'comment' as comment, payload ->> 'ref_code' as ref_code, reconciliation_id,
 		       (payload ->> 'demo')::boolean as demo, payload ->> 'vertical' as vertical
 		from events where payload ->> 'demo_id' = ${demoId}
 		order by (payload ->> 'stage')::int, event_type
@@ -84,7 +84,7 @@ async function readView(demoId: string) {
 }
 
 describe('recordDemoStage (real casual_writer transaction)', () => {
-	it('V1: a full walkthrough lands 5 stage rows + 1 demo_completed, demo-flagged, session-less, invisible to activation', async () => {
+	it('V1: a full walkthrough lands 5 stage rows + 1 demo_completed, demo-flagged, reconciliation-less, invisible to activation', async () => {
 		const before = await activationCount();
 		const demoId = randomUUID();
 		const inbound = mintRefCode();
@@ -104,9 +104,9 @@ describe('recordDemoStage (real casual_writer transaction)', () => {
 		expect(completed).toHaveLength(1);
 		expect(completed[0].stage).toBe(5);
 		for (const r of rows) {
-			expect(r.session_id).toBeNull();
+			expect(r.reconciliation_id).toBeNull();
 			expect(r.demo).toBe(true);
-			expect(r.vertical).toBe('recruitment');
+			expect(r.vertical).toBe('salary-negotiation');
 			expect(r.ref_code).toBe(inbound);
 		}
 		expect(rows[2].comment).toBeNull(); // stage 3 sent a null comment

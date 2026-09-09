@@ -1,10 +1,10 @@
 // T3-m1-recruitment-demo §1: runDemoReconciliation over the golden
-// fixtures yields the engine's zone plus the recruitment guidance, and
+// fixtures yields the engine's zone plus the salary-negotiation guidance, and
 // passes engine rejections through unchanged.
 import { describe, expect, it } from 'vitest';
 import golden from '$lib/server/engine/fixtures/golden.json';
 import type { Zone } from '$lib/server/engine/types';
-import { recruitmentTemplate } from '$lib/templates/recruitment';
+import { salaryNegotiationTemplate } from '$lib/templates/salaryNegotiation';
 import { runDemoReconciliation, type DemoRawTuple } from './demoReconcile';
 
 function tuple(xs: readonly number[]): DemoRawTuple {
@@ -32,7 +32,7 @@ const VIEW_KEYS = [
 
 describe('runDemoReconciliation', () => {
 	for (const f of golden.fixtures) {
-		it(`golden ${f.id}: zone + guidance (budget = low-preferring, candidate = high-preferring)`, () => {
+		it(`golden ${f.id}: zone + guidance (budget = buyer, candidate = seller)`, () => {
 			const budget = tuple(f.input.lowPreferrer);
 			const candidate = tuple(f.input.highPreferrer);
 			const out = runDemoReconciliation(budget, candidate);
@@ -40,13 +40,13 @@ describe('runDemoReconciliation', () => {
 			if (!out.ok) return;
 			const zone = expectedZone(f);
 			expect(out.view.zone).toBe(zone);
-			expect(out.view.guidance).toEqual(recruitmentTemplate.guidance(zone));
+			expect(out.view.guidance).toEqual(salaryNegotiationTemplate.guidance(zone));
 			expect(out.view.budgetTuple).toEqual(budget);
 			expect(out.view.candidateTuple).toEqual(candidate);
 			expect(Object.keys(out.view).sort()).toEqual(VIEW_KEYS);
 			expect(out.view.fairPrice.float).toBeGreaterThan(0);
-			expect(out.view.distances['low-preferring']).toBeDefined();
-			expect(out.view.distances['high-preferring']).toBeDefined();
+			expect(out.view.distances.buyer).toBeDefined();
+			expect(out.view.distances.seller).toBeDefined();
 		});
 	}
 

@@ -8,17 +8,17 @@
 	import { resolve } from '$app/paths';
 	import MeterPanel from '$lib/client/meter/MeterPanel.svelte';
 	import RevealCanvas from '$lib/client/reveal/RevealCanvas.svelte';
-	import { recruitmentTemplate, RECRUITMENT_DIRECTION } from '$lib/templates/recruitment';
+	import { salaryNegotiationTemplate } from '$lib/templates/salaryNegotiation';
 	import type { Zone } from '$lib/server/engine/types';
 	import { OVERLAP_LABEL } from '$lib/client/demo/demoStages';
 	import { formatSalary } from '$lib/client/demo/demoClient';
 
-	const budgetRows = recruitmentTemplate.questions[RECRUITMENT_DIRECTION.budget].map((q) => ({
+	const budgetRows = salaryNegotiationTemplate.questions.buyer.map((q) => ({
 		key: q.key,
 		label: q.label,
 		help: q.prompt
 	}));
-	const candidateRows = recruitmentTemplate.questions[RECRUITMENT_DIRECTION.candidate].map((q) => ({
+	const candidateRows = salaryNegotiationTemplate.questions.seller.map((q) => ({
 		key: q.key,
 		label: q.label,
 		help: q.prompt
@@ -59,7 +59,7 @@
 
 	let shown = $state<Zone>('deal');
 	const scene = $derived(scenes[shown]);
-	const guidance = $derived(recruitmentTemplate.guidance(shown));
+	const guidance = $derived(salaryNegotiationTemplate.guidance(shown));
 
 	let reducedMotion = $state(false);
 	let narrow = $state(false);
@@ -225,7 +225,7 @@
 					aria-pressed={shown === z}
 					onclick={() => (shown = z)}
 				>
-					{OVERLAP_LABEL[recruitmentTemplate.guidance(z).overlap]}
+					{OVERLAP_LABEL[salaryNegotiationTemplate.guidance(z).overlap]}
 				</button>
 			{/each}
 		</div>
@@ -260,10 +260,10 @@
 						<dd>{guidance.nonRemunerationInPlay ? 'Need to be in play' : 'Not needed to close'}</dd>
 					</div>
 				</dl>
-				<p class="outcome__host">{guidance.hostCopy}</p>
+				<p class="outcome__host">{guidance.brokerCopy}</p>
 				<p class="outcome__party">
 					<span class="outcome__party-label">The candidate reads:</span>
-					{guidance.partyCopy}
+					{guidance.sideCopy}
 				</p>
 			</div>
 		</div>

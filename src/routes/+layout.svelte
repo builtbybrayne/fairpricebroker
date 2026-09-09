@@ -6,8 +6,13 @@
 
 	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
 
-	const scopeName = $derived(data.verticals.find((v) => v.id === data.scope)?.name ?? null);
-	const scopeHref = $derived(data.scope === 'recruiting' ? resolve('/recruitment') : resolve('/'));
+	// The scope tag reads the vertical dictionary's name and links to its
+	// marketing page while it has one.
+	const scopeVertical = $derived(data.verticals.find((v) => v.id === data.scope) ?? null);
+	const scopeName = $derived(scopeVertical?.name ?? null);
+	const scopeHref = $derived(
+		scopeVertical?.marketingPath === '/recruitment' ? resolve('/recruitment') : resolve('/')
+	);
 </script>
 
 <svelte:head>

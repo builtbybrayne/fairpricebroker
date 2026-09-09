@@ -6,11 +6,12 @@
 	 */
 	import MeterPanel from '$lib/client/meter/MeterPanel.svelte';
 	import type { CasualSide } from '$lib/casual/casualTemplate';
+	import type { Side } from '$lib/domain/terms';
 	import { validateTuple } from './casualClient';
 
 	let {
 		side,
-		partyLabel,
+		spec,
 		accent,
 		values = $bindable<(string | null)[]>([null, null, null, null]),
 		sealed = false,
@@ -21,8 +22,10 @@
 		step = 1,
 		onseal
 	}: {
-		side: CasualSide;
-		partyLabel: 'A' | 'B';
+		/** Which side this meter belongs to; never shown, only marked on the form. */
+		side: Side;
+		/** The scenario's title, points and example figures for that side. */
+		spec: CasualSide;
 		accent: 'blue' | 'terracotta';
 		values?: (string | null)[];
 		sealed?: boolean;
@@ -34,7 +37,7 @@
 		onseal: () => void;
 	} = $props();
 
-	const rows = $derived(side.points.map((p) => ({ key: p.key, label: p.label, help: p.prompt })));
+	const rows = $derived(spec.points.map((p) => ({ key: p.key, label: p.label, help: p.prompt })));
 
 	let attempted = $state(false);
 	const validation = $derived(validateTuple(values));
@@ -50,15 +53,15 @@
 <form
 	class="entry"
 	onsubmit={submit}
-	data-state-screen="party-entry"
-	data-party={partyLabel}
+	data-state-screen="side-entry"
+	data-side={side}
 	data-sealed={sealed ? '' : undefined}
 >
 	{#if sealed}
-		<MeterPanel title={side.title} {rows} mode="sealed" {accent} {sealedNote} />
+		<MeterPanel title={spec.title} {rows} mode="sealed" {accent} {sealedNote} />
 	{:else}
 		<MeterPanel
-			title={side.title}
+			title={spec.title}
 			{rows}
 			bind:values
 			mode="entry"
@@ -67,7 +70,7 @@
 			{min}
 			{max}
 			{step}
-			example={side.example}
+			example={spec.example}
 			{error}
 		>
 			{#snippet footer()}

@@ -9,6 +9,8 @@ status: active
 
 # T3 — M1 platform, naive-auth lane: sign-in, credits, invite delivery without email
 
+> **Vocabulary superseded, 9 Sep 2026.** This plan is written in M1's words; `T3-m2-domain-terms` (§2–§3, ruled §6) replaced them and the schema was rebaselined as `supabase/migrations/20260910000001..7`. The body below is unchanged history; read it with the map: session (the record) → reconciliation, which also ends this plan's collision between `readSession` and the auth session; `invites.role` → `invites.seat` + `acts_for`, and in the naive phase `invites.plaintext_token` holds the link, shown until redeemed and nulled at redemption; `invite_preview` now returns (reconciliation_id, seat, acts_for, email, email_bound, broker_sees_figures, state, redeemable); `create_invited_session` / `launch_invited_session` → `launch_reconciliation(p_request_key, p_vertical, p_currency, p_creator_seat, p_creator_acts_for, p_visit_id, p_invite_grants, p_offer_id)`; grants are `[{ "seat": "seller" }]` or `[{ "seat": "buyer", "email": "x@y" }]`, email optional. Also superseded: §0's twenty launch credits — new accounts start with 8 (commit `fa38a45`, 9 Sep 2026; `20260910000007_credits_launch_preview_grants.sql`).
+
 ## 0. Human summary (plain language)
 
 **Let people sign in and get free credits, without building real login or

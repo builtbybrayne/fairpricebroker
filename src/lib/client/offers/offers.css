@@ -1,0 +1,367 @@
+/* Offer surfaces (Operate mode): the shared vocabulary the /app and
+   /rec pages compose from. Tokens come from app.css; nothing here invents a
+   colour. Mobile-first from 375px. */
+
+.shell {
+	max-width: 1080px;
+	margin: 0 auto;
+	padding: 8px 16px 64px;
+}
+
+.shell--narrow {
+	max-width: 720px;
+}
+
+.shell__head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px 20px;
+	margin: 8px 0 22px;
+}
+
+.shell__title {
+	font-size: 28px;
+	letter-spacing: -0.03em;
+	line-height: 1.05;
+}
+
+.shell__sub {
+	margin-top: 6px;
+	color: var(--slate);
+	font-size: 16px;
+}
+
+.shell__actions {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+
+.panel {
+	background: var(--ground);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--raise-md);
+	padding: 22px 22px 24px;
+}
+
+.panel + .panel,
+.panel + .meter-wrap,
+.meter-wrap + .panel {
+	margin-top: 22px;
+}
+
+.panel__title {
+	font-size: 20px;
+	letter-spacing: -0.02em;
+	line-height: 1.15;
+}
+
+.panel__lede {
+	margin-top: 8px;
+	color: var(--slate);
+	font-size: 16px;
+	max-width: 62ch;
+}
+
+.panel--navy {
+	background: var(--navy);
+	color: var(--on-navy);
+	box-shadow: var(--lift-navy);
+}
+
+.panel--navy .panel__title {
+	color: var(--on-navy);
+}
+
+.panel--navy .panel__lede {
+	color: var(--on-navy-soft);
+}
+
+/* status badge: a small inset capsule; colour carries the state */
+.badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 5px 11px;
+	border-radius: var(--radius-pill);
+	font-family: var(--font-display);
+	font-weight: 700;
+	font-size: 11px;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: var(--slate);
+	background: var(--ground);
+	box-shadow: var(--inset-sm);
+	white-space: nowrap;
+}
+
+.badge::before {
+	content: '';
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--mist);
+}
+
+.badge--open::before {
+	background: var(--blue-2);
+}
+
+.badge--locked::before {
+	background: var(--gold);
+}
+
+.badge--closed {
+	color: var(--navy);
+}
+
+.badge--closed::before {
+	background: var(--gold);
+	box-shadow: 0 0 0 3px rgba(232, 179, 75, 0.3);
+}
+
+.badge--cancelled::before {
+	background: var(--terracotta-2);
+}
+
+/* buttons ------------------------------------------------------------- */
+.btn {
+	height: 48px;
+	padding: 0 24px;
+	font-size: 17px;
+	text-decoration: none;
+}
+
+.btn--sm {
+	height: 40px;
+	padding: 0 18px;
+	font-size: 15px;
+}
+
+.btn:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+	box-shadow: none;
+}
+
+.btn--quiet {
+	background: var(--ground);
+	color: var(--navy);
+	box-shadow: var(--raise-sm);
+}
+
+.btn--quiet:hover {
+	box-shadow: var(--raise-md);
+}
+
+.btn--danger {
+	background: var(--ground);
+	color: var(--terracotta);
+	box-shadow: var(--raise-sm);
+}
+
+.link-quiet {
+	background: none;
+	color: var(--slate);
+	font-weight: 500;
+	font-size: 15px;
+	text-decoration: underline;
+	text-underline-offset: 0.18em;
+}
+
+.link-quiet:hover {
+	color: var(--navy);
+}
+
+/* form fields --------------------------------------------------------- */
+.field {
+	display: grid;
+	gap: 8px;
+	margin-top: 18px;
+}
+
+.field__label {
+	font-weight: 600;
+	color: var(--ink);
+	font-size: 16px;
+}
+
+.field__help {
+	color: var(--slate);
+	font-size: 14px;
+}
+
+.field__input {
+	height: 50px;
+	padding: 0 16px;
+	border: 0;
+	border-radius: var(--radius-md);
+	background: var(--ground);
+	box-shadow: var(--inset-md);
+	font-size: 17px;
+	color: var(--ink);
+	width: 100%;
+}
+
+.field__input::placeholder {
+	color: var(--mist);
+}
+
+.field__input:focus {
+	outline: 3px solid var(--gold);
+	outline-offset: 2px;
+}
+
+select.field__input {
+	appearance: none;
+	-webkit-appearance: none;
+	background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'><path d='M1 1l6 6 6-6' fill='none' stroke='%235a6b80' stroke-width='2' stroke-linecap='round'/></svg>");
+	background-repeat: no-repeat;
+	background-position: right 16px center;
+	padding-right: 40px;
+}
+
+.form-error {
+	margin-top: 14px;
+	color: #8d2b3a;
+	font-size: 15px;
+}
+
+/* progress: the four stages of a check, completion feedback only */
+.stages {
+	list-style: none;
+	margin: 0 0 22px;
+	padding: 0;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+.stages__step {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	flex: none;
+	color: var(--mist);
+	font-weight: 500;
+	font-size: 15px;
+}
+
+.stages__num {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
+	border: 2px solid var(--hairline);
+	font-family: var(--font-display);
+	font-weight: 700;
+	font-size: 14px;
+	color: var(--mist);
+}
+
+.stages__step--done .stages__num {
+	border-color: var(--navy);
+	color: var(--navy);
+}
+
+.stages__step--done {
+	color: var(--slate);
+}
+
+.stages__step--current .stages__num {
+	background: var(--navy);
+	border-color: var(--navy);
+	color: #fff;
+}
+
+.stages__step--current {
+	color: var(--navy);
+}
+
+.stages__line {
+	flex: 1 1 24px;
+	min-width: 16px;
+	height: 2px;
+	background: var(--hairline);
+}
+
+/* Below 720px the stages wrap and the title steps down. */
+@media (max-width: 719px) {
+	.stages {
+		flex-wrap: wrap;
+		gap: 10px 18px;
+		overflow: visible;
+	}
+	.stages__line {
+		display: none;
+	}
+	.shell__title {
+		font-size: 24px;
+	}
+}
+
+/* the sealed-figures toggle and the numbers table */
+.numbers {
+	margin-top: 18px;
+	display: grid;
+	gap: 14px;
+}
+
+.numbers__side {
+	display: grid;
+	gap: 6px;
+}
+
+.numbers__title {
+	font-size: 12px;
+	letter-spacing: 0.16em;
+}
+
+.numbers__title--blue {
+	color: var(--blue);
+}
+
+.numbers__title--terracotta {
+	color: var(--terracotta);
+}
+
+.numbers__row {
+	display: flex;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 8px 0;
+	border-bottom: 1px solid var(--hairline);
+	font-size: 15px;
+}
+
+.numbers__row dt {
+	color: var(--slate);
+}
+
+.numbers__row dd {
+	margin: 0;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+@media (min-width: 720px) {
+	.shell {
+		padding: 16px 32px 80px;
+	}
+	.shell__title {
+		font-size: 36px;
+	}
+	.panel {
+		padding: 28px 32px 30px;
+	}
+	.numbers {
+		grid-template-columns: 1fr 1fr;
+		gap: 28px;
+	}
+}

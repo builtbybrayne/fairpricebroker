@@ -140,7 +140,7 @@ components:
 
 **Creative North Star: "The Instrument"**
 
-Fair Price Broker looks like a well-made measuring instrument sitting on a calm desk. The shell is a Stripe-class neutral: a soft cool-grey ground, navy ink, plain warm copy, nothing shouting. Set into that shell are two kinds of object. The first is the meter, a raised neumorphic panel pressed out of the same grey as the page, holding four inset slider grooves with a ring-thumb in the party's colour; it reads as something you can touch and set. The second is the reveal, a deep-navy canvas where the product's own maths is the animation: two coloured ranges drift in from either side, a gold zone lights where they overlap, and the fair price lands on a lit gold chip. Trust lives in everything around the instrument; the fun lives inside it.
+Fair Price Broker looks like a well-made measuring instrument sitting on a calm desk. The shell is a Stripe-class neutral: a soft cool-grey ground, navy ink, plain warm copy, nothing shouting. Set into that shell are two kinds of object. The first is the meter, a raised neumorphic panel pressed out of the same grey as the page, holding four inset slider grooves with a ring-thumb in the side's colour; it reads as something you can touch and set. The second is the reveal, a deep-navy canvas where the product's own maths is the animation: two coloured ranges drift in from either side, a gold zone lights where they overlap, and the fair price lands on a lit gold chip. Trust lives in everything around the instrument; the fun lives inside it.
 
 The world is carried by a strict colour grammar rather than by decoration. Blue is always "you", terracotta is always "them", gold is reserved for the fair price and for the single primary action on a screen. Depth is a single soft-light source from the top-left, so every raised surface and every inset groove agrees about where the light is; navy panels are the only things that cast a real drop shadow, because they are the only things that sit on top of the desk rather than being pressed out of it. Sora Bold carries every heading, label and figure chip; Albert Sans carries prose and figures, with tabular numerals switched on globally so prices line up.
 
@@ -149,7 +149,7 @@ Density is generous at the first viewport and relaxed below it. The comp was dra
 **Key Characteristics:**
 
 - Calm neutral shell, tactile neumorphic meter, one living navy canvas.
-- Party colours are semantic: blue = you, terracotta = them, gold = the fair price and the primary action.
+- Side colours are semantic: blue = you, terracotta = them, gold = the fair price and the primary action.
 - One shadow scale, one light source (top-left), raised and inset variants only.
 - Sora Bold display and labels; Albert Sans body; tabular numerals everywhere.
 - Proportional first viewport (`--u`) that never scales above the comp; fixed rules below 1024px.
@@ -181,7 +181,7 @@ A cool-grey ground and navy ink, with three semantic hues (blue, terracotta, gol
 
 ### Named Rules
 
-**The One Meaning Rule.** Blue means the viewer's own side, terracotta means the other side, gold means the fair price or the one primary action. One recorded exception: in the recruitment composition the colour follows the role (client blue, candidate terracotta) on every view, so the recruiter's replica and the candidate's own page agree (see The Meter). No hue is ever borrowed for decoration, status, or a second CTA on the same screen.
+**The One Meaning Rule.** Blue means the viewer's own side, terracotta means the other side, gold means the fair price or the one primary action. The seats map onto it plainly: a buyer or a seller is "you" on their own page and "them" on the other side's, and a broker takes the colour of the side it acts for. One recorded exception: in the salary-negotiation vertical the colour follows the side, not the viewer (hiring company blue, candidate terracotta) on every view, so the broker's replica and the candidate's own page agree (see The Meter). No hue is ever borrowed for decoration, status, or a second CTA on the same screen.
 
 **The Same-Grey Rule.** Raised panels, inset grooves and the page share `{colors.ground}`. A panel with a different fill is not neumorphic and does not belong to the meter family; it is a navy canvas or nothing.
 
@@ -237,10 +237,10 @@ Hybrid. The grey world is neumorphic: depth is conveyed by paired soft shadows o
 - **Raise, large** (`box-shadow: 14px 14px 34px var(--shade), -14px -14px 34px var(--light)`): defined for a hero-scale raised object; not yet used on the homepage.
 - **Inset, small** (`box-shadow: inset 2px 2px 5px var(--shade), inset -2px -2px 5px var(--light)`): the default `.inset`: slider grooves, the sealed tag, URL boxes, ref-code chips, the interstitial's round mark, and the "coming later" vertical cards.
 - **Inset, medium** (`box-shadow: inset 3px 3px 8px var(--shade-deep), inset -3px -3px 8px var(--light)`): a deeper groove; defined in the scale for wells that need to read as recessed below a small inset.
-- **Thumb** (`3px 3px 8px var(--shade-deep), -3px -3px 8px var(--light), inset 0 0 0 6px var(--thumb)`): the meter thumb: a raised ground-coloured disc with a 6px ring of the party colour inside it.
+- **Thumb** (`3px 3px 8px var(--shade-deep), -3px -3px 8px var(--light), inset 0 0 0 6px var(--thumb)`): the meter thumb: a raised ground-coloured disc with a 6px ring of the side colour inside it.
 - **Lift, navy** (`0 18px 40px rgba(29,53,87,0.3)`): the navy hero canvas and outcome panel. The navy pill uses a lighter `0 4px 12px rgba(29,53,87,0.25)`.
 - **Lift, gold** (`0 8px 22px rgba(232,179,75,0.45)`): the gold pill's glow; the fair-price chip uses `0 10px 28px` of the same colour, the zone `0 0 34px`.
-- **Party glow** (`0 0 24px rgba(92,142,200,0.55)` / `rgba(198,121,104,0.55)` plus an offset 60px trailing glow): the reveal bars, each glowing in its own colour with the wake extending in its direction of travel.
+- **Side glow** (`0 0 24px rgba(92,142,200,0.55)` / `rgba(198,121,104,0.55)` plus an offset 60px trailing glow): the reveal bars, each glowing in its own colour with the wake extending in its direction of travel.
 
 ### Named Rules
 
@@ -288,7 +288,7 @@ Pills, Sora Bold, no border, one primary per screen.
 
 ### The Meter (signature)
 
-A raised panel whose head carries an uppercase Sora title in Navy and, when sealed, an inset SEALED tag (Slate, 0.16em, lock glyph). Beneath, one stage (150px tall; 164px on phones): an inset 12px groove runs between two 42px raised dials at its ends; the dials are the outer pair (the range) and turn with a vertical drag, the wheel, or arrow keys, a Mist tick ring and a party-coloured needle showing where they sit in the scenario's full range. Two 24px ring thumbs (Ground fill, 6px party-coloured inset ring, the shared thumb shadow) ride the groove between the dials on a linear local scale inset 12% from each end, with a translucent party-coloured band between them. Above every point its figure: in entry mode a borderless field (Albert Sans 600, 17px, tabular, currency in Slate before it, a Gold underline when focused) so a dragged value is always typeable; in display mode the formatted figure. Below every point its label in 11px tracked caps (Slate; Navy when touched), wrapping to two lines within 88px. Under the stage, one line in Slate carrying the touched point's question, with the label in Navy. Sealed mode replaces the stage with an inset plate: a Mist lock and one sentence ("Sealed. Hand the phone over."); nothing of the figures reaches the DOM. Accent (`--thumb`, `--thumb-soft`) is blue for "you" / the client and terracotta for "them" / the candidate. In the recruitment composition colour follows the role, not the viewer: the candidate is terracotta on their own page and in the recruiter's replica alike, so the two views of one check never disagree (finish review adaptation, 9 Sep 2026). Figures of a thousand or more with no pennies show none; a typed decimal keeps up to 4. On phones the second knob's figure lifts and its label drops so close knobs never collide. The layout follows the exfu price meter (operator ruling 8 Sep 2026); the earlier four-row meter is retired.
+A raised panel whose head carries an uppercase Sora title in Navy and, when sealed, an inset SEALED tag (Slate, 0.16em, lock glyph). Beneath, one stage (150px tall; 164px on phones): an inset 12px groove runs between two 42px raised dials at its ends; the dials are the outer pair (the range) and turn with a vertical drag, the wheel, or arrow keys, a Mist tick ring and a side-coloured needle showing where they sit in the scenario's full range. Two 24px ring thumbs (Ground fill, 6px side-coloured inset ring, the shared thumb shadow) ride the groove between the dials on a linear local scale inset 12% from each end, with a translucent side-coloured band between them. Above every point its figure: in entry mode a borderless field (Albert Sans 600, 17px, tabular, currency in Slate before it, a Gold underline when focused) so a dragged value is always typeable; in display mode the formatted figure. Below every point its label in 11px tracked caps (Slate; Navy when touched), wrapping to two lines within 88px. Under the stage, one line in Slate carrying the touched point's question, with the label in Navy. Sealed mode replaces the stage with an inset plate: a Mist lock and one sentence ("Sealed. Hand the phone over."); nothing of the figures reaches the DOM. Accent (`--thumb`, `--thumb-soft`) is blue for "you" and terracotta for "them"; where a vertical pins colour to a side, blue is the buyer and terracotta the seller. In the salary-negotiation vertical colour follows the side, not the viewer: the candidate (the seller) is terracotta on their own page and in the broker's replica alike, so the two views of one reconciliation never disagree (finish review adaptation, 9 Sep 2026; vocabulary per T3-m2-domain-terms). Figures of a thousand or more with no pennies show none; a typed decimal keeps up to 4. On phones the second knob's figure lifts and its label drops so close knobs never collide. The layout follows the exfu price meter (operator ruling 8 Sep 2026); the earlier four-row meter is retired.
 
 ### The Reveal (signature)
 
@@ -317,7 +317,7 @@ A centred raised panel (max 620px, 44px 32px 40px) with a 72px inset circular ma
 - **Don't** put a second gold action, a gold status badge or gold decoration on a screen that already has its primary action.
 - **Don't** fill a neumorphic panel with white, a tint or a border; a different-coloured container is a navy canvas or it is not a container.
 - **Don't** cast a grey drop shadow under gold, or a hard offset shadow anywhere; the only drop shadows are the navy lifts.
-- **Don't** render both parties' ranges (`variant="both"`) on a blind payload, and don't reintroduce the other side's numbers through a legend, tooltip or axis annotation.
+- **Don't** render both sides' ranges (`variant="both"`) on a blind payload, and don't reintroduce the other side's numbers through a legend, tooltip or axis annotation.
 - **Don't** use the uppercase tracked label style as a kicker or eyebrow above a headline; it marks parts of the instrument only.
 - **Don't** add points, streaks, scores or "winner" states to the steps row or the reveal; progress marks completion (gold fill) and nothing else.
 - **Don't** show testimonials, logos, counters or "coming soon" proof placeholders; the working meter and reveal are the proof.

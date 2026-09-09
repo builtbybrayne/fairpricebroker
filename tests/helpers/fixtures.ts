@@ -1,17 +1,18 @@
 import { randomUUID } from 'node:crypto';
 import type { TransactionSql } from 'postgres';
+import { otherSide, type Side } from '$lib/domain/terms';
 import { admin, asUser, createAuthUser, type TestUser } from './db';
 
-export type Dir = 'low-preferring' | 'high-preferring';
-export const OTHER: Record<Dir, Dir> = {
-	'low-preferring': 'high-preferring',
-	'high-preferring': 'low-preferring'
+export type { Side };
+export const OTHER: Record<Side, Side> = {
+	buyer: otherSide('buyer'),
+	seller: otherSide('seller')
 };
 
 export interface CreatedInvite {
-	session_id: string;
+	reconciliation_id: string;
 	invite_id: string;
-	role: string;
+	seat: string;
 	plaintext_token: string;
 }
 
@@ -22,42 +23,49 @@ export async function signInAndGrant(user: TestUser): Promise<number> {
 	});
 }
 
-/** Recruitment composition: creator = host + low-preferring; one invite (high). */
-export async function createRecruitmentSession(
+/**
+ * Brokered (salary-negotiation): the creator is the broker acting for the
+ * buyer; one seller invite, email-bound when an email is given and
+ * unbound (link only) when it is null.
+ */
+export async function createBrokeredReconciliation(
 	creator: TestUser,
-	inviteeEmail: string,
+	sellerEmail: string | null,
 	opts: { visitId?: string | null; requestKey?: string } = {}
 ): Promise<CreatedInvite[]> {
 	await signInAndGrant(creator);
+	const grant = sellerEmail === null ? { seat: 'seller' } : { seat: 'seller', email: sellerEmail };
 	return asUser(
 		creator,
 		(tx) =>
 			tx<CreatedInvite[]>`
-			select * from launch_invited_session(
-				${opts.requestKey ?? randomUUID()}, 'recruitment', 'GBP', 'creator-as-host',
-				${opts.visitId ?? null}::uuid, 'low-preferring',
-				${tx.json([{ role: 'high-preferring', email: inviteeEmail }])}
+			select * from launch_reconciliation(
+				${opts.requestKey ?? randomUUID()}, 'salary-negotiation', 'GBP', 'broker', 'buyer',
+				${opts.visitId ?? null}::uuid, ${tx.json([grant])}
 			)
 		`
 	);
 }
 
-/** Blind composition: creator = host only; two party invites. */
-export async function createBlindSession(
+/**
+ * Blind: the creator is a broker who acts for nobody, in a vertical whose
+ * broker does not see figures; one email-bound invite per side.
+ */
+export async function createBlindReconciliation(
 	creator: TestUser,
-	lowEmail: string,
-	highEmail: string
+	buyerEmail: string,
+	sellerEmail: string
 ): Promise<CreatedInvite[]> {
 	await signInAndGrant(creator);
 	return asUser(
 		creator,
 		(tx) =>
 			tx<CreatedInvite[]>`
-			select * from launch_invited_session(
-				${randomUUID()}, 'generic', 'GBP', 'creator-as-host', null::uuid, null,
+			select * from launch_reconciliation(
+				${randomUUID()}, 'generic', 'GBP', 'broker', null, null::uuid,
 				${tx.json([
-					{ role: 'low-preferring', email: lowEmail },
-					{ role: 'high-preferring', email: highEmail }
+					{ seat: 'buyer', email: buyerEmail },
+					{ seat: 'seller', email: sellerEmail }
 				])}
 			)
 		`
@@ -66,59 +74,59 @@ export async function createBlindSession(
 
 export async function redeem(user: TestUser, token: string): Promise<string> {
 	return asUser(user, async (tx) => {
-		const r = await tx<{ s: string }[]>`select redeem_invite(${token}) as s`;
-		return r[0].s;
+		const r = await tx<{ r: string }[]>`select redeem_invite(${token}) as r`;
+		return r[0].r;
 	});
 }
 
-export const LOW_TUPLE = ['100', '120', '140', '160'];
-export const HIGH_TUPLE = ['110', '130', '150', '170'];
+export const BUYER_TUPLE = ['100', '120', '140', '160'];
+export const SELLER_TUPLE = ['110', '130', '150', '170'];
 
-export async function enterPosition(
+export async function enterFigures(
 	user: TestUser,
-	sessionId: string,
-	direction: Dir,
-	tuple: string[] = direction === 'low-preferring' ? LOW_TUPLE : HIGH_TUPLE
+	reconciliationId: string,
+	side: Side,
+	tuple: string[] = side === 'buyer' ? BUYER_TUPLE : SELLER_TUPLE
 ): Promise<void> {
 	await asUser(user, async (tx) => {
 		await tx`
-			insert into party_positions (session_id, direction, v1, v2, v3, v4)
-			values (${sessionId}::uuid, ${direction}, ${tuple[0]}::numeric, ${tuple[1]}::numeric,
+			insert into figures (reconciliation_id, side, v1, v2, v3, v4)
+			values (${reconciliationId}::uuid, ${side}, ${tuple[0]}::numeric, ${tuple[1]}::numeric,
 			        ${tuple[2]}::numeric, ${tuple[3]}::numeric)
 		`;
 	});
 }
 
-export async function submit(user: TestUser, sessionId: string): Promise<string> {
+export async function submitFigures(user: TestUser, reconciliationId: string): Promise<string> {
 	return asUser(user, async (tx) => {
-		const r = await tx<{ s: string }[]>`select submit_position(${sessionId}::uuid) as s`;
+		const r = await tx<{ s: string }[]>`select submit_figures(${reconciliationId}::uuid) as s`;
 		return r[0].s;
 	});
 }
 
-export async function sessionState(sessionId: string): Promise<string> {
+export async function reconciliationState(reconciliationId: string): Promise<string> {
 	const r = await admin()<
 		{ state: string }[]
-	>`select state from sessions where id = ${sessionId}::uuid`;
+	>`select state from reconciliations where id = ${reconciliationId}::uuid`;
 	return r[0].state;
 }
 
-/** A recruitment session taken to `locked` with both positions submitted. */
-export async function lockedRecruitmentSession(): Promise<{
+/** A brokered reconciliation taken to `locked` with both sides' figures submitted. */
+export async function lockedBrokeredReconciliation(): Promise<{
 	creator: TestUser;
-	candidate: TestUser;
-	sessionId: string;
+	seller: TestUser;
+	reconciliationId: string;
 }> {
-	const creator = await createAuthUser('rec');
-	const candidate = await createAuthUser('cand');
-	const [inv] = await createRecruitmentSession(creator, candidate.email);
-	await redeem(candidate, inv.plaintext_token);
-	await enterPosition(creator, inv.session_id, 'low-preferring');
-	await enterPosition(candidate, inv.session_id, 'high-preferring');
-	await submit(creator, inv.session_id);
-	const s = await submit(candidate, inv.session_id);
+	const creator = await createAuthUser('bro');
+	const seller = await createAuthUser('sel');
+	const [inv] = await createBrokeredReconciliation(creator, seller.email);
+	await redeem(seller, inv.plaintext_token);
+	await enterFigures(creator, inv.reconciliation_id, 'buyer');
+	await enterFigures(seller, inv.reconciliation_id, 'seller');
+	await submitFigures(creator, inv.reconciliation_id);
+	const s = await submitFigures(seller, inv.reconciliation_id);
 	if (s !== 'locked') throw new Error(`expected locked, got ${s}`);
-	return { creator, candidate, sessionId: inv.session_id };
+	return { creator, seller, reconciliationId: inv.reconciliation_id };
 }
 
 export async function withUser<T>(

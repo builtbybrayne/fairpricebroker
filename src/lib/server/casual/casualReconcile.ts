@@ -1,8 +1,9 @@
 // T3-m1-casual-mode §2 / §4: the named shared casual capability contract.
 // Consumers are the casual UI, HTTP, and MCP adapters only — never a
-// host-visible catalogue handler (§2). Pure-ish orchestration: no I/O
+// broker-visible catalogue handler (§2). Pure-ish orchestration: no I/O
 // beyond the engine call and the one seam call.
-import { CASUAL_PARTY_DIRECTION, CASUAL_TEMPLATE_ID } from '$lib/casual/casualTemplate';
+import { CASUAL_TEMPLATE_ID } from '$lib/casual/casualTemplate';
+import { sideToDirection, type Side } from '$lib/domain/terms';
 import { reconcile } from '$lib/server/engine';
 import type { DirectionalParty, EngineError, VWTuple } from '$lib/server/engine/types';
 import type { RefCode } from '$lib/server/refCodes';
@@ -15,7 +16,7 @@ import { buildCasualResultPayload, type CasualResultPayload } from './casualPayl
 export const CASUAL_RECONCILE_CAPABILITY = {
 	name: 'casual.reconcile',
 	authTier: 'none',
-	sessionTypes: ['casual'],
+	reconciliationKinds: ['casual'],
 	invokingRole: 'co-present-pair',
 	payloadClass: 'casual-full-detail',
 	rateLimitClass: 'compute'
@@ -24,8 +25,8 @@ export const CASUAL_RECONCILE_CAPABILITY = {
 export type RawTuple = readonly [string, string, string, string];
 
 export interface CasualReconcileRequest {
-	readonly partyATuple: RawTuple;
-	readonly partyBTuple: RawTuple;
+	readonly buyerTuple: RawTuple;
+	readonly sellerTuple: RawTuple;
 	/** Inbound attribution ref, validated at the HTTP boundary (casualRoute.ts). */
 	readonly ref: RefCode | null;
 	/** Client-minted UUID v4, validated at the HTTP boundary. */
@@ -39,22 +40,23 @@ export type CasualReconcileResponse =
 /**
  * Wraps a raw tuple as the engine's branded input WITHOUT re-validating —
  * the engine is the sole validation authority (T3-m1-engine-port §2.3).
+ * The side → direction mapping is the domain's one constant (buyer = low).
  */
-function asParty(tuple: RawTuple, direction: DirectionalParty['direction']): DirectionalParty {
+function asEngineInput(tuple: RawTuple, side: Side): DirectionalParty {
 	// Brand-only cast: DecimalString is a nominal brand over string.
-	return { tuple: tuple as unknown as VWTuple, direction };
+	return { tuple: tuple as unknown as VWTuple, direction: sideToDirection[side] };
 }
 
 export async function handleCasualReconcile(
 	req: CasualReconcileRequest,
 	deps: { readonly completer: CasualPlayCompleter }
 ): Promise<CasualReconcileResponse> {
-	// 1. Fixed directional mapping from the template (A = low, B = high).
-	const partyA = asParty(req.partyATuple, CASUAL_PARTY_DIRECTION.A);
-	const partyB = asParty(req.partyBTuple, CASUAL_PARTY_DIRECTION.B);
+	// 1. Fixed directional mapping: the buyer is low-preferring, the seller high.
+	const buyer = asEngineInput(req.buyerTuple, 'buyer');
+	const seller = asEngineInput(req.sellerTuple, 'seller');
 
 	// 2. Default tolerance (relative-r1).
-	const outcome = reconcile(partyA, partyB);
+	const outcome = reconcile(buyer, seller);
 
 	// 3. Engine rejection: returned unchanged; the seam is never reached.
 	if (!outcome.ok) return { ok: false, error: outcome.error };

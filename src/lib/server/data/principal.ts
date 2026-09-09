@@ -1,37 +1,38 @@
-// T3-m1-data-core §2.7: the caller's AUTHORITY is derived server-side from
-// persisted state, in one query, as the caller's own authenticated role.
-// This module is the SOLE authority that ever computes `hostFull`.
-import type { Role } from '$lib/server/engine';
+// T3-m1-data-core §2.7 (T3-m2 vocabulary): the caller's AUTHORITY is
+// derived server-side from persisted state, in one query, as the caller's
+// own authenticated role. This module is the SOLE authority that ever
+// computes a broker's `full` (whether it sees both sides' figures).
+import { isSide, type Side } from '$lib/domain/terms';
 import type { CallerSql } from './db';
 
-export type InvitedViewer =
-	| { kind: 'party'; role: Role }
-	| { kind: 'host'; hostFull: boolean }
+export type Viewer =
+	| { kind: 'side'; side: Side }
+	| { kind: 'broker'; full: boolean }
 	| { kind: 'developer' }
 	| { kind: 'none' };
 
-export async function resolveInvitedViewer(
-	caller: CallerSql,
-	sessionId: string
-): Promise<InvitedViewer> {
+export async function resolveViewer(caller: CallerSql, reconciliationId: string): Promise<Viewer> {
 	const rows = await caller<
 		{
-			direction: Role | null;
-			is_host: boolean;
-			host_visibility: string | null;
+			side: string | null;
+			is_broker: boolean;
+			broker_sees_figures: boolean | null;
 			is_developer: boolean;
 		}[]
 	>`
 		select
-			session_role_for(${sessionId}::uuid) as direction,
-			is_session_host(${sessionId}::uuid) as is_host,
-			(select host_visibility from sessions where id = ${sessionId}::uuid) as host_visibility,
+			side_for(${reconciliationId}::uuid) as side,
+			is_broker(${reconciliationId}::uuid) as is_broker,
+			(select broker_sees_figures from reconciliations where id = ${reconciliationId}::uuid)
+				as broker_sees_figures,
 			is_developer() as is_developer
 	`;
 	const r = rows[0];
 	if (!r) return { kind: 'none' };
 	if (r.is_developer) return { kind: 'developer' };
-	if (r.is_host) return { kind: 'host', hostFull: r.host_visibility === 'host-visible' };
-	if (r.direction) return { kind: 'party', role: r.direction };
+	// A broker acting for a side is still the broker seat here: what it may
+	// see is the vertical's disclosure fact, not the side it enters for.
+	if (r.is_broker) return { kind: 'broker', full: r.broker_sees_figures === true };
+	if (isSide(r.side)) return { kind: 'side', side: r.side };
 	return { kind: 'none' };
 }

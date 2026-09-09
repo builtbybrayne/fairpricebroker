@@ -5,7 +5,7 @@ import { loadDotEnv } from './env';
 
 loadDotEnv();
 
-export const DIRS = ['low-preferring', 'high-preferring'] as const;
+export { SIDES } from '$lib/domain/terms';
 
 let adminPool: Sql | undefined;
 /** Migration-owner (postgres) connection: bypasses RLS; fixture setup only. */

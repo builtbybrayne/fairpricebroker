@@ -11,9 +11,9 @@ Scope: the public "Try it as a recruiter" walkthrough (T3-m1-recruitment-demo §
 
 Audience: an agency or contingency recruiter arriving from outreach, on a phone as often as a laptop; no account, no sign-up, three minutes.
 
-Job: play both hats — enter a made-up client budget, see the candidate link go out, switch hats and answer as the candidate (having read the disclosure and the incentive argument exactly as a candidate would), then see the two-dimensional read the recruiter gets — and answer two or three directed questions plus a comment at each stage.
+Job: play both hats — enter a made-up hiring-company budget, see the candidate link go out, switch hats and answer as the candidate (having read the disclosure and the incentive argument exactly as a candidate would), then see the two-dimensional read the recruiter gets — and answer two or three directed questions plus a comment at each stage.
 
-Task per stage: 1 employer meter (blue) → "Send the candidate link"; 2 the link, then "Now you're the candidate"; 3 disclosure + incentive, candidate meter (terracotta) → "See what the recruiter sees"; 4 reveal (both ranges, fair salary, overlap level, non-remuneration steer) beside what the candidate sees → Continue; 5 wrap-up → Finish → done state with Start free.
+Task per stage: 1 the hiring company's meter (blue, the buyer side) → "Send the candidate link"; 2 the link, then "Now you're the candidate"; 3 disclosure + incentive, candidate meter (terracotta, the seller side) → "See what the recruiter sees"; 4 reveal (both ranges, fair salary, overlap level, non-remuneration steer) beside what the candidate sees → Continue; 5 wrap-up → Finish → done state with Start free.
 
 States: stage 1–5, done; meter validation error (client grammar) and engine rejection surfaced on the candidate meter; busy while a stage POSTs; every answer optional; reduced motion honoured (no stage fade, no reveal drift, instant scroll).
 
@@ -22,3 +22,5 @@ Constraints: progressive best-effort submission (POST per stage, one silent retr
 Composition: progress rail across the top (five stages tinted by hat, completed filled, current ringed, hat pill beside it), stage heading and framing lede, the stage's instrument or reveal, a hairline, the directed questions as raised pill choices and inset text areas, then the gold Continue with "Stage n of 5". Mobile-first from 375px; the meters are the shared single-track MeterPanel seeded with example salaries (revised 8 Sep 2026), with short point labels and the touched point's question under the track.
 
 Resolved 8 Sep 2026: the four-row meter was replaced by the single-track meter, which renders each point's question itself; the demo's scoped :global overrides are gone.
+
+Vocabulary (9 Sep 2026, T3-m2-domain-terms): the demo's hats are the buyer side (hiring company), the seller side (candidate) and the broker seat (recruitment consultant) of the `salary-negotiation` vertical; the words on screen stay the recruiter's, read from the vertical dictionary.

@@ -1,5 +1,6 @@
-// VERIFY item 3: payload golden key-set tests per viewer class, plus the
-// static egress checks (§2.11).
+// VERIFY item 3: payload golden key-set tests per viewer class (side /
+// broker-blind / broker-full / developer), plus the static egress checks
+// (§2.11).
 import { execFileSync } from 'node:child_process';
 import { afterAll, describe, expect, it } from 'vitest';
 import type { JSONValue } from 'postgres';
@@ -7,10 +8,10 @@ import type { ReconcileResult } from '$lib/server/engine';
 import { admin, asUser, closeAdmin, createAuthUser } from '../../../../tests/helpers/db';
 import { closeAllDb } from './db';
 import {
-	constructInvitedPayload,
+	constructPayload,
 	DEVELOPER_ONLY_KEYS,
-	getVisibilityDisclosure,
-	PER_PARTY_SAFE_KEYS,
+	getBrokerSeesFigures,
+	PER_SIDE_SAFE_KEYS,
 	RAW_INPUT_KEYS
 } from './payloadConstructor';
 
@@ -80,70 +81,73 @@ function keyPaths(payload: Record<string, unknown>): string[] {
 }
 const sorted = (xs: readonly string[]) => [...xs].sort();
 
-async function fixtureSession(
-	visibility: 'blind' | 'host-visible',
-	zone: 'comfort' | 'deal' | 'no-deal'
-) {
-	const host = await createAuthUser('host');
-	const low = await createAuthUser('low');
-	const high = await createAuthUser('high');
+/** A closed reconciliation with a stored result and one bound principal per seat. */
+async function fixtureReconciliation(brokerSees: boolean, zone: 'comfort' | 'deal' | 'no-deal') {
+	const broker = await createAuthUser('broker');
+	const buyer = await createAuthUser('buyer');
+	const seller = await createAuthUser('seller');
 	const dev = await createAuthUser('dev');
 	const stranger = await createAuthUser('stranger');
-	const [s] = await admin()<{ id: string }[]>`
-		insert into sessions (type, composition, template_id, host_visibility, currency, state)
-		values ('invited', 'creator-as-host', ${visibility === 'host-visible' ? 'recruitment' : 'generic'}, ${visibility}, 'GBP', 'closed')
+	const [r] = await admin()<{ id: string }[]>`
+		insert into reconciliations (kind, vertical, broker_sees_figures, currency, state)
+		values ('invited', ${brokerSees ? 'salary-negotiation' : 'generic'}, ${brokerSees}, 'GBP', 'closed')
 		returning id`;
-	await admin()`insert into session_participants (session_id, is_host, bound_auth_uid) values (${s.id}::uuid, true, ${host.sub}::uuid)`;
-	await admin()`insert into session_participants (session_id, direction, bound_auth_uid) values (${s.id}::uuid, 'low-preferring', ${low.sub}::uuid)`;
-	await admin()`insert into session_participants (session_id, direction, bound_auth_uid) values (${s.id}::uuid, 'high-preferring', ${high.sub}::uuid)`;
+	await admin()`insert into participants (reconciliation_id, seat, bound_auth_uid) values (${r.id}::uuid, 'broker', ${broker.sub}::uuid)`;
+	await admin()`insert into participants (reconciliation_id, seat, bound_auth_uid) values (${r.id}::uuid, 'buyer', ${buyer.sub}::uuid)`;
+	await admin()`insert into participants (reconciliation_id, seat, bound_auth_uid) values (${r.id}::uuid, 'seller', ${seller.sub}::uuid)`;
 	await admin()`insert into developer_grants (auth_uid, granted_by) values (${dev.sub}::uuid, 'test')`;
-	await admin()`insert into results (session_id, payload, engine_version, algorithm_version)
-	              values (${s.id}::uuid, ${admin().json(fixture(zone) as unknown as JSONValue)}, '0.1.0', 'reconciliation/1')`;
-	return { sessionId: s.id, host, low, high, dev, stranger };
+	await admin()`insert into results (reconciliation_id, payload, engine_version, algorithm_version)
+	              values (${r.id}::uuid, ${admin().json(fixture(zone) as unknown as JSONValue)}, '0.1.0', 'reconciliation/1')`;
+	return { reconciliationId: r.id, broker, buyer, seller, dev, stranger };
 }
 
-const PARTY_LOW = sorted([
-	...PER_PARTY_SAFE_KEYS,
+// The stored payload keeps the engine's keys: the buyer IS the
+// low-preferring side, the seller the high-preferring one. Spelling the
+// keys out here (rather than through OWN_*_KEY) pins that mapping.
+const SIDE_BUYER = sorted([
+	...PER_SIDE_SAFE_KEYS,
 	'distances.low-preferring',
 	'input.low-preferring'
 ]);
-const PARTY_HIGH = sorted([
-	...PER_PARTY_SAFE_KEYS,
+const SIDE_SELLER = sorted([
+	...PER_SIDE_SAFE_KEYS,
 	'distances.high-preferring',
 	'input.high-preferring'
 ]);
-const BLIND_HOST = sorted([
-	...PER_PARTY_SAFE_KEYS,
+const BROKER_BLIND = sorted([
+	...PER_SIDE_SAFE_KEYS,
 	'distances.low-preferring',
 	'distances.high-preferring'
 ]);
-const HOST_FULL = sorted([...BLIND_HOST, ...RAW_INPUT_KEYS]);
-const DEVELOPER = sorted([...HOST_FULL, ...DEVELOPER_ONLY_KEYS]);
+const BROKER_FULL = sorted([...BROKER_BLIND, ...RAW_INPUT_KEYS]);
+const DEVELOPER = sorted([...BROKER_FULL, ...DEVELOPER_ONLY_KEYS]);
 
 describe('payload classes', () => {
 	for (const zone of ['comfort', 'deal', 'no-deal'] as const) {
-		for (const visibility of ['blind', 'host-visible'] as const) {
-			it(`${zone} / ${visibility}: party, host, developer, none`, async () => {
-				const f = await fixtureSession(visibility, zone);
+		for (const brokerSees of [false, true]) {
+			const label = brokerSees ? 'broker-full' : 'broker-blind';
+			it(`${zone} / ${label}: side, broker, developer, none`, async () => {
+				const f = await fixtureReconciliation(brokerSees, zone);
 				const build = (u: { sub: string; email: string }) =>
-					asUser(u, (tx) => constructInvitedPayload(tx, f.sessionId));
+					asUser(u, (tx) => constructPayload(tx, f.reconciliationId));
 
-				const low = await build(f.low);
-				expect(keyPaths(low)).toEqual(PARTY_LOW);
-				expect(low).not.toHaveProperty(['distances', 'high-preferring']);
-				expect(low).not.toHaveProperty(['input', 'high-preferring']);
+				const buyer = await build(f.buyer);
+				expect(keyPaths(buyer)).toEqual(SIDE_BUYER);
+				expect(buyer).not.toHaveProperty(['distances', 'high-preferring']);
+				expect(buyer).not.toHaveProperty(['input', 'high-preferring']);
 				if (zone === 'no-deal') {
 					expect(
-						(low.distances as Record<string, { float: number }>)['low-preferring'].float
+						(buyer.distances as Record<string, { float: number }>)['low-preferring'].float
 					).not.toBe(0);
 				}
-				const high = await build(f.high);
-				expect(keyPaths(high)).toEqual(PARTY_HIGH);
+				const seller = await build(f.seller);
+				expect(keyPaths(seller)).toEqual(SIDE_SELLER);
+				expect(seller).not.toHaveProperty(['input', 'low-preferring']);
 
-				const host = await build(f.host);
-				expect(keyPaths(host)).toEqual(visibility === 'host-visible' ? HOST_FULL : BLIND_HOST);
+				const broker = await build(f.broker);
+				expect(keyPaths(broker)).toEqual(brokerSees ? BROKER_FULL : BROKER_BLIND);
 				for (const k of ['layers', 'honesty', 'curves', 'gap', 'overlap', 'hasComfortZone']) {
-					expect(host).not.toHaveProperty(k);
+					expect(broker).not.toHaveProperty(k);
 				}
 
 				const dev = await build(f.dev);
@@ -152,15 +156,18 @@ describe('payload classes', () => {
 					keyPaths(fixture(zone) as unknown as Record<string, unknown>)
 				);
 
-				await expect(build(f.stranger)).rejects.toThrow('no resolvable role');
+				await expect(build(f.stranger)).rejects.toThrow('no resolvable viewer');
 
-				// pre-entry disclosure fact
-				expect(await asUser(f.low, (tx) => getVisibilityDisclosure(tx, f.sessionId))).toBe(
-					visibility
+				// R11: the pre-entry disclosure fact, as a boolean
+				expect(await asUser(f.buyer, (tx) => getBrokerSeesFigures(tx, f.reconciliationId))).toBe(
+					brokerSees
+				);
+				expect(await asUser(f.broker, (tx) => getBrokerSeesFigures(tx, f.reconciliationId))).toBe(
+					brokerSees
 				);
 				await expect(
-					asUser(f.stranger, (tx) => getVisibilityDisclosure(tx, f.sessionId))
-				).rejects.toThrow('no-role');
+					asUser(f.stranger, (tx) => getBrokerSeesFigures(tx, f.reconciliationId))
+				).rejects.toThrow('no-seat');
 			});
 		}
 	}
@@ -184,8 +191,8 @@ describe('static egress checks', () => {
 		);
 		expect(hits).toEqual(['src/lib/server/data/payloadConstructor.ts']);
 	});
-	it('hostFull is computed only in principal.ts', () => {
-		const assigning = grep('hostFull:').filter((f) => !f.endsWith('.test.ts'));
+	it("a broker viewer's `full` is computed only in principal.ts", () => {
+		const assigning = grep("kind: 'broker', full:").filter((f) => !f.endsWith('.test.ts'));
 		expect(assigning).toEqual(['src/lib/server/data/principal.ts']);
 	});
 	it('constructCasualPayload does not exist in src', () => {

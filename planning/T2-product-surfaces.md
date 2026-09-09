@@ -129,6 +129,17 @@ template on one horizontal core (T1 §2.2).
    | respondent | survey | submit one tuple | own submission + confirmation only |
    | org admin | org plumbing (later) | membership, org sessions, shared credit pool | as creator/host per session; never party inputs |
    | developer | all (server-granted) | read audit payloads | internal-only class; granted by database role, never user-selectable, invisible to other users |
+
+   _Vocabulary note, 9 Sep 2026 (`T3-m2-domain-terms`, ruled §6):_ the
+   words in this table are M1's; the built vocabulary supersedes them
+   without rewriting this history. Read: session → reconciliation; party
+   (A/B) → side (buyer / seller); host → broker (a seat, which may act
+   for a side); the "composition" (creator-as-party / creator-as-host) →
+   the creator's seat plus `acts_for`; payload classes party / blind-host
+   / host-full → side / broker-blind / broker-full; the standing
+   container for many responses → offer. The matrix's meaning is
+   unchanged.
+
 5. **Templates are configuration, not code:** a template = the four
    question texts, party labels, the directional mapping (which party is
    low-preferring vs high-preferring, consumed by T2-engine §2.3), copy
@@ -300,6 +311,9 @@ ruling.)*
   The confirm-and-hide and handover interstitials are gone; the guarantee
   (a sealed side's figures are never re-displayed before the outcome)
   is unchanged. See T3-m1-casual-mode §3.
+  _Vocabulary note, 9 Sep 2026:_ Party A / Party B are the buyer and
+  seller sides internally (`T3-m2-domain-terms` §6 #11); on-screen titles
+  come from the scenario. The wording above is left as ruled.
 
 - **R6 (20 Aug 2026, operator, post-acceptance append) — casual outcome
   hides raw figures by default.** Refines R5: the casual outcome view
@@ -328,6 +342,13 @@ ruling.)*
   Verification (§4) extends: payload-safety fixtures for both
   host-visibility settings, asserting host-full appears only when the
   persisted mode configures it.
+  _Vocabulary note, 9 Sep 2026:_ as built after `T3-m2-domain-terms`, the
+  host is the broker seat; `host_visibility` is the boolean
+  `broker_sees_figures` on the reconciliation (disclosed to a side by
+  `broker_sees_figures_for`); host-full / blind-host are the broker-full
+  / broker-blind payload classes; the recruitment template is the
+  `salary-negotiation` vertical, whose dictionary sets
+  `brokerSeesFigures: true`. The ruling stands as written.
 - **R8 — vertical demo walkthroughs are a first-class surface.** Each
   vertical template should in principle carry a **guided demo**: a
   public, no-signup walkthrough on the vertical's page in which one

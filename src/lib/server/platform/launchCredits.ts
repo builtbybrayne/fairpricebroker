@@ -1,5 +1,5 @@
 // T3-m1-platform-naive-auth §3.5: the launch-credit seam data-core's
-// session creation is gated behind. Runs on the caller's request-scoped
+// reconciliation creation is gated behind. Runs on the caller's request-scoped
 // (authenticated) connection.
 import type { CallerSql } from '$lib/server/data/db';
 

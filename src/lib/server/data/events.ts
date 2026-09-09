@@ -1,6 +1,6 @@
 // T3-m1-data-core §2.8 / seam contract v2: completeCasualPlay and
-// issueSessionRef — each ONE transaction, advisory-locked on its key,
-// idempotent as a whole with a conflict re-read.
+// issueReconciliationRef — each ONE transaction, advisory-locked on its
+// key, idempotent as a whole with a conflict re-read.
 import { randomBytes } from 'node:crypto';
 import { isRefCode, type RefCode } from '$lib/server/refCodes';
 import { roleDb } from './db';
@@ -34,7 +34,7 @@ export async function completeCasualPlay(input: {
 			tx<{ share_ref: string }[]>`
 				select payload ->> 'share_ref' as share_ref from events
 				where idempotency_key = ${input.idempotencyKey}::uuid
-					and session_id is null and event_type = 'reconciliation_completed'
+					and reconciliation_id is null and event_type = 'reconciliation_completed'
 			`;
 		const existing = await replay();
 		if (existing.length > 0) return { shareRef: existing[0].share_ref as RefCode };
@@ -42,9 +42,9 @@ export async function completeCasualPlay(input: {
 		const payload = { template_id: input.templateId, ref_code: input.ref, share_ref: shareRef };
 		try {
 			await tx.savepoint(async (sp) => {
-				await sp`insert into share_refs (ref_code, issued_for_session_id) values (${shareRef}, null)`;
+				await sp`insert into share_refs (ref_code, issued_for_reconciliation_id) values (${shareRef}, null)`;
 				await sp`
-					insert into events (session_id, event_type, payload, idempotency_key)
+					insert into events (reconciliation_id, event_type, payload, idempotency_key)
 					values (null, 'reconciliation_completed', ${sp.json(payload)}, ${input.idempotencyKey}::uuid)
 				`;
 			});
@@ -58,20 +58,24 @@ export async function completeCasualPlay(input: {
 	});
 }
 
-export async function issueSessionRef(sessionId: string): Promise<{ ref: RefCode }> {
+export async function issueReconciliationRef(reconciliationId: string): Promise<{ ref: RefCode }> {
 	const sql = roleDb('orchestrator');
 	return sql.begin(async (tx) => {
-		await tx`select pg_advisory_xact_lock(hashtextextended(${sessionId}::text, 0))`;
+		await tx`select pg_advisory_xact_lock(hashtextextended(${reconciliationId}::text, 0))`;
 		const replay = async () =>
 			tx<{ ref_code: string }[]>`
-				select ref_code from share_refs where issued_for_session_id = ${sessionId}::uuid
+				select ref_code from share_refs
+				where issued_for_reconciliation_id = ${reconciliationId}::uuid
 			`;
 		const existing = await replay();
 		if (existing.length > 0) return { ref: existing[0].ref_code as RefCode };
 		const ref = mintRefCode();
 		try {
 			await tx.savepoint(async (sp) => {
-				await sp`insert into share_refs (ref_code, issued_for_session_id) values (${ref}, ${sessionId}::uuid)`;
+				await sp`
+					insert into share_refs (ref_code, issued_for_reconciliation_id)
+					values (${ref}, ${reconciliationId}::uuid)
+				`;
 			});
 		} catch (e) {
 			if (!isUniqueViolation(e)) throw e;

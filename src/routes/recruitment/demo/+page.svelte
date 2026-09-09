@@ -10,7 +10,7 @@
 	import { resolve } from '$app/paths';
 	import MeterPanel from '$lib/client/meter/MeterPanel.svelte';
 	import RevealCanvas from '$lib/client/reveal/RevealCanvas.svelte';
-	import { recruitmentTemplate, RECRUITMENT_DIRECTION } from '$lib/templates/recruitment';
+	import { salaryNegotiationTemplate } from '$lib/templates/salaryNegotiation';
 	import type { DemoAnswerValue, DemoStage } from '$lib/server/demo/demoAnswers';
 	import type { DemoReconcileView } from '$lib/server/demo/demoReconcile';
 	import {
@@ -30,12 +30,12 @@
 
 	let { data }: { data: { ref: string | null } } = $props();
 
-	const budgetRows = recruitmentTemplate.questions[RECRUITMENT_DIRECTION.budget].map((q) => ({
+	const budgetRows = salaryNegotiationTemplate.questions.buyer.map((q) => ({
 		key: q.key,
 		label: q.label,
 		help: q.prompt
 	}));
-	const candidateRows = recruitmentTemplate.questions[RECRUITMENT_DIRECTION.candidate].map((q) => ({
+	const candidateRows = salaryNegotiationTemplate.questions.seller.map((q) => ({
 		key: q.key,
 		label: q.label,
 		help: q.prompt
@@ -330,10 +330,10 @@
 			{:else if stage === 3}
 				<div class="candidate raised" data-candidate-preamble>
 					<h2 class="candidate__title">Read first, as the candidate does</h2>
-					<h3 class="candidate__heading">{recruitmentTemplate.disclosure.heading}</h3>
-					<p class="candidate__body">{recruitmentTemplate.disclosure.body}</p>
-					<h3 class="candidate__heading">{recruitmentTemplate.incentive.heading}</h3>
-					<p class="candidate__body">{recruitmentTemplate.incentive.body}</p>
+					<h3 class="candidate__heading">{salaryNegotiationTemplate.disclosure.heading}</h3>
+					<p class="candidate__body">{salaryNegotiationTemplate.disclosure.body}</p>
+					<h3 class="candidate__heading">{salaryNegotiationTemplate.incentive.heading}</h3>
+					<p class="candidate__body">{salaryNegotiationTemplate.incentive.body}</p>
 				</div>
 
 				<div class="entry entry--terracotta">
@@ -395,7 +395,7 @@
 									</dd>
 								</div>
 							</dl>
-							<p class="read__copy" data-host-copy>{reveal.guidance.hostCopy}</p>
+							<p class="read__copy" data-broker-copy>{reveal.guidance.brokerCopy}</p>
 							<p class="read__figures">
 								Budget {formatSalary(budgetRange.lo)}–{formatSalary(budgetRange.hi)} · Candidate
 								{formatSalary(candidateRange.lo)}–{formatSalary(candidateRange.hi)}
@@ -414,7 +414,7 @@
 									<dd>{OVERLAP_LABEL[reveal.guidance.overlap]}</dd>
 								</div>
 							</dl>
-							<p class="read__copy" data-party-copy>{reveal.guidance.partyCopy}</p>
+							<p class="read__copy" data-side-copy>{reveal.guidance.sideCopy}</p>
 							<p class="read__figures">The employer’s budget is never shown here.</p>
 						</section>
 					</div>

@@ -3,6 +3,7 @@
 	import RevealCanvas from '$lib/client/reveal/RevealCanvas.svelte';
 	import CasualFlow from '$lib/client/casual/CasualFlow.svelte';
 	import { formatMoney, niceAxis, type CasualState } from '$lib/client/casual/casualClient';
+	import { sideToDirection } from '$lib/domain/terms';
 	import {
 		CASUAL_SCENARIOS,
 		CUSTOM_SCENARIO,
@@ -24,7 +25,7 @@
 	let phase = $state<CasualState>('entry');
 	// Which of the three steps the pair is on (the row lights up as they go).
 	const step = $derived(
-		phase === 'entry' ? 1 : phase === 'a-sealed' || phase === 'b-sealed' ? 2 : 3
+		phase === 'entry' ? 1 : phase === 'buyer-sealed' || phase === 'seller-sealed' ? 2 : 3
 	);
 	let flow = $state<CasualFlow | null>(null);
 	let stepsEl = $state<HTMLElement | null>(null);
@@ -33,9 +34,9 @@
 	// reconciliation lands, then the pair's own result (casual is the
 	// full-detail mode, so both ranges are permitted here).
 	const exampleHero = (s: CasualScenario) => ({
-		axis: niceAxis([...s.a.example, ...s.b.example, s.exampleOutcome.fair]),
-		yours: { lo: s.a.example[0], hi: s.a.example[3] },
-		theirs: { lo: s.b.example[0], hi: s.b.example[3] },
+		axis: niceAxis([...s.buyer.example, ...s.seller.example, s.exampleOutcome.fair]),
+		yours: { lo: s.buyer.example[0], hi: s.buyer.example[3] },
+		theirs: { lo: s.seller.example[0], hi: s.seller.example[3] },
 		zone: s.exampleOutcome.zone as { lo: number; hi: number } | null,
 		fair: s.exampleOutcome.fair,
 		fairLabel: null as string | null,
@@ -50,12 +51,12 @@
 	}
 
 	function onreveal(r: CasualResultPayload) {
-		const a = r.input['low-preferring'].tuple.map(Number);
-		const b = r.input['high-preferring'].tuple.map(Number);
+		const buyer = r.input[sideToDirection.buyer].tuple.map(Number);
+		const seller = r.input[sideToDirection.seller].tuple.map(Number);
 		hero = {
-			axis: niceAxis([...a, ...b, r.fairPrice.float]),
-			yours: { lo: a[0], hi: a[3] },
-			theirs: { lo: b[0], hi: b[3] },
+			axis: niceAxis([...buyer, ...seller, r.fairPrice.float]),
+			yours: { lo: buyer[0], hi: buyer[3] },
+			theirs: { lo: seller[0], hi: seller[3] },
 			zone:
 				r.zone === 'comfort'
 					? { lo: r.overlapLow.float, hi: r.overlapHigh.float }

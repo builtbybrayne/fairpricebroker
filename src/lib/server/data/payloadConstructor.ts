@@ -1,23 +1,28 @@
-// T3-m1-data-core §2.7: stored-session payload classes as explicit key
-// allowlists. Casual payloads are built by T3-m1-casual-mode's
-// buildCasualResultPayload; this brief constructs only stored-session
-// payloads (party / blind-host / host-full / developer).
-import type { ReconcileResult, Role } from '$lib/server/engine';
+// T3-m1-data-core §2.7 (T3-m2 vocabulary): stored-result payload classes
+// as explicit key allowlists — side / broker-blind / broker-full /
+// developer. Casual payloads are built by T3-m1-casual-mode's
+// buildCasualResultPayload; this module constructs only stored payloads.
+//
+// The stored result keeps the ENGINE's keys (input['low-preferring'],
+// distances['high-preferring']); a side is mapped onto them here, at the
+// edge, through sideToDirection — nowhere else.
+import { sideToDirection, type Side } from '$lib/domain/terms';
+import type { ReconcileResult } from '$lib/server/engine';
 import type { CallerSql } from './db';
 import { readRawResult } from './rawResultReader';
-import { resolveInvitedViewer, type InvitedViewer } from './principal';
+import { resolveViewer, type Viewer } from './principal';
 
-export type RoleSafePayload = Record<string, unknown>;
+export type SafePayload = Record<string, unknown>;
 
-export const PER_PARTY_SAFE_KEYS = [
+export const PER_SIDE_SAFE_KEYS = [
 	'zone',
 	'fairPrice',
 	'convergenceAchieved',
 	'convergedTrivially',
 	'meta'
 ] as const;
-export const OWN_DISTANCE_KEY = (role: Role) => `distances.${role}` as const;
-export const OWN_INPUT_KEY = (role: Role) => `input.${role}` as const;
+export const OWN_DISTANCE_KEY = (side: Side) => `distances.${sideToDirection[side]}` as const;
+export const OWN_INPUT_KEY = (side: Side) => `input.${sideToDirection[side]}` as const;
 export const RAW_INPUT_KEYS = ['input.low-preferring', 'input.high-preferring'] as const;
 export const DEVELOPER_ONLY_KEYS = [
 	'hasComfortZone',
@@ -40,7 +45,7 @@ function readByPath(obj: unknown, path: string): unknown {
 	}, obj);
 }
 
-function assignByPath(target: RoleSafePayload, path: string, value: unknown): void {
+function assignByPath(target: SafePayload, path: string, value: unknown): void {
 	if (value === undefined) return;
 	const parts = path.split('.');
 	let cursor: Record<string, unknown> = target;
@@ -54,18 +59,18 @@ function assignByPath(target: RoleSafePayload, path: string, value: unknown): vo
 	cursor[parts[parts.length - 1]] = value;
 }
 
-export function redactInvited(result: ReconcileResult, viewer: InvitedViewer): RoleSafePayload {
-	const out: RoleSafePayload = {};
+export function redact(result: ReconcileResult, viewer: Viewer): SafePayload {
+	const out: SafePayload = {};
 	const assign = (path: string) => assignByPath(out, path, readByPath(result, path));
-	for (const path of PER_PARTY_SAFE_KEYS) assign(path);
-	if (viewer.kind === 'party') {
-		assign(OWN_DISTANCE_KEY(viewer.role));
-		assign(OWN_INPUT_KEY(viewer.role));
-	} else if (viewer.kind === 'host' || viewer.kind === 'developer') {
-		assign(OWN_DISTANCE_KEY('low-preferring'));
-		assign(OWN_DISTANCE_KEY('high-preferring'));
+	for (const path of PER_SIDE_SAFE_KEYS) assign(path);
+	if (viewer.kind === 'side') {
+		assign(OWN_DISTANCE_KEY(viewer.side));
+		assign(OWN_INPUT_KEY(viewer.side));
+	} else if (viewer.kind === 'broker' || viewer.kind === 'developer') {
+		assign(OWN_DISTANCE_KEY('buyer'));
+		assign(OWN_DISTANCE_KEY('seller'));
 	}
-	if ((viewer.kind === 'host' && viewer.hostFull) || viewer.kind === 'developer') {
+	if ((viewer.kind === 'broker' && viewer.full) || viewer.kind === 'developer') {
 		for (const path of RAW_INPUT_KEYS) assign(path);
 	}
 	if (viewer.kind === 'developer') {
@@ -75,27 +80,27 @@ export function redactInvited(result: ReconcileResult, viewer: InvitedViewer): R
 }
 
 /**
- * Builds the role-safe payload for `sessionId` for the principal behind
- * `caller` (an authenticated-role transaction carrying the verified JWT
- * claims). The viewer is resolved inside; never accepted from the caller.
+ * Builds the viewer-safe payload for `reconciliationId` for the principal
+ * behind `caller` (an authenticated-role transaction carrying the verified
+ * JWT claims). The viewer is resolved inside; never accepted from the caller.
  */
-export async function constructInvitedPayload(
+export async function constructPayload(
 	caller: CallerSql,
-	sessionId: string
-): Promise<RoleSafePayload> {
-	const viewer = await resolveInvitedViewer(caller, sessionId);
-	if (viewer.kind === 'none') throw new Error('no resolvable role for this session');
-	const result = (await readRawResult(sessionId)) as ReconcileResult;
-	return redactInvited(result, viewer);
+	reconciliationId: string
+): Promise<SafePayload> {
+	const viewer = await resolveViewer(caller, reconciliationId);
+	if (viewer.kind === 'none') throw new Error('no resolvable viewer for this reconciliation');
+	const result = (await readRawResult(reconciliationId)) as ReconcileResult;
+	return redact(result, viewer);
 }
 
-/** T2-product-surfaces §9 R11 pre-entry disclosure fact. */
-export async function getVisibilityDisclosure(
+/** T2-product-surfaces §9 R11: the pre-entry disclosure fact — does the broker see both sides' figures? */
+export async function getBrokerSeesFigures(
 	caller: CallerSql,
-	sessionId: string
-): Promise<'blind' | 'host-visible'> {
-	const rows = await caller<{ v: 'blind' | 'host-visible' }[]>`
-		select request_visibility_disclosure(${sessionId}::uuid) as v
+	reconciliationId: string
+): Promise<boolean> {
+	const rows = await caller<{ v: boolean }[]>`
+		select broker_sees_figures_for(${reconciliationId}::uuid) as v
 	`;
 	return rows[0].v;
 }

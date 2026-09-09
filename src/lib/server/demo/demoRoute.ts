@@ -28,7 +28,7 @@ import { runDemoReconciliation, type DemoRawTuple } from './demoReconcile';
 export const DEMO_ANSWER_CAPABILITY = {
 	name: 'demo.answer',
 	authTier: 'none',
-	sessionTypes: ['demo'],
+	reconciliationKinds: ['demo'],
 	invokingRole: 'visitor',
 	payloadClass: 'none',
 	rateLimitClass: 'compute'
@@ -37,9 +37,9 @@ export const DEMO_ANSWER_CAPABILITY = {
 export const DEMO_RECONCILE_CAPABILITY = {
 	name: 'demo.reconcile',
 	authTier: 'none',
-	sessionTypes: ['demo'],
+	reconciliationKinds: ['demo'],
 	invokingRole: 'visitor',
-	payloadClass: 'host-full',
+	payloadClass: 'broker-full',
 	rateLimitClass: 'compute'
 } as const;
 

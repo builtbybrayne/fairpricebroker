@@ -1,5 +1,5 @@
 <script lang="ts">
-	import '$lib/client/recruitment/recruit.css';
+	import '$lib/client/offers/offers.css';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();

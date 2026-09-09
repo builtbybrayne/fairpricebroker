@@ -266,3 +266,70 @@ rebaseline route is preferred.
   owner is refused.
 - Every recruitment screen reads the dictionary: no literal "candidate"
   or "client" in a shared component.
+
+## 8. As built (stub, 9 Sep 2026)
+
+> Written by the documents agent of the refactor session; verification
+> filled in by the parent session once the suites had run.
+>
+> **Verification, 9 Sep 2026:** vitest 26 files, 176 tests green (engine
+> golden vectors untouched; data-core RLS, lifecycle, payload and
+> attribution suites rewritten to the new function and table names with
+> every blindness assertion kept); Playwright 20/20 against the dev server
+> (casual, offers, join, demo); svelte-check 0 errors; eslint and prettier
+> clean. A SQL smoke test drove the guarded functions end to end as three
+> authenticated users before any code moved: 8 credits granted, a
+> broker-for-buyer launch with an unbound seller link, the seller seeing no
+> invite or figures before redemption, redemption recording the email and
+> locking on the second submit, the offerer's reach across the offer, and a
+> stranger seeing nothing.
+>
+> One deliberate correction to §3 as first written: the plaintext link is
+> NOT nulled at redemption (the operator ruled the link id must stay
+> visible so links can be told apart); it is copyable only until redeemed.
+
+The rebaseline of §5 (route 1) landed as seven migrations replacing the
+M1 set, and the routes took the generic slugs ruled in §6 #10. The
+vocabulary lives in `src/lib/domain/terms.ts` (`Side`, `Seat`,
+`sideToDirection` / `directionToSide`, the `VERTICALS` dictionaries,
+`scopeFor`); the engine is untouched.
+
+**Migrations** (`supabase/migrations/`, each file's own header):
+
+| File                                              | Holds                                                                                                                                                     |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `20260910000001_db_roles_and_baseline.sql`        | database roles first, the deny-by-default grants baseline, the JWT-claim helpers                                                                          |
+| `20260910000002_access_maps.sql`                  | §4: `access_maps`, `access_members`, typed actors, `personal_map()`, `may_access()`                                                                       |
+| `20260910000003_attribution_and_identities.sql`   | attribution funnel (`share_refs.issued_for_reconciliation_id`, `visits`, `events.reconciliation_id`) and identities                                       |
+| `20260910000004_offers_and_reconciliations.sql`   | §3: `offers`, `reconciliations` (`offer_id`, `broker_sees_figures`), `participants` (seat, acts_for, side), `figures`, `invites` (seat, acts_for, `plaintext_token`), `tags` / `tag_links`, results, `honesty_signal_storage.side` |
+| `20260910000005_helpers_grants_policies.sql`      | SECURITY DEFINER helpers (`is_broker`, `side_for`, `is_creator`, `broker_sees_figures_for`, `may_access_offer_of`), least-privilege grants, RLS policies |
+| `20260910000006_guarded_functions.sql`            | guarded transitions: `launch_reconciliation`, `redeem_invite`, `submit_figures`, `recall_figures`, `cancel_reconciliation`                                |
+| `20260910000007_credits_launch_preview_grants.sql` | `ensure_identity`, the launch credit ledger (8 credits per new account), `invite_preview`, the reserve-then-create wrapper, the demo view, client EXECUTE grants |
+
+**Routes** (generic in code; vertical words only in copy):
+
+| Route                | What it is                                                                                                              |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `/app`               | account home; verticals from `VERTICALS`                                                                                |
+| `/app/offers`        | the caller's offers                                                                                                     |
+| `/app/offers/new`    | create an offer: title, currency, the offerer's figures                                                                 |
+| `/app/o/[id]`        | the offer page: figures, generate n one-time links, the link table (email learned on arrival)                           |
+| `/app/rec/[id]`      | one reconciliation for the offerer / broker: result, both sides' figures behind the toggle, what the other side sees    |
+| `/rec/[id]`          | the responding side's page (was `/s/[id]/party`)                                                                        |
+| `/join/[token]`      | unchanged                                                                                                               |
+| `/recruitment`, `/recruitment/demo` | unchanged in URL; the marketing page and guided demo of the `salary-negotiation` vertical                  |
+
+**Modules:** `src/lib/server/offers/` (`offers.ts`, `reconciliations.ts`,
+`figures.ts`) replaces `recruitment/`; client helpers in
+`src/lib/client/offers/`; the template is
+`src/lib/templates/salaryNegotiation.ts` exporting
+`salaryNegotiationTemplate` with `questions: Record<Side, QuestionSet>`;
+data core: `resolveViewer` → `Viewer` (`side` / `broker` / `developer` /
+`none`), `constructPayload`, `getBrokerSeesFigures`, `readRawResult`,
+`issueReconciliationRef`; payload classes side / broker-blind /
+broker-full / developer. The top bar's scope tag reads the dictionary
+name through `scopeFor`.
+
+**Verification against §7:** _to be filled in by the parent session
+(engine golden vectors; blindness suite; access suite; dictionary sweep
+of the recruitment screens; `npm run check`, unit and e2e counts)._

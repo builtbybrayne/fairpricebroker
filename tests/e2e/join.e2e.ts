@@ -17,13 +17,13 @@ test.afterAll(async () => {
 
 interface Fixture {
 	token: string;
-	sessionId: string;
+	reconciliationId: string;
 	inviteId: string;
 	inviteeEmail: string;
 }
 
-/** A recruitment session created by a fresh creator, with one email-bound invite. */
-async function recruitmentInvite(): Promise<Fixture> {
+/** A salary-negotiation reconciliation created by a fresh creator (broker for the buyer), with one email-bound seller invite. */
+async function brokeredInvite(): Promise<Fixture> {
 	const creator = randomUUID();
 	const creatorEmail = `e2e-creator-${creator.slice(0, 8)}@example.test`;
 	const inviteeEmail = `e2e-invitee-${randomUUID().slice(0, 8)}@example.test`;
@@ -38,16 +38,16 @@ async function recruitmentInvite(): Promise<Fixture> {
 		await tx`select set_config('request.jwt.claims', ${claims}, true)`;
 		await tx.unsafe('set local role authenticated');
 		await tx`select grant_launch_credits()`;
-		return tx<{ session_id: string; invite_id: string; plaintext_token: string }[]>`
-			select session_id, invite_id, plaintext_token from launch_invited_session(
-				${randomUUID()}, 'recruitment', 'GBP', 'creator-as-host', null::uuid, 'low-preferring',
-				${tx.json([{ role: 'high-preferring', email: inviteeEmail }])})
+		return tx<{ reconciliation_id: string; invite_id: string; plaintext_token: string }[]>`
+			select reconciliation_id, invite_id, plaintext_token from launch_reconciliation(
+				${randomUUID()}, 'salary-negotiation', 'GBP', 'broker', 'buyer', null::uuid,
+				${tx.json([{ seat: 'seller', email: inviteeEmail }])})
 		`;
 	});
 	const [r] = rows;
 	return {
 		token: r.plaintext_token,
-		sessionId: r.session_id,
+		reconciliationId: r.reconciliation_id,
 		inviteId: r.invite_id,
 		inviteeEmail
 	};
@@ -56,7 +56,7 @@ async function recruitmentInvite(): Promise<Fixture> {
 async function inviteRow(inviteId: string) {
 	const [row] = await sql<{ redeemed_at: string | null; participants: number }[]>`
 		select i.redeemed_at,
-		       (select count(*)::int from session_participants p where p.invite_id = i.id) as participants
+		       (select count(*)::int from participants p where p.invite_id = i.id) as participants
 		from invites i where i.id = ${inviteId}::uuid`;
 	return row;
 }
@@ -75,12 +75,12 @@ async function openJoin(
 test('V3: a fresh email-bound invite signs the browser in, redeems, and redirects; a second context gets the dead-link page; the redeemer can re-enter', async ({
 	browser
 }) => {
-	const f = await recruitmentInvite();
+	const f = await brokeredInvite();
 	expect((await inviteRow(f.inviteId)).redeemed_at).toBeNull();
 
 	const { context: a, res } = await openJoin(browser, f.token);
 	expect(res.status()).toBe(303);
-	expect(res.headers()['location']).toBe(`/s/${f.sessionId}/party`);
+	expect(res.headers()['location']).toBe(`/rec/${f.reconciliationId}`);
 
 	const after = await inviteRow(f.inviteId);
 	expect(after.redeemed_at).not.toBeNull();
@@ -100,10 +100,10 @@ test('V3: a fresh email-bound invite signs the browser in, redeems, and redirect
 	const bCookies = await b.cookies();
 	expect(bCookies.filter((c) => c.name.startsWith('sb-'))).toHaveLength(0);
 
-	// Re-entry by the redeemer still redirects to the party surface.
+	// Re-entry by the redeemer still redirects to the side surface.
 	const again = await openJoin(browser, f.token, a);
 	expect(again.res.status()).toBe(303);
-	expect(again.res.headers()['location']).toBe(`/s/${f.sessionId}/party`);
+	expect(again.res.headers()['location']).toBe(`/rec/${f.reconciliationId}`);
 	expect((await inviteRow(f.inviteId)).participants).toBe(1);
 
 	await a.close();
@@ -113,7 +113,7 @@ test('V3: a fresh email-bound invite signs the browser in, redeems, and redirect
 test('V4: an expired invite shows the dead-link page and leaves redeemed_at null', async ({
 	page
 }) => {
-	const f = await recruitmentInvite();
+	const f = await brokeredInvite();
 	await sql`update invites set expires_at = now() - interval '1 minute' where id = ${f.inviteId}::uuid`;
 	await page.goto(`/join/${f.token}`);
 	await expect(page.locator('h1')).toHaveText("This link isn't live");
@@ -123,7 +123,7 @@ test('V4: an expired invite shows the dead-link page and leaves redeemed_at null
 test('V4: a revoked invite shows the dead-link page and leaves redeemed_at null', async ({
 	page
 }) => {
-	const f = await recruitmentInvite();
+	const f = await brokeredInvite();
 	await sql`update invites set revoked_at = now() where id = ${f.inviteId}::uuid`;
 	await page.goto(`/join/${f.token}`);
 	await expect(page.locator('h1')).toHaveText("This link isn't live");

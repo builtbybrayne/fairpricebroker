@@ -9,6 +9,8 @@ status: active
 
 # T3 — M1 recruitment core: the invited reconciliation, recruitment template
 
+> **Vocabulary superseded, 9 Sep 2026.** This plan is written in M1's words; `T3-m2-domain-terms` (§2–§3, ruled §6) replaced them and the schema was rebaselined as `supabase/migrations/20260910000001..7`. The body below is unchanged history; read it with the map: session → reconciliation; the recruiter → the broker seat acting for the buyer; the client / hiring company → the buyer side; the candidate → the seller side; the recruitment template → the `salary-negotiation` vertical (`src/lib/templates/salaryNegotiation.ts`, `salaryNegotiationTemplate`, `questions: Record<Side, QuestionSet>`), whose dictionary carries the on-screen names (Hiring Company, Candidate, Opportunity, Recruitment Consultant); roles / role_candidates → `offers` + `invites` (the link is `invites.plaintext_token`; the respondent's email is learned at redemption); `host_visibility` → `broker_sees_figures`; payload classes party / host-full → side / broker-full; server modules `recruitment/*` → `src/lib/server/offers/*`; routes `/app/roles` → `/app/offers`, `/app/new` → `/app/offers/new`, `/app/r/[id]` → `/app/o/[id]`, `/app/s/[id]` → `/app/rec/[id]`, `/s/[id]/party` → `/rec/[id]`; `/join/[token]`, `/recruitment` and `/recruitment/demo` unchanged. Where this plan says recruiter or candidate as prose about the people, that still reads correctly.
+
 ## 0. Human summary (plain language)
 
 **The real product, for recruiters.** A recruiter signs in, starts a

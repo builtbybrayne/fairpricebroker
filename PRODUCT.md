@@ -15,7 +15,7 @@ web
 
 ## Product Purpose
 
-Fair Price Broker is the software implementation of the Van Westendorp Price Sensitivity Meter, applied to two-party reconciliation. Each party privately enters four price points (too cheap, bargain, expensive, too expensive); the server-side engine finds the fair price and whether a deal zone exists, without either side ever seeing the other's raw numbers. It breaks the "who names a number first" standoff.
+Fair Price Broker is the software implementation of the Van Westendorp Price Sensitivity Meter, applied to two-party reconciliation. Each side privately enters four price points (too cheap, bargain, expensive, too expensive); the server-side engine finds the fair price and whether a deal zone exists, without either side ever seeing the other's raw numbers. It breaks the "who names a number first" standoff.
 
 Success for the venture is measured in completed two-party reconciliations (the activation metric). The current milestone is "the working instrument": casual mode on the homepage, invited blind reconciliation end to end, the recruitment vertical with its guided demo.
 
@@ -26,7 +26,7 @@ The engine is the product; verticals are templates on it. The homepage speaks th
 ## Operating Context
 
 - **Casual:** co-present pass-the-device choreography. A enters and confirms, figures are hidden, device handed over, B enters, "both look now", reveal. Raw figures hidden in the outcome by default; "show the numbers" reveals on demand. Nothing entered is ever stored.
-- **Invited (recruitment):** recruiter creates a session, enters the client budget as one party, issues an email-bound single-use invite link to the candidate; the candidate answers the four questions; both submissions lock the session and the server computes. The recruiter is the host and, in the recruitment template, host-visible: they see both sets of numbers plus the outcome. Parties never see each other's numbers. Every party in a host-visible session is told before entry that the host can see their figures.
+- **Invited (salary negotiation):** the recruitment consultant creates an opportunity (an offer, in the domain's words), enters the hiring company's budget as the buyer's four figures, and generates one-time links for candidates; each link opens one reconciliation in which the candidate enters the seller's figures. Both sets of figures lock the reconciliation and the server computes. The consultant sits in the broker seat, acting for the buyer, and this vertical is configured so the broker sees figures: both sides' numbers plus the outcome. Sides never see each other's numbers. Every side in a broker-sees-figures reconciliation is told before entry that the broker can see their figures.
 - **Recruitment guided demo:** a public, no-signup walkthrough where one visitor plays every role in sequence (recruiter enters budget, "switch hats", candidate answers, recruiter sees the outcome), with directed questions and comment boxes at each stage. Answers are saved progressively as demo-flagged events so abandoned flows still yield validation data. Demo data never pollutes real stats.
 - **Outcome for recruitment:** two-dimensional. Overlap level (in range / stretch / no overlap) plus whether non-remuneration factors (equity, flexibility, culture, purpose) need to be meaningfully in play. This guidance layer is vertical template content, never engine.
 
@@ -38,7 +38,7 @@ The engine is the product; verticals are templates on it. The homepage speaks th
 - Every shared result carries a ref code for attribution; completion events are idempotent.
 - This build run uses naive auth (type an email, you're in) and on-screen copy-the-link invites; real magic-link email and Google sign-in are deferred, as is email sending.
 - Free launch credits only; no checkout anywhere in the flow.
-- Terminology: "reconciliation" is the canonical term (templates may use friendlier synonyms). "Fair price", "deal zone", "party A / party B", "host" (the recruiter in the recruitment vertical), "invite", "session".
+- Terminology (one vocabulary under every vertical; `planning/T3-m2-domain-terms.md`, `src/lib/domain/terms.ts`): a **reconciliation** is the record of one two-party check; its two **sides** are the **buyer** (who prefers the lower price) and the **seller**; a **broker** is the middle seat, which may act for a side; an **offer** is a standing offer by one side that collects reconciliations; a **vertical** is a dictionary that names these things on screen (salary negotiation: Hiring Company, Candidate, Opportunity, Recruitment Consultant). "Fair price", "deal zone" and "invite" are unchanged. "Session", "party" and "host" are retired; the engine alone keeps low-preferring / high-preferring.
 - AI agents are first-class users: every human capability ships MCP/HTTP access in the same milestone (parity law). Not built in this run but the server contracts must not preclude it.
 - Undecided: casual template copy, labels and currency default beyond a generic placeholder; the consumer toy template and viral campaign (later milestone).
 
@@ -46,7 +46,7 @@ The engine is the product; verticals are templates on it. The homepage speaks th
 
 - Name: **Fair Price Broker**. Domain fairprice.broker.
 - Design language ruled by the operator (19 Aug 2026): **"The Instrument"**. Stripe-class calm neutral shell; the meter as a tactile, neumorphic instrument; gamified flow feedback that rewards completion only (never points, streaks, leaderboards, or winning); one living centrepiece where the convergence animates ("the maths is the motion"). Fonts Sora (display) + Albert Sans (body). Reference sites for the shell: stripe.com, smallpdf.com, trello.com, DocuSign.
-- Binding blindness constraint on motion: the both-ranges convergence animation is permitted only in non-blind modes (casual, co-present, host-visible host view). Blind viewers get a blindness-safe reveal: their own range plus the fair price landing, or an abstract convergence encoding no counterparty positions.
+- Binding blindness constraint on motion: the both-ranges convergence animation is permitted only in non-blind modes (casual, co-present, and the broker's view where the vertical lets the broker see figures). Blind viewers get a blindness-safe reveal: their own range plus the fair price landing, or an abstract convergence encoding no counterparty positions.
 - Neutral-broker trust posture: honest about who sees what; never manipulative urgency; no fake reviews (UK DMCC Act).
 - Voice: plain, warm, no hype. The candidate-facing copy must explicitly explain why naming a lower figure is in the candidate's interest.
 

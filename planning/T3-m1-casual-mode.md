@@ -9,6 +9,8 @@ status: draft
 
 # T3 — M1 casual mode: the homepage instrument
 
+> **Vocabulary superseded, 9 Sep 2026.** This plan is written in M1's words; `T3-m2-domain-terms` (§2–§3, ruled §6) replaced them and the schema was rebaselined as `supabase/migrations/20260910000001..7`. The body below is unchanged history; read it with the map: Party A / Party B → the buyer and seller sides internally (ruled `T3-m2-domain-terms` §6 #11), so scenario `a` / `b` keys become `buyer` / `seller` and the on-screen titles are unchanged and come from the scenario; the engine's low-/high-preferring is mapped once in `src/lib/domain/terms.ts`; `issueSessionRef` → `issueReconciliationRef` (`completeCasualPlay` unchanged); `events.session_id` / `share_refs.issued_for_session_id` → `reconciliation_id` / `issued_for_reconciliation_id`. Casual stays stateless; nothing else in this plan moves.
+
 > Revised 7 Sep 2026 addressing Codex audit r1 (verdict: revise; 3 high /
 > 3 medium / 1 low). Gist: the response payload is now an explicit
 > allowlisted `CasualResultPayload`, not the full `ReconcileResult`;

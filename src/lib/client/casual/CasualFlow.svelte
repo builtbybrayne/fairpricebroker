@@ -5,6 +5,10 @@
 	 * own meter, which hides it behind a plate for the handover; when both
 	 * are sealed the reconciliation runs and the pair reveal it together.
 	 *
+	 * The two sides are the BUYER (the one paying; the engine's
+	 * low-preferring) and the SELLER. The scenario carries each side's title
+	 * and points; the words buyer / seller never reach the screen here.
+	 *
 	 * All state is in-memory Svelte state: never localStorage, never a
 	 * persisted store. A reload loses everything, which is correct.
 	 *
@@ -41,13 +45,13 @@
 	} = $props();
 
 	const seed = (s: CasualScenario) => ({
-		a: s.a.example.map(String) as (string | null)[],
-		b: s.b.example.map(String) as (string | null)[]
+		buyer: s.buyer.example.map(String) as (string | null)[],
+		seller: s.seller.example.map(String) as (string | null)[]
 	});
-	let aValues = $state<(string | null)[]>(untrack(() => seed(scenario).a));
-	let bValues = $state<(string | null)[]>(untrack(() => seed(scenario).b));
-	let sealedA = $state(false);
-	let sealedB = $state(false);
+	let buyerValues = $state<(string | null)[]>(untrack(() => seed(scenario).buyer));
+	let sellerValues = $state<(string | null)[]>(untrack(() => seed(scenario).seller));
+	let sealedBuyer = $state(false);
+	let sealedSeller = $state(false);
 	// The inbound ref is captured once, deliberately: it must not change
 	// mid-flow if the URL does (T2-product-surfaces §3.1).
 	let attributionRef = $state<string | null>(untrack(() => ref));
@@ -69,22 +73,22 @@
 	$effect(() => {
 		void scenario.id;
 		untrack(() => {
-			if (phase === 'entry' && !sealedA && !sealedB) {
-				aValues = seed(scenario).a;
-				bValues = seed(scenario).b;
+			if (phase === 'entry' && !sealedBuyer && !sealedSeller) {
+				buyerValues = seed(scenario).buyer;
+				sellerValues = seed(scenario).seller;
 			}
 		});
 	});
 
 	/** True while a scenario switch is allowed (nothing sealed yet). */
 	export function untouched() {
-		return phase === 'entry' && !sealedA && !sealedB;
+		return phase === 'entry' && !sealedBuyer && !sealedSeller;
 	}
 
 	let root = $state<HTMLElement | null>(null);
 	/** Puts focus on the first open meter (the hero CTA calls this). */
 	export function start() {
-		if (phase !== 'entry' && phase !== 'a-sealed' && phase !== 'b-sealed') return;
+		if (phase !== 'entry' && phase !== 'buyer-sealed' && phase !== 'seller-sealed') return;
 		if (startedAt === null) startedAt = performance.now();
 		const first = root?.querySelector<HTMLElement>(
 			'form:not([data-sealed]) .knob, form:not([data-sealed]) .dial'
@@ -92,25 +96,25 @@
 		first?.focus({ preventScroll: true });
 	}
 
-	function sealA() {
+	function sealBuyer() {
 		if (startedAt === null) startedAt = performance.now();
-		sealedA = true;
+		sealedBuyer = true;
 		afterSeal();
 	}
-	function sealB() {
+	function sealSeller() {
 		if (startedAt === null) startedAt = performance.now();
-		sealedB = true;
+		sealedSeller = true;
 		afterSeal();
 	}
 	function afterSeal() {
 		engineError = null;
-		if (sealedA && sealedB) {
+		if (sealedBuyer && sealedSeller) {
 			// The ONLY mint point in the whole flow (§3).
 			idempotencyKey = mintIdempotencyKey();
 			phase = 'both-look-now';
 			void fire();
 		} else {
-			phase = sealedA ? 'a-sealed' : 'b-sealed';
+			phase = sealedBuyer ? 'buyer-sealed' : 'seller-sealed';
 		}
 	}
 	function retry() {
@@ -131,10 +135,10 @@
 		}
 	}
 	function reset(keepError = false) {
-		aValues = seed(scenario).a;
-		bValues = seed(scenario).b;
-		sealedA = false;
-		sealedB = false;
+		buyerValues = seed(scenario).buyer;
+		sellerValues = seed(scenario).seller;
+		sealedBuyer = false;
+		sealedSeller = false;
 		response = null;
 		idempotencyKey = null;
 		pending = false;
@@ -152,8 +156,8 @@
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({
-					partyATuple: asRawTuple(aValues),
-					partyBTuple: asRawTuple(bValues),
+					buyerTuple: asRawTuple(buyerValues),
+					sellerTuple: asRawTuple(sellerValues),
 					ref: attributionRef,
 					idempotencyKey
 				})
@@ -191,7 +195,7 @@
 	}
 
 	const canContinue = $derived(phase === 'both-look-now' && response !== null && !pending);
-	const labels = $derived({ a: scenario.a.title, b: scenario.b.title });
+	const labels = $derived({ buyer: scenario.buyer.title, seller: scenario.seller.title });
 </script>
 
 <div
@@ -219,17 +223,17 @@
 
 		<div class="flow__panels">
 			<PartyEntry
-				side={scenario.a}
-				partyLabel="A"
+				side="buyer"
+				spec={scenario.buyer}
 				accent="blue"
-				bind:values={aValues}
-				sealed={sealedA}
-				sealedNote={sealedB ? 'Sealed.' : 'Sealed. Hand the phone over.'}
+				bind:values={buyerValues}
+				sealed={sealedBuyer}
+				sealedNote={sealedSeller ? 'Sealed.' : 'Sealed. Hand the phone over.'}
 				currency={scenario.currency}
 				min={scenario.min}
 				max={scenario.max}
 				step={scenario.step}
-				onseal={sealA}
+				onseal={sealBuyer}
 			/>
 			<div class="flow__lock" aria-hidden="true">
 				<svg viewBox="0 0 34 40"
@@ -243,17 +247,17 @@
 				<span class="caps">Both set in private <br />Figures hidden until reveal</span>
 			</div>
 			<PartyEntry
-				side={scenario.b}
-				partyLabel="B"
+				side="seller"
+				spec={scenario.seller}
 				accent="terracotta"
-				bind:values={bValues}
-				sealed={sealedB}
-				sealedNote={sealedA ? 'Sealed.' : 'Sealed. Hand the phone over.'}
+				bind:values={sellerValues}
+				sealed={sealedSeller}
+				sealedNote={sealedBuyer ? 'Sealed.' : 'Sealed. Hand the phone over.'}
 				currency={scenario.currency}
 				min={scenario.min}
 				max={scenario.max}
 				step={scenario.step}
-				onseal={sealB}
+				onseal={sealSeller}
 			/>
 		</div>
 
