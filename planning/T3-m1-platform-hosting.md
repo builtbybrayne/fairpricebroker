@@ -4,7 +4,7 @@ plan_kind: thematic
 tier: 3
 t2_parent: T2-platform
 milestone: M1-working-instrument
-status: draft
+status: active
 ---
 
 # T3 — M1 platform, hosting lane: dev and prod environments on Supabase + Vercel
