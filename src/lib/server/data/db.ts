@@ -31,7 +31,10 @@ function requireEnv(key: string): string {
 function pool(key: string, url: string): Sql {
 	let p = pools.get(key);
 	if (!p) {
-		p = postgres(url, { max: 4, onnotice: () => {} });
+		// prepare:false — Supabase's transaction pooler (port 6543), which the
+		// serverless deploy connects through, does not support named prepared
+		// statements. Harmless on a direct/local connection.
+		p = postgres(url, { max: 4, prepare: false, onnotice: () => {} });
 		pools.set(key, p);
 	}
 	return p;

@@ -27,7 +27,7 @@ four per-role `*_DB_URL` values use the local-dev passwords created by the
 roles migration (`supabase/migrations/*roles_and_baseline*.sql`).
 
 ```bash
-npm run dev            # http://localhost:5173
+npm run dev            # http://localhost:5173 (set PREVIEW_SIGNIN_ALLOWLIST=* in .env for /signin)
 ```
 
 What works in this build:

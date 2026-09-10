@@ -13,7 +13,11 @@
 	<header class="shell__head">
 		<div>
 			<h1 class="shell__title">Sign in</h1>
-			<p class="shell__sub">Type your email and you are in. No password, nothing sent.</p>
+			{#if data.open}
+				<p class="shell__sub">Type your email and you are in. No password, nothing sent.</p>
+			{:else}
+				<p class="shell__sub">Preview sign-in is closed on this deployment.</p>
+			{/if}
 		</div>
 	</header>
 
